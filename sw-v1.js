@@ -1,5 +1,5 @@
-const CACHE='sheetmancer-shell-v33';
-const FONT_CSS='https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=EB+Garamond:ital,wght@0,400;0,600;0,700;1,400&display=swap';
+const CACHE='sheetmancer-shell-v34';
+const FONT_CSS='https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Cormorant+Garamond:wght@700&family=EB+Garamond:ital,wght@0,400;0,600;0,700;1,400&display=swap';
 self.addEventListener('install',function(e){
   self.skipWaiting();
   e.waitUntil((async function(){
