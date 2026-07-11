@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sheetmancer Privacy Policy — DigiRune Studios</title>
+<style>
+  :root{--ink:#1a1108;--muted:#5b5145;--leather:#5a2d0c;--gold:#9c6b1f;--rule:#c9973a;--bg:#f7ecd8;--surface:#fffdf7;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:Georgia,'Times New Roman',serif;line-height:1.6;}
+  .wrap{max-width:760px;margin:0 auto;padding:40px 22px 64px;}
+  header{border-bottom:2px solid var(--leather);padding-bottom:18px;margin-bottom:8px;}
+  .kicker{font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);font-weight:bold;}
+  h1{font-size:30px;margin:6px 0 4px;color:var(--ink);}
+  .eff{color:var(--muted);font-style:italic;font-size:14px;}
+  h2{font-size:20px;color:var(--leather);margin:30px 0 8px;border-bottom:1px solid var(--rule);padding-bottom:4px;}
+  h3{font-size:16px;color:var(--gold);margin:18px 0 4px;}
+  p,li{font-size:16px;}
+  ul{padding-left:22px;}
+  a{color:var(--leather);}
+  .box{background:var(--surface);border:1px solid var(--rule);border-left:4px solid var(--leather);border-radius:8px;padding:14px 18px;margin:16px 0;}
+  .supp{background:#fbf3e2;border:1px dashed var(--rule);border-radius:8px;padding:10px 16px;margin:14px 0;font-size:14px;color:var(--muted);}
+  footer{margin-top:40px;border-top:2px solid var(--leather);padding-top:14px;color:var(--muted);font-size:13px;text-align:center;}
+  strong{color:var(--leather);}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div class="kicker">DigiRune Studios</div>
+  <h1>Sheetmancer Privacy Policy</h1>
+  <div class="eff">Effective date: June 6, 2026 &middot; Last updated: July 11, 2026</div>
+</header>
+
+<div class="supp">
+This is the app-specific privacy policy for <strong>Sheetmancer</strong>. It supplements the general
+<a href="https://digirunestudios.com/#privacy">DigiRune Studios Privacy Policy</a>. Where the two address
+Sheetmancer differently, this page &mdash; the more specific one &mdash; governs.
+</div>
+
+<p>Sheetmancer is a mobile app by <strong>DigiRune Studios</strong>, a division of
+<strong>McCullough Development, Inc.</strong> (a South Carolina corporation based in Beaufort, South
+Carolina, USA). The app lets you photograph a paper tabletop role-playing game (TTRPG) character sheet and
+turn it into an editable digital character that syncs across your devices. This policy explains, in plain
+language, what information the app handles and how. We built Sheetmancer to respect your privacy:
+<strong>no ads, no tracking, and we never sell your data.</strong></p>
+
+<div class="box">
+<strong>The short version.</strong> You sign in with your Apple or Google account so your characters can sync
+across your devices. We store your characters securely in the cloud, tied to your account, and a copy stays
+on your device so the app works offline. When you scan a sheet, the photos are sent once to our AI provider
+only to read the text on them &mdash; they are not used to train any AI and are deleted shortly after. We
+don't show ads, we don't sell your information, and you can delete your account and all your data from inside
+the app at any time.
+</div>
+
+<h2>1. Information we handle</h2>
+
+<h3>Your account</h3>
+<p>To use Sheetmancer you sign in with <strong>Sign in with Apple</strong> or <strong>Google</strong>. We
+receive a unique account identifier from that provider (and, depending on the provider and your choices, a
+name and/or email address) so we can recognize you and link your characters to your account. We use a trusted
+authentication service, <strong>Google Firebase Authentication</strong>, to manage sign-in securely. We do
+not receive or store your Apple or Google password.</p>
+
+<h3>Your character data</h3>
+<p>The digital characters you create or edit (names, stats, notes, optional portrait images, themes, and
+session journal entries) are stored in two places: <strong>securely in the cloud</strong> using
+<strong>Google Firebase / Firestore</strong>, tied to your account so they sync across your devices, and as a
+<strong>local copy on each device</strong> so the app works offline. Your character data is private to your
+account; we do not browse, share, or sell it.</p>
+
+<h3>Character photos you scan</h3>
+<p>When you take or upload photos of a character sheet and tap Scan, those images are transmitted over a
+secure connection to our processing service (see Section 2) so the text on the page can be extracted into
+digital fields. We do not permanently store your photos on our servers, and the app does not keep the
+original images after extraction &mdash; only the structured character data it produces.</p>
+
+<h3>Purchases</h3>
+<p>Sheetmancer is a paid app and offers optional in-app purchases (additional character slots). All payments
+and purchase records are handled directly by the <strong>Apple App Store</strong> or <strong>Google Play</strong>
+under their own terms and privacy policies. DigiRune Studios never sees or stores your payment card details.</p>
+
+<h3>What we do <em>not</em> collect</h3>
+<ul>
+  <li>No advertising identifiers, and no third-party advertising or analytics tracking SDKs.</li>
+  <li>No location data, contacts, or microphone access.</li>
+  <li>Camera and photo access are used only when you choose to add a page.</li>
+  <li>We do not build a profile of you or track you across other apps or websites.</li>
+</ul>
+
+<h2>2. Our AI processing service</h2>
+<p>To read the text on your character sheets, Sheetmancer sends the photos to <strong>Anthropic</strong>, the
+maker of the Claude AI models, through a secure server we operate. We use Anthropic's commercial API for
+this single purpose: turning the writing on your page into editable fields.</p>
+<p>Per Anthropic's commercial API terms, <strong>inputs and outputs sent through the API are not used to
+train Anthropic's AI models</strong>, and they are automatically deleted from Anthropic's systems after a
+short retention period (currently about 7 days) kept only to detect misuse. Your character photos are never
+used to build or improve any AI model. Anthropic's data practices are described at
+<a href="https://privacy.claude.com">privacy.claude.com</a>.</p>
+
+<h2>3. How your information is used</h2>
+<ul>
+  <li>To sign you in and recognize your account across your devices.</li>
+  <li>To extract the text from your character sheet photos and build your digital character.</li>
+  <li>To store and sync your characters so they appear on all your devices.</li>
+  <li>To process optional in-app purchases through the app stores.</li>
+</ul>
+<p>We do not use your information for advertising, profiling, or any purpose beyond operating the app's
+core features.</p>
+
+<h2>4. Service providers we rely on</h2>
+<p>We do not sell, rent, or trade your information. We share data only with the service providers needed to
+run the app, each for the limited purpose described:</p>
+<ul>
+  <li><strong>Google Firebase</strong> (Authentication &amp; Firestore) &mdash; to sign you in and store/sync
+  your characters securely.</li>
+  <li><strong>Anthropic</strong> &mdash; to read your scan photos and return the extracted text, as described
+  in Section 2.</li>
+  <li><strong>Cloudflare</strong> &mdash; the secure server that relays scan requests to Anthropic.</li>
+  <li><strong>Apple / Google</strong> &mdash; sign-in and purchase processing.</li>
+</ul>
+<p>We may also disclose information if required by law.</p>
+
+<h2>5. Data security &amp; retention</h2>
+<p>Sign-in and cloud storage are handled through Google Firebase's secure infrastructure, and scan photos are
+transmitted over encrypted (HTTPS) connections. We keep your account and character data for as long as your
+account is active. When you delete your account (see Section 6), your characters and account record are
+removed from our cloud storage.</p>
+
+<h2>6. Your choices &amp; rights</h2>
+<ul>
+  <li><strong>Delete a character</strong> at any time from within the app; the change syncs to your other
+  devices.</li>
+  <li><strong>Delete your account and all your data</strong> from inside the app &mdash; this permanently
+  removes your characters and account record from our cloud storage.</li>
+  <li><strong>Export a backup</strong> of any character as a file before deleting.</li>
+  <li><strong>Sign out</strong> on any device to remove the local copy from that device.</li>
+  <li><strong>Decline camera or photo access</strong> in your device settings at any time.</li>
+</ul>
+<p>To request help with your data, contact us at the address in Section 9.</p>
+
+<h2>7. Children's privacy</h2>
+<p>Sheetmancer is intended for a general audience and is not directed to children under 13. We do not knowingly
+collect personal information from children. If you believe a child has provided us information, contact us and
+we will delete it.</p>
+
+<h2>8. Changes to this policy</h2>
+<p>If we materially change how we handle your information, we will update this policy and revise the date
+above, and where appropriate notify you in the app, before the change takes effect.</p>
+
+<h2>9. Contact</h2>
+<p>Questions about this policy or your data? Contact us at
+<a href="mailto:Will@DigiRuneStudios.com">Will@DigiRuneStudios.com</a>. Sheetmancer and DigiRune Studios are
+operated by <strong>McCullough Development, Inc.</strong> (d/b/a DigiRune Studios), Beaufort, South Carolina,
+USA.</p>
+
+<footer>
+  McCullough Development, Inc. d/b/a DigiRune Studios &middot; Will@DigiRuneStudios.com &middot; digirunestudios.com<br>
+  &copy; 2026 McCullough Development, Inc. All rights reserved.
+</footer>
+</div>
+</body>
+</html>
