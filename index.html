@@ -1523,43 +1523,99 @@ function SignInSheet({ T, onClose }) {
   }, /*#__PURE__*/React.createElement("svg", {
     width: "20", height: "20", viewBox: "0 0 24 24", fill: "none", "aria-hidden": "true"
   }, /*#__PURE__*/React.createElement("path", { d: "M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z", fill: "#4285F4" }), /*#__PURE__*/React.createElement("path", { d: "M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z", fill: "#34A853" }), /*#__PURE__*/React.createElement("path", { d: "M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z", fill: "#FBBC05" }), /*#__PURE__*/React.createElement("path", { d: "M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z", fill: "#EA4335" })), "Continue with Google"), /*#__PURE__*/React.createElement("button", {
-    disabled: true,
-    "aria-label": "Continue with Apple — coming with the App Store version",
-    style: { display: "flex", alignItems: "center", justifyContent: "center", gap: 9, width: "100%", padding: "14px", borderRadius: 11, border: "1px solid #3a3a3a", cursor: "not-allowed", background: "#000000", color: "rgba(255,255,255,0.45)", fontFamily: "system-ui,-apple-system,'Segoe UI',Roboto,sans-serif", fontWeight: 600, fontSize: 15 }
+    onClick: () => { try { window.ssSignInApple && window.ssSignInApple(); } catch (e) {} onClose(); },
+    "aria-label": "Continue with Apple",
+    className: "ss-press",
+    style: { display: "flex", alignItems: "center", justifyContent: "center", gap: 9, width: "100%", padding: "14px", borderRadius: 11, border: "1px solid #000000", cursor: "pointer", background: "#000000", color: "#ffffff", fontFamily: "system-ui,-apple-system,'Segoe UI',Roboto,sans-serif", fontWeight: 600, fontSize: 15 }
   }, /*#__PURE__*/React.createElement("svg", {
-    width: "18", height: "18", viewBox: "0 0 24 24", fill: "rgba(255,255,255,0.45)", "aria-hidden": "true", style: { marginTop: -2 }
-  }, /*#__PURE__*/React.createElement("path", { d: "M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.53 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" })), "Continue with Apple", /*#__PURE__*/React.createElement("span", {
-    style: { fontSize: 10, fontWeight: 700, letterSpacing: 0.5, color: "#0A0A0C", background: "rgba(255,255,255,0.5)", borderRadius: 5, padding: "2px 6px", marginLeft: 3 }
-  }, "SOON")), /*#__PURE__*/React.createElement("div", {
-    style: { color: T.textMuted, fontSize: 12.5, textAlign: "center", marginTop: 10, lineHeight: 1.5 }
-  }, "Apple sign-in arrives with the App Store version — please use Google for now."), /*#__PURE__*/React.createElement("div", {
+    width: "18", height: "18", viewBox: "0 0 24 24", fill: "#ffffff", "aria-hidden": "true", style: { marginTop: -2 }
+  }, /*#__PURE__*/React.createElement("path", { d: "M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.53 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" })), "Continue with Apple"), /*#__PURE__*/React.createElement("div", {
     style: { color: T.textMuted, fontSize: 12, textAlign: "center", marginTop: 8, lineHeight: 1.5, opacity: 0.8 }
   }, "Free. We only use it to save & sync your characters."))), document.body);
 }
-function SignOutSheet({ T, email, onClose }) {
-  return ReactDOM.createPortal(/*#__PURE__*/React.createElement("div", {
-    onClick: onClose,
+function SignOutSheet({ T, email, onClose, onBusy, onErrState, syncErr }) {
+  const [mode, setMode] = useState("main");
+  const [busy, setBusy] = useState(false);
+  const [err, setErrRaw] = useState("");
+  const setErr = (m) => { setErrRaw(m); if (onErrState) onErrState(!!m); };
+  const [armed, setArmed] = useState(false);
+  const attemptRef = useRef(0);
+  const done = (v) => { setBusy(v); if (onBusy) onBusy(v); if (!v) setArmed(false); };
+  const doDelete = () => {
+    if (busy) return;
+    const my = ++attemptRef.current;   // a retired attempt settles into the void
+    done(true); setErr("");
+    Promise.resolve().then(() => window.ssDeleteAccount({ onDestructive: () => { if (my === attemptRef.current) setArmed(true); } })).then(() => {
+      if (my !== attemptRef.current) return;
+      done(false);
+      try { const t = document.getElementById("ssToast"); if (t) { t.onclick = null; t.textContent = "Your account has been deleted."; t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 8000); } } catch (e) {}
+      onClose();
+    }).catch((e) => {
+      if (my !== attemptRef.current) return;
+      done(false);
+      setErr((e && e.ssMsg) || "We couldn't finish that just now. Your account has not been changed.");
+    });
+  };
+  // Only retire this attempt if the module agrees it was still cancellable - a cancel
+  // that lands in the microtask gap after arming must NOT relabel a real deletion.
+  const cancelPending = () => {
+    let retired = false;
+    try { retired = !!(window.ssCancelDelete && window.ssCancelDelete()); } catch (e) {}
+    if (!retired) return false;
+    attemptRef.current++; done(false); return true;
+  };
+  const shell = (kids) => ReactDOM.createPortal(/*#__PURE__*/React.createElement("div", {
+    onClick: (busy && armed) ? undefined : () => { if (busy && !cancelPending()) return; onClose(); },
     style: { position: "fixed", inset: 0, background: "rgba(0,0,0,0.72)", zIndex: 100600, display: "flex", alignItems: "center", justifyContent: "center", padding: 22 }
   }, /*#__PURE__*/React.createElement("div", {
     onClick: e => e.stopPropagation(),
     style: { background: T.surface, border: T.frame || ("2px solid " + T.borderLight), borderRadius: 16, padding: "22px 20px", maxWidth: 320, width: "100%", boxShadow: T.surfaceShadow, textAlign: "center" }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: { fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, fontSize: 16, color: T.text }
-  }, "You're signed in"), email && /*#__PURE__*/React.createElement("div", {
-    style: { color: T.textMuted, fontSize: 13, margin: "7px 0 2px", wordBreak: "break-all" }
-  }, email), /*#__PURE__*/React.createElement("div", {
-    style: { color: T.textMuted, fontSize: 13, margin: "7px 0 16px", lineHeight: 1.5 }
-  }, "Your characters sync automatically across your devices."), /*#__PURE__*/React.createElement("button", {
-    onClick: () => { try { window.ssSignOut && window.ssSignOut(); } catch (e) {} onClose(); },
-    className: "ss-press",
-    style: { width: "100%", padding: "12px", borderRadius: 11, border: "1px solid " + T.borderLight, background: "none", color: T.text, fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, fontSize: 14, cursor: "pointer" }
-  }, "Sign out"))), document.body);
+  }, kids)), document.body);
+
+  if (mode === "confirm") {
+    return shell([
+      /*#__PURE__*/React.createElement("div", { key: "t", style: { fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, fontSize: 16, color: T.text } }, "Delete your account?"),
+      /*#__PURE__*/React.createElement("div", { key: "b", style: { color: T.textMuted, fontSize: 13, margin: "10px 0 0", lineHeight: 1.55 } }, "This permanently deletes your ", /*#__PURE__*/React.createElement("span", { translate: "no" }, "Sheetmancer"), " account and the copy of your characters kept in the cloud. You'll be asked to sign in once more so we know it's you."),
+      /*#__PURE__*/React.createElement("div", { key: "k", style: { color: T.textMuted, fontSize: 12.5, margin: "10px 0 0", lineHeight: 1.55, opacity: 0.85 } }, "Characters saved on this device stay on this device. We can't restore or refund character slots you've purchased."),
+      err && /*#__PURE__*/React.createElement("div", { key: "e", role: "alert", style: { color: "#D0605C", fontSize: 12.5, margin: "12px 0 0", lineHeight: 1.5 } }, err),
+      /*#__PURE__*/React.createElement("button", {
+        key: "d", onClick: doDelete, disabled: busy, className: "ss-press",
+        style: { width: "100%", minHeight: 44, padding: "12px", borderRadius: 11, border: "1px solid #D0605C", background: busy ? "none" : "#D0605C22", color: busy ? T.textMuted : "#D0605C", fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, fontSize: 14, cursor: busy ? "default" : "pointer", marginTop: 16 }
+      }, busy ? "Deleting\u2026" : "Delete my account"),
+      /*#__PURE__*/React.createElement("button", {
+        key: "c",
+        onClick: () => {
+          if (busy && !armed) { if (cancelPending()) setErr("Cancelled \u2014 nothing has changed."); return; }
+          if (!busy) { setErr(""); setMode("main"); }
+        },
+        disabled: busy && armed, className: "ss-press",
+        style: { width: "100%", minHeight: 44, padding: "12px", borderRadius: 11, border: "1px solid " + T.borderLight, background: "none", color: T.text, fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, fontSize: 14, cursor: (busy && armed) ? "default" : "pointer", marginTop: 9 }
+      }, "Cancel")
+    ]);
+  }
+
+  return shell([
+    /*#__PURE__*/React.createElement("div", { key: "t", style: { fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, fontSize: 16, color: T.text } }, "You're signed in"),
+    email && /*#__PURE__*/React.createElement("div", { key: "m", style: { color: T.textMuted, fontSize: 13, margin: "7px 0 2px", wordBreak: "break-all" } }, email),
+    /*#__PURE__*/React.createElement("div", { key: "s", style: { color: syncErr ? "#D0605C" : T.textMuted, fontSize: 13, margin: "7px 0 16px", lineHeight: 1.5 } }, syncErr ? "Syncing isn't getting through right now \u2014 the characters on this device are safe." : "Your characters sync automatically across your devices."),
+    /*#__PURE__*/React.createElement("button", {
+      key: "o", onClick: () => { try { window.ssSignOut && window.ssSignOut(); } catch (e) {} onClose(); }, className: "ss-press",
+      style: { width: "100%", minHeight: 44, padding: "12px", borderRadius: 11, border: "1px solid " + T.borderLight, background: "none", color: T.text, fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, fontSize: 14, cursor: "pointer" }
+    }, "Sign out"),
+    /*#__PURE__*/React.createElement("div", { key: "r", style: { height: 1, background: T.borderLight, opacity: 0.5, margin: "16px 0 4px" } }),
+    /*#__PURE__*/React.createElement("button", {
+      key: "x", onClick: () => setMode("confirm"),
+      style: { width: "100%", minHeight: 44, padding: "12px", borderRadius: 11, border: "none", background: "none", color: T.textMuted, fontFamily: "system-ui,-apple-system,'Segoe UI',Roboto,sans-serif", fontWeight: 600, fontSize: 12.5, cursor: "pointer", opacity: 0.9 }
+    }, "Delete account")
+  ]);
 }
 function SignInButton({ T }) {
   const auth = useSsAuth();
   const [sheet, setSheet] = useState(false);
+  const [delBusy, setDelBusy] = useState(false);
+  const [delErr, setDelErr] = useState(false);
   const signed = auth.signedIn;
-  const c = signed ? "#5BBA6F" : "#D0605C";
+  const c = signed ? (auth.err ? "#D4A843" : "#5BBA6F") : "#D0605C";
   return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("button", {
     onClick: () => setSheet(true),
     "aria-label": signed ? "Signed in — tap for account options" : "Sign in to scan and sync",
@@ -1567,7 +1623,7 @@ function SignInButton({ T }) {
     style: { display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 11px", borderRadius: 11, border: "1.5px solid " + c, background: c + "22", color: T.text, fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, fontSize: 12, letterSpacing: 0.3, cursor: "pointer", whiteSpace: "nowrap" }
   }, /*#__PURE__*/React.createElement("span", {
     style: { width: 8, height: 8, borderRadius: "50%", background: c, boxShadow: "0 0 6px " + c, flexShrink: 0 }
-  }), signed ? "Signed in" : "Sign in"), sheet && (signed ? /*#__PURE__*/React.createElement(SignOutSheet, { T: T, email: auth.email, onClose: () => setSheet(false) }) : /*#__PURE__*/React.createElement(SignInSheet, { T: T, onClose: () => setSheet(false) })));
+  }), signed ? "Signed in" : "Sign in"), sheet && ((signed || delBusy || delErr) ? /*#__PURE__*/React.createElement(SignOutSheet, { T: T, email: auth.email, syncErr: !!auth.err, onBusy: setDelBusy, onErrState: setDelErr, onClose: () => { setDelBusy(false); setDelErr(false); setSheet(false); } }) : /*#__PURE__*/React.createElement(SignInSheet, { T: T, onClose: () => setSheet(false) })));
 }
 function SignInExplainer({ T }) {
   const [sheet, setSheet] = useState(false);
@@ -1756,7 +1812,7 @@ function HomeScreen({
       marginTop: 4,
       letterSpacing: 1
     }
-  }, "Sheetmancer · build v39"))), /*#__PURE__*/React.createElement("button", {
+  }, "Sheetmancer · build v40"))), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowHelp(false),
     className: "ss-press",
     style: {
@@ -6106,19 +6162,212 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
   window.ssGetIdToken=function(){return new Promise(function(res,rej){function tok(u){u.getIdToken().then(res,rej);}if(auth.currentUser){tok(auth.currentUser);return;}authM.signInAnonymously(auth).then(function(c){tok(c.user);}).catch(rej);});};
   var provider=new authM.GoogleAuthProvider();
   window.ssSignIn=function(){if(user)return;pending=true;broadcast();authM.signInWithPopup(auth,provider).then(function(){pending=false;}).catch(function(){pending=false;broadcast();});};
+  /* Sign in with Apple. Apple requires this wherever another social sign-in is
+     offered (App Store 4.8). Scopes stay minimal - email + name - to match what
+     Google gives us and what the privacy policy discloses. */
+  window.ssSignInApple=function(){
+   if(user)return;
+   var ap=new authM.OAuthProvider("apple.com");
+   ap.addScope("email");ap.addScope("name");
+   pending=true;broadcast();
+   authM.signInWithPopup(auth,ap).then(function(){pending=false;}).catch(function(){pending=false;broadcast();});
+  };
   window.ssSignOut=function(){try{if(user)authM.signOut(auth);}catch(e){}};
+  /* ---- Account deletion (Apple 5.1.1(v)). Self-Review Gate / F-064 discipline: ----
+     - NO flag is shared with the sign-in handlers.
+     - Nothing is destroyed until reauth SUCCEEDS (verify-then-destroy), and the
+       caller can still cancel right up to that line. Cancelling invalidates the
+       attempt by SEQUENCE, so a popup that returns late can never resume it.
+     - A Firestore TOMBSTONE (users_deleted/{uid}) is written BEFORE the document
+       is removed. Firestore does NOT enforce token revocation, so a second
+       signed-in device would otherwise re-create the document for up to an hour
+       after deletion. Security rules refuse every later write to users/{uid} once
+       the tombstone exists, so the resurrection is blocked SERVER-side, on every
+       device. Recovery deletes the tombstone; the rules allow the owner to.
+     - The Worker is told to purge its KV records with a token captured while the
+       account was still alive (an ID token outlives its user by up to an hour).
+     - The 30s destructive timer only releases the USER (so no one is trapped in a
+       modal); the chain keeps its guards and still rolls back if it fails later.
+     - The per-uid guard is lifted only once the tombstone is CONFIRMED gone.
+     - Every exit path reports what actually happened, including a restore that
+       was attempted and failed. */
+  var deletedUids=Object.create(null),deleting=false,deleteTimer=null,deleteBusy=false,deleteSeq=0;
+  var SS_API="https://sheetsnap-api.will-6d6.workers.dev";
+  var REAUTH_MS=120000,DESTRUCT_MS=30000;
+  function tomb(uid){return fsM.doc(db,"users_deleted",uid);}
+  function derr(code,msg){var e=new Error(code);e.ssMsg=msg;return e;}
+  function raceOut(p,ms,e){var t;return Promise.race([p,new Promise(function(_,rj){t=setTimeout(function(){rj(e);},ms);})])
+   .then(function(v){clearTimeout(t);return v;},function(x){clearTimeout(t);throw x;});}
+  /* Honoured only BEFORE the first destructive step. It retires the attempt by
+     sequence number, so the abandoned chain can never destroy anything later. */
+  window.ssCancelDelete=function(){if(deleting)return false;deleteSeq++;deleteBusy=false;return true;};
+  window.ssDeleteAccount=function(opts){
+   opts=opts||{};
+   return new Promise(function(resolve,reject){
+    if(deleteBusy){reject(derr("in-progress","A deletion is already running — give it a moment."));return;}
+    var u=auth.currentUser;
+    if(!u||u.isAnonymous){reject(derr("not-signed-in","You're not signed in."));return;}
+    var uid=u.uid,mySeq=++deleteSeq;
+    var pid=(u.providerData&&u.providerData[0]&&u.providerData[0].providerId)||"google.com";
+    var rp=(pid==="apple.com")?new authM.OAuthProvider("apple.com"):new authM.GoogleAuthProvider();
+    var phase=0;      /* 0 nothing touched | 1 tombstone written | 2 cloud copy gone | 3 account gone */
+    var settled=false,savedTok="",tombIssued=false;
+    deleteBusy=true;
+    function stale(){return mySeq!==deleteSeq;}
+    function stop(){deleting=false;deleteBusy=false;if(deleteTimer){clearTimeout(deleteTimer);deleteTimer=null;}}
+    function settle(fn){if(settled)return;settled=true;fn();}     /* releases the CALLER only */
+    function succeed(){
+     stop();
+     user=null;last="";lastSyncedAt=0;errState=false;syncing=false;pending=false;
+     if(timer){clearTimeout(timer);timer=null;}
+     try{sessionStorage.removeItem("ss-sync-reloaded");}catch(e){}
+     settle(function(){broadcast();resolve();});
+    }
+    /* Put the cloud copy back from what is on this device, and REPORT whether it
+       worked - never claim a restore that was only attempted. */
+    function restoreDoc(){
+     var s=JSON.stringify(gather());
+     return fsM.setDoc(ref(uid),{sheetsnap_blob:s,sheetsnap_updatedAt:Date.now()},{merge:true})
+      .then(function(){last=s;lastSyncedAt=Date.now();errState=false;return true;},function(){errState=true;return false;});
+    }
+    /* Roll back. Runs even if the caller was already released by the timer - an
+       abandoned chain must still clean up after itself. The tombstone delete is
+       driven by ISSUED, not acked (a write whose ack was lost still landed), and
+       the per-uid guard is lifted ONLY once it is confirmed gone; otherwise this
+       device would resume pushing into a document the rules now refuse, silently. */
+    function recover(e,msgFor){
+     /* A retired attempt (cancelled, superseded) owns no global state: it never
+        armed - ssCancelDelete refuses to retire an armed chain - so it must not
+        stop() a live chain's timer, release its deleteBusy, or lift its guard. */
+     if(stale()){if(!e.ssMsg)e.ssMsg="Cancelled — nothing has changed.";settle(function(){reject(e);});return;}
+     var alive=!!(auth.currentUser&&auth.currentUser.uid===uid);
+     var drop=(tombIssued&&alive)
+       ? fsM.deleteDoc(tomb(uid)).then(function(){return true;},function(){return false;})
+       : Promise.resolve(!tombIssued);
+     drop.then(function(tombGone){
+       if(tombGone)delete deletedUids[uid];
+       if(phase>=2&&alive)return restoreDoc().then(function(r){return {tombGone:tombGone,restored:r,gone:!alive};});
+       return {tombGone:tombGone,restored:null,gone:!alive};
+     }).then(function(st){
+       e.ssMsg=msgFor(st);
+       stop();
+       settle(function(){broadcast();reject(e);});
+     }).catch(function(){stop();settle(function(){broadcast();reject(e);});});
+    }
+    /* The destructive step is taking too long. Release the user - nobody stays
+       trapped in a modal - but leave the guards standing so the chain can still
+       finish or roll back, and so a second attempt is refused meanwhile. */
+    function timedOut(){settle(function(){
+     broadcast();
+     reject(derr("timeout","This is taking longer than expected. Leave the app open a little longer — it may still finish. The characters on this device are safe either way."));
+    });}
+    /* STEP 1 - reauthenticate. Nothing is destroyed if this fails, times out, or is
+       cancelled, so the UI keeps an escape open for the whole step. */
+    raceOut(Promise.resolve().then(function(){return authM.reauthenticateWithPopup(u,rp);}),REAUTH_MS,
+      derr("reauth-timeout","We didn't hear back from the sign-in window. Nothing has been changed — please try again."))
+    .then(function(){
+     if(stale())throw derr("cancelled","Cancelled — nothing has changed.");
+     var cur=auth.currentUser;
+     if(!cur||cur.uid!==uid)throw derr("identity-changed","Something changed while we were working. Nothing has been deleted — please try again.");
+     /* captured while the account is alive; outlives it by design */
+     return raceOut(cur.getIdToken(true),30000,derr("token-timeout","We couldn't confirm your sign-in just now. Nothing has been changed — please try again."));
+    }).then(function(tok){
+     if(stale())throw derr("cancelled","Cancelled — nothing has changed.");
+     savedTok=tok;
+     if(opts.onDestructive){try{opts.onDestructive();}catch(_){}}   /* past the point of cancelling */
+     deleting=true;deletedUids[uid]=1;                 /* stop the sync loop re-creating the doc */
+     deleteTimer=setTimeout(timedOut,DESTRUCT_MS);
+     /* STEP 2 - tombstone, before anything is destroyed. merge:true so a retry after
+        a lost ack is a harmless no-op rather than a permanent brick. */
+     tombIssued=true;
+     return fsM.setDoc(tomb(uid),{deletedAt:Date.now()},{merge:true});
+    }).then(function(){
+     phase=1;
+     /* STEP 3 - the cloud copy. Characters on this device are deliberately kept. */
+     return fsM.deleteDoc(ref(uid));
+    }).then(function(){
+     phase=2;
+     var c2=auth.currentUser;
+     if(!c2||c2.uid!==uid)throw derr("identity-changed","Your cloud copy was removed, but we could not finish deleting the account. Please sign in and try again.");
+     /* STEP 4 - the auth user itself. */
+     return authM.deleteUser(c2);
+    }).then(function(){
+     phase=3;
+     /* STEP 5 - server-side purge. Best effort: the account is already gone, and a
+        failure here must never look like a failed deletion to the user. The outcome
+        is recorded for diagnostics - if a wrapped build's origin is missing from the
+        Worker's ALLOWED_ORIGINS this is where it shows up. */
+     return raceOut(fetch(SS_API+"/account",{method:"DELETE",headers:{Authorization:"Bearer "+savedTok}}),15000,derr("purge-timeout","purge timed out"))
+      .then(function(r){window.ssLastPurge={ok:!!r.ok,status:r.status};if(!r.ok)try{console.warn("Sheetmancer: account purge returned "+r.status);}catch(_){}},
+            function(err){window.ssLastPurge={ok:false,status:0};try{console.warn("Sheetmancer: account purge failed",err);}catch(_){}});
+    }).then(succeed).catch(function(e){
+     if(!e||typeof e!=="object")e=new Error(String(e||"delete-failed"));
+     var code=String(e.code||e.message||"");
+     var fixed=e.ssMsg;                                 /* messages raised above are already true */
+     recover(e,function(st){
+      var tail=(tombIssued&&!st.tombGone)?" Syncing is paused on this device until a delete succeeds — reopening the app in a few minutes clears it.":"";
+      if(st.gone){
+       /* phase 3 = the account really is gone. phase 2 = only the cloud copy is. */
+       if(phase>=3)return "Your account was removed, but we couldn't confirm the last step. Nothing more is needed on this device — the characters here are safe.";
+       if(phase>=2)return "Your cloud copy was removed, but you're no longer signed in to that account, so we couldn't finish deleting it. Sign in again and try once more — the characters on this device are safe."+tail;
+       return "You're no longer signed in to that account, so we stopped before finishing. Sign in again and try once more — the characters on this device are safe."+tail;
+      }
+      if(fixed&&phase<2)return fixed;
+      if(phase>=2){
+       return (st.restored
+        ? "We removed your cloud copy but couldn't delete the account itself. The characters on this device are safe, and the cloud copy has been put back."
+        : "We removed your cloud copy but couldn't delete the account itself. The characters on this device are safe, but we couldn't put the cloud copy back yet.")+" Please try again."+tail;
+      }
+      if(phase===1)return "We couldn't remove your cloud copy. Nothing has been deleted — please try again."+tail;
+      /* phase 0 - nothing was destroyed. Popups only ever fail here. */
+      if(/popup-blocked/i.test(code))return "Your browser blocked the confirmation window. Allow pop-ups for this site, then try again.";
+      if(/popup|cancel|closed/i.test(code))return "Confirmation was cancelled — nothing has changed.";
+      return "We couldn't finish that just now. Your account has not been changed."+tail;
+     });
+    });
+   });
+  };
   function ref(uid){return fsM.doc(db,"users",uid);}
-  function push(){if(!user)return;var s=JSON.stringify(gather());if(s===last)return;last=s;syncing=true;broadcast();fsM.setDoc(ref(user.uid),{sheetsnap_blob:s,sheetsnap_updatedAt:Date.now()},{merge:true}).then(function(){lastSyncedAt=Date.now();syncing=false;errState=false;broadcast();}).catch(function(){syncing=false;errState=true;last="";broadcast();});}
+  function push(){if(!user)return;
+   /* Blocked, not synced - a delete in flight or a tombstone standing. Say so. */
+   if(deleting||deletedUids[user.uid]){if(!errState){errState=true;broadcast();}return;}
+   var uu=user.uid;var s=JSON.stringify(gather());if(s===last)return;last=s;syncing=true;broadcast();fsM.setDoc(ref(uu),{sheetsnap_blob:s,sheetsnap_updatedAt:Date.now()},{merge:true}).then(function(){lastSyncedAt=Date.now();syncing=false;errState=false;broadcast();}).catch(function(e){syncing=false;errState=true;if(/permission/i.test(String((e&&(e.code||e.message))||"")))deletedUids[uu]=1;else last="";broadcast();});}
+  /* A deletion that died between the tombstone and the finish would otherwise leave
+     the account permanently unable to sync, silently and with no way back. On sign-in,
+     an OLD tombstone (older than the few seconds a real deletion takes) is reconciled:
+     force a token refresh - it fails if the auth user is really gone - and only clear
+     the tombstone when the account provably still exists. A young tombstone is left
+     alone so a deletion in flight on another device is never undone. */
+  var TOMB_STRANDED_MS=300000;
+  function reconcile(u){
+   return fsM.getDoc(tomb(u.uid)).then(function(t){
+    if(!t.exists())return true;
+    var at=((t.data()||{}).deletedAt)||0;
+    if(Date.now()-at<TOMB_STRANDED_MS)return true;
+    return u.getIdToken(true).then(function(){
+     return fsM.deleteDoc(tomb(u.uid)).then(function(){delete deletedUids[u.uid];return true;},function(){return true;});
+    },function(err){
+     var c=String((err&&(err.code||err.message))||"");
+     /* Only these PROVE the account is gone. A network blip must never sign anyone out. */
+     if(/user-token-expired|user-not-found|user-disabled|invalid-user-token/i.test(c)){try{authM.signOut(auth);}catch(e){}return false;}
+     errState=true;return true;
+    });
+   },function(){return true;});
+  }
+  function loadCloud(u){
+    return fsM.getDoc(ref(u.uid)).then(function(snap){
+     var d=snap.exists()?snap.data():null;
+     if(d&&d.sheetsnap_blob){try{var c=JSON.parse(d.sheetsnap_blob);if(apply(c)&&!sessionStorage.getItem("ss-sync-reloaded")){sessionStorage.setItem("ss-sync-reloaded","1");location.reload();return;}}catch(e){}}
+     last=JSON.stringify(gather());lastSyncedAt=Date.now();syncing=false;errState=false;broadcast();push();
+    }).catch(function(e){syncing=false;errState=navigator.onLine;broadcast();});
+  }
   authM.onAuthStateChanged(auth,function(u){
    user=(u&&u.isAnonymous)?null:u;
    pending=false;
    if(u&&!u.isAnonymous){
     syncing=true;broadcast();
-    fsM.getDoc(ref(u.uid)).then(function(snap){
-     var d=snap.exists()?snap.data():null;
-     if(d&&d.sheetsnap_blob){try{var c=JSON.parse(d.sheetsnap_blob);if(apply(c)&&!sessionStorage.getItem("ss-sync-reloaded")){sessionStorage.setItem("ss-sync-reloaded","1");location.reload();return;}}catch(e){}}
-     last=JSON.stringify(gather());lastSyncedAt=Date.now();syncing=false;errState=false;broadcast();push();
-    }).catch(function(e){syncing=false;errState=navigator.onLine;broadcast();});
+    reconcile(u).then(function(go){if(!go){syncing=false;broadcast();return;}return loadCloud(u);})
+     .catch(function(){syncing=false;errState=navigator.onLine;broadcast();});
    } else { syncing=false;broadcast(); }
   });
   setInterval(function(){if(user){var s=JSON.stringify(gather());if(s!==last){if(timer)clearTimeout(timer);timer=setTimeout(push,1200);}}},2000);
