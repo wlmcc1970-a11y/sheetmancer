@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.digirunestudios.sheetmancer",
+      "sha256_cert_fingerprints": [
+        "67:C9:A6:ED:FD:F1:01:8E:A3:EA:83:E4:D7:AF:F4:34:62:DD:17:78:49:C9:AD:B2:08:CE:4B:EA:FB:58:FB:AC"
+      ]
+    }
+  }
+]
