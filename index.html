@@ -2378,7 +2378,7 @@ function HomeScreen({
       marginTop: 4,
       letterSpacing: 1
     }
-  }, "Sheetmancer · build v45"))), /*#__PURE__*/React.createElement("button", {
+  }, "Sheetmancer · build v46"))), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowHelp(false),
     className: "ss-press",
     style: {
@@ -6765,11 +6765,29 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
  function gather(){var o={};KEYS.forEach(function(k){var v=localStorage.getItem(k);if(v!=null)o[k]=v;});return o;}
  function apply(m){var ch=false;Object.keys(m||{}).forEach(function(k){if(KEYS.indexOf(k)>=0&&localStorage.getItem(k)!==m[k]){localStorage.setItem(k,m[k]);ch=true;}});return ch;}
  var user=null,last="",timer=null,syncing=false,lastSyncedAt=0,errState=false,pending=false;
+ var authM=null;   /* hoisted: keepTok() below runs at this scope and needs it */
+ var appleTok=null,appleTokUid="";
+ /* G2: the Apple OAuth access token, bound to the uid it belongs to. Persisted in
+    sessionStorage because sign-in triggers a location.reload() whenever the cloud
+    blob differs from local — memory alone is wiped for every returning user, and the
+    <5min freshness shortcut then skips the reauth that would recapture it, so the
+    revoke would silently never run. Scoped to the tab, cleared on sign-out. An Apple
+    access token is short-lived and strictly weaker than the Firebase refresh token
+    already sitting in IndexedDB. */
+ function keepTok(res){try{var cr=authM.OAuthProvider.credentialFromResult(res);
+   if(cr&&cr.accessToken){appleTok=cr.accessToken;appleTokUid=(res&&res.user&&res.user.uid)||"";
+   try{sessionStorage.setItem("ss-atok",appleTokUid+"|"+appleTok);}catch(_){}}}catch(_){}}
+ function dropTok(){appleTok=null;appleTokUid="";try{sessionStorage.removeItem("ss-atok");}catch(_){}}
+ function loadTok(uid){
+   if(!appleTok){try{var raw=sessionStorage.getItem("ss-atok")||"",ix=raw.indexOf("|");
+     if(ix>0){appleTokUid=raw.slice(0,ix);appleTok=raw.slice(ix+1);}}catch(_){}}
+   return (appleTokUid===uid)?appleTok:null;   /* never revoke one account's grant for another */
+ }
  function relTime(ts){if(!ts)return"just now";var s=Math.floor((Date.now()-ts)/1000);if(s<10)return"just now";if(s<60)return s+"s ago";var m=Math.floor(s/60);if(m<60)return m+"m ago";var h=Math.floor(m/60);if(h<24)return h+"h ago";return Math.floor(h/24)+"d ago";}
  function broadcast(){var status,detail;if(pending){status="Signing in…";detail="";}else if(!user){status="Sign in";detail="";}else if(!navigator.onLine){status="Offline";detail="will sync when online";}else if(syncing){status="Syncing…";detail="";}else if(errState){status="Sync error";detail="tap to retry";}else{status="Synced";detail=relTime(lastSyncedAt);}window.ssAuth={signedIn:!!user,email:user?(user.email||""):"",syncing:syncing,err:errState,offline:!navigator.onLine,pending:pending,lastSyncedAt:lastSyncedAt,status:status,detail:detail};try{window.dispatchEvent(new CustomEvent("ss-auth"));}catch(e){}}
  window.ssAuth={signedIn:false,email:"",status:"Sign in",detail:""};
  Promise.all([import(FB+"firebase-app.js"),import(FB+"firebase-auth.js"),import(FB+"firebase-firestore.js")]).then(function(m){
-  var appM=m[0],authM=m[1],fsM=m[2];
+  var appM=m[0];authM=m[1];var fsM=m[2];
   var app=appM.initializeApp(cfg),auth=authM.getAuth(app),db=fsM.getFirestore(app);
   /* Scan identity: every scan needs a verified Firebase token (Worker L2).
      Signed-in users use their account; everyone else gets a silent anonymous
@@ -6785,9 +6803,15 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
    var ap=new authM.OAuthProvider("apple.com");
    ap.addScope("email");ap.addScope("name");
    pending=true;broadcast();
-   authM.signInWithPopup(auth,ap).then(function(){pending=false;}).catch(function(){pending=false;broadcast();});
+   authM.signInWithPopup(auth,ap).then(function(res){
+     /* G2: keep the Apple access token. Apple requires it to be REVOKED when the
+        account is deleted - deleting the Firebase user alone is not sufficient and
+        is a documented review rejection. See keepTok() for where it is held. */
+     keepTok(res);
+     pending=false;
+   }).catch(function(){pending=false;broadcast();});
   };
-  window.ssSignOut=function(){try{if(user)authM.signOut(auth);}catch(e){}};
+  window.ssSignOut=function(){dropTok();try{if(user)authM.signOut(auth);}catch(e){}};
   /* ---- Account deletion (Apple 5.1.1(v)). Self-Review Gate / F-064 discipline: ----
      - NO flag is shared with the sign-in handlers.
      - Nothing is destroyed until reauth SUCCEEDS (verify-then-destroy), and the
@@ -6897,7 +6921,10 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
         },1000);
         setTimeout(function(){if(poll){clearInterval(poll);poll=null;}},REAUTH_MS+2000);
         try{
-          authM.reauthenticateWithPopup(u,rp).then(function(){finish(true);}).catch(function(e){
+          authM.reauthenticateWithPopup(u,rp).then(function(rres){
+            if(pid==="apple.com")keepTok(rres);   /* Google credentials also carry an accessToken - never store one as if it were Apple's */
+            finish(true);
+          }).catch(function(e){
             var c=(e&&e.code)||"";
             /* Cannot open, was closed, or unsupported here: say so NOW. A dead end the
                user can act on beats a spinner that never resolves. */
@@ -6936,6 +6963,35 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
      phase=2;
      var c2=auth.currentUser;
      if(!c2||c2.uid!==uid)throw derr("identity-changed","Your cloud copy was removed, but we could not finish deleting the account. Please sign in and try again.");
+     /* STEP 3.5 (G2) - REVOKE THE APPLE TOKEN, while the user still exists.
+        Apple requires an app offering Sign in with Apple + account deletion to revoke
+        the token; deleting the Firebase user alone is not enough and is a documented
+        review rejection. MUST run BEFORE deleteUser: revokeAccessToken is a no-op when
+        currentUser is null, so calling it after would silently do nothing.
+        Best-effort by design - a failure here must never strand a user who has already
+        lost their cloud copy - so the outcome is recorded and deletion continues.
+        Re-armed against DESTRUCT_MS because a hung revoke would otherwise consume a
+        third of the budget and report a false timeout on a deletion that succeeded. */
+     var lastRevoked="";
+     window.ssLastRevoke={ok:false,attempted:false,skipped:true,reason:"not-reached"};
+     function doRevoke(cu){
+       var isApple=false;
+       try{isApple=(cu.providerData||[]).some(function(p){return p&&p.providerId==="apple.com";});}catch(_){}
+       var tok=loadTok(uid);
+       if(!isApple||!tok||!authM.revokeAccessToken){
+         window.ssLastRevoke={ok:false,attempted:false,skipped:true,
+           reason:isApple?(tok?"api-missing":"no-token"):"not-apple"};
+         return Promise.resolve();
+       }
+       if(tok===lastRevoked)return Promise.resolve();     /* already revoked this exact grant */
+       lastRevoked=tok;
+       return raceOut(authM.revokeAccessToken(auth,tok),8000,derr("revoke-timeout","Revoking the Apple sign-in took too long."))
+         .then(function(){window.ssLastRevoke={ok:true,attempted:true,skipped:false};},
+               function(err){window.ssLastRevoke={ok:false,attempted:true,skipped:false,code:(err&&(err.code||err.message))||""};
+                             try{console.warn("Sheetmancer: Apple token revocation failed",err);}catch(_){}})
+         .then(function(){if(deleteTimer){clearTimeout(deleteTimer);deleteTimer=setTimeout(timedOut,DESTRUCT_MS);}});
+     }
+     return doRevoke(c2).then(function(){
      /* STEP 4 - the auth user itself. If Firebase still judges the sign-in too old,
         reauthenticate and retry ONCE rather than stopping here with the cloud copy
         already gone - a half-deleted account is the worst outcome available. */
@@ -6946,8 +7002,10 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
          var c3=auth.currentUser;
          if(!c3||c3.uid!==uid)throw derr("identity-changed","Your cloud copy was removed, but we could not finish deleting the account. Please sign in and try again.");
          deleteTimer=setTimeout(timedOut,DESTRUCT_MS);
-         return authM.deleteUser(c3);
+         /* the retry's reauth minted a fresh Apple grant - revoke that one too */
+         return doRevoke(c3).then(function(){return authM.deleteUser(c3);});
        });
+     });
      });
     }).then(function(){
      phase=3;
@@ -7020,6 +7078,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
     }).catch(function(e){syncing=false;errState=navigator.onLine;broadcast();});
   }
   authM.onAuthStateChanged(auth,function(u){
+   if(!u||(!u.isAnonymous&&appleTokUid&&u.uid!==appleTokUid))dropTok();   /* G2: never carry a token across accounts. Deliberately NOT on isAnonymous: a scan can trigger signInAnonymously before Firebase restores the session, and that must not wipe a rehydrated token. An anon uid never matches appleTokUid anyway. */
    user=(u&&u.isAnonymous)?null:u;
    pending=false;
    if(u&&!u.isAnonymous){
