@@ -63,6 +63,470 @@ input,button{font-family:inherit}
 @keyframes ssRise{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
 </style>
 <script>/* translate safety: guard React vs browser-translation DOM swaps */(function(){try{var p=Node.prototype;var rc=p.removeChild;p.removeChild=function(ch){if(ch&&ch.parentNode!==this){return ch;}return rc.apply(this,arguments);};var ib=p.insertBefore;p.insertBefore=function(nn,rn){if(rn&&rn.parentNode!==this){return nn;}return ib.apply(this,arguments);};}catch(_){}})();</script>
+<script>
+/* Sheetmancer PDF export - self-contained, no external dependency, works offline. */
+var SSPDF_W={"Times-Roman":"250,333,408,500,500,833,778,180,333,333,500,564,250,333,250,278,500,500,500,500,500,500,500,500,500,500,278,278,564,564,564,444,921,722,667,667,722,611,556,722,722,333,389,722,611,889,722,722,556,722,667,556,611,722,722,944,722,722,611,333,278,333,469,500,333,444,500,444,500,444,333,500,500,278,278,500,278,778,500,500,500,500,333,389,278,500,500,722,500,500,444,480,200,480,541,350,500,350,333,500,444,1000,500,500,333,1000,556,333,889,350,611,350,350,333,333,444,444,350,500,1000,333,980,389,333,722,350,444,722,250,333,500,500,500,500,200,500,333,760,276,500,564,333,760,333,400,564,300,300,333,500,453,250,333,300,310,500,750,750,750,444,722,722,722,722,722,722,889,667,611,611,611,611,333,333,333,333,722,722,722,722,722,722,722,564,722,722,722,722,722,722,556,500,444,444,444,444,444,444,667,444,444,444,444,444,278,278,278,278,500,500,500,500,500,500,500,564,500,500,500,500,500,500,500,500","Times-Bold":"250,333,555,500,500,1000,833,278,333,333,500,570,250,333,250,278,500,500,500,500,500,500,500,500,500,500,333,333,570,570,570,500,930,722,667,722,722,667,611,778,778,389,500,778,667,944,722,778,611,778,722,556,667,722,722,1000,722,722,667,333,278,333,581,500,333,500,556,444,556,444,333,500,556,278,333,556,278,833,556,500,556,556,444,389,333,556,500,722,500,500,444,394,220,394,520,350,500,350,333,500,500,1000,500,500,333,1000,556,333,1000,350,667,350,350,333,333,500,500,350,500,1000,333,1000,389,333,722,350,444,722,250,333,500,500,500,500,220,500,333,747,300,500,570,333,747,333,400,570,300,300,333,556,540,250,333,300,330,500,750,750,750,500,722,722,722,722,722,722,1000,722,667,667,667,667,389,389,389,389,722,722,778,778,778,778,778,570,778,722,722,722,722,722,611,556,500,500,500,500,500,500,722,444,444,444,444,444,278,278,278,278,500,556,500,500,500,500,500,570,500,556,556,556,556,500,556,500","Times-Italic":"250,333,420,500,500,833,778,214,333,333,500,675,250,333,250,278,500,500,500,500,500,500,500,500,500,500,333,333,675,675,675,500,920,611,611,667,722,611,611,722,722,333,444,667,556,833,667,722,611,722,611,500,556,722,611,833,611,556,556,389,278,389,422,500,333,500,500,444,500,444,278,500,500,278,278,444,278,722,500,500,500,500,389,389,278,500,444,667,444,444,389,400,275,400,541,350,500,350,333,500,556,889,500,500,333,1000,500,333,944,350,556,350,350,333,333,556,556,350,500,889,333,980,389,333,667,350,389,556,250,389,500,500,500,500,275,500,333,760,276,500,675,333,760,333,400,675,300,300,333,500,523,250,333,300,310,500,750,750,750,500,611,611,611,611,611,611,889,667,611,611,611,611,333,333,333,333,722,667,722,722,722,722,722,675,722,722,722,722,722,556,611,500,500,500,500,500,500,500,667,444,444,444,444,444,278,278,278,278,500,500,500,500,500,500,500,675,500,500,500,500,500,444,500,444","Helvetica":"278,278,355,556,556,889,667,191,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,278,278,584,584,584,556,1015,667,667,722,722,667,611,778,722,278,500,667,556,833,722,778,667,778,722,667,611,722,667,944,667,667,611,278,278,278,469,556,333,556,556,500,556,556,278,556,556,222,222,500,222,833,556,556,556,556,333,500,278,556,500,722,500,500,500,334,260,334,584,350,556,350,222,556,333,1000,556,556,333,1000,667,333,1000,350,611,350,350,222,222,333,333,350,556,1000,333,1000,500,333,944,350,500,667,278,333,556,556,556,556,260,556,333,737,370,556,584,333,737,333,400,584,333,333,333,556,537,278,333,333,365,556,834,834,834,611,667,667,667,667,667,667,1000,722,667,667,667,667,278,278,278,278,722,722,778,778,778,778,778,584,778,722,722,722,722,667,667,611,556,556,556,556,556,556,889,500,556,556,556,556,278,278,278,278,556,556,556,556,556,556,556,584,611,556,556,556,556,500,556,500","Helvetica-Bold":"278,333,474,556,556,889,722,238,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,333,333,584,584,584,611,975,722,722,722,722,667,611,778,722,278,556,722,611,833,722,778,667,778,722,667,611,722,667,944,667,667,611,333,278,333,584,556,333,556,611,556,611,556,333,611,611,278,278,556,278,889,611,611,611,611,389,556,333,611,556,778,556,556,500,389,280,389,584,350,556,350,278,556,500,1000,556,556,333,1000,667,333,1000,350,611,350,350,278,278,500,500,350,556,1000,333,1000,556,333,944,350,500,667,278,333,556,556,556,556,280,556,333,737,370,556,584,333,737,333,400,584,333,333,333,611,556,278,333,333,365,556,834,834,834,611,722,722,722,722,722,722,1000,722,667,667,667,667,278,278,278,278,722,722,778,778,778,778,778,584,778,722,722,722,722,667,667,611,556,556,556,556,556,556,889,556,556,556,556,556,278,278,278,278,611,611,611,611,611,611,611,584,611,611,611,611,611,556,611,556"};
+/* Sheetmancer PDF export — dependency-free PDF writer.
+   Renders a character sheet as a real, text-based PDF (crisp, selectable, small),
+   with typeset pagination that never splits a field across a page boundary.
+   Palette derives from THEMES.parchment in index.html. */
+(function (root) {
+  "use strict";
+
+  /* ---------- standard-font metrics (exact Adobe widths, /1000 em) ---------- */
+  var W = root.SSPDF_W || {};
+  var WCACHE = {};
+  function widths(f) {
+    if (WCACHE[f]) return WCACHE[f];
+    var arr = new Array(256), s = (W[f] || "").split(",");
+    for (var i = 0; i < 256; i++) arr[i] = i < 32 ? 0 : (+s[i - 32] || 500);
+    WCACHE[f] = arr; return arr;
+  }
+
+  /* ---------- Unicode -> WinAnsi (scanned sheets carry curly quotes, dashes) ---------- */
+  var UNI = { 0x2018:0x91,0x2019:0x92,0x201C:0x93,0x201D:0x94,0x2013:0x96,0x2014:0x97,
+              0x2022:0x95,0x2026:0x85,0x2122:0x99,0x00A0:0x20,0x2212:0x2D,0x02BC:0x27 };
+  function toWin(str) {
+    var o = "";
+    for (var i = 0; i < str.length; i++) {
+      var c = str.charCodeAt(i);
+      if (c === 9) { o += " "; continue; }
+      if (c < 32) continue;
+      if (c < 256) { o += String.fromCharCode(c); continue; }
+      if (UNI[c] != null) { o += String.fromCharCode(UNI[c]); continue; }
+      o += "?";
+    }
+    return o;
+  }
+  function esc(s) { return s.replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)"); }
+
+  function textWidth(str, font, size) {
+    var w = widths(font), t = 0;
+    for (var i = 0; i < str.length; i++) t += w[str.charCodeAt(i) & 255];
+    return t * size / 1000;
+  }
+
+  /* word-wrap; breaks over-long single words so nothing ever bleeds out of a column */
+  function wrap(str, font, size, maxW) {
+    str = toWin(String(str == null ? "" : str));
+    var out = [];
+    var paras = str.split(/\r?\n/);
+    for (var p = 0; p < paras.length; p++) {
+      var words = paras[p].split(/\s+/).filter(function (x) { return x.length; });
+      if (!words.length) { out.push(""); continue; }
+      var line = "";
+      for (var i = 0; i < words.length; i++) {
+        var word = words[i];
+        if (textWidth(word, font, size) > maxW) {         // hard-break a giant token
+          if (line) { out.push(line); line = ""; }
+          var chunk = "";
+          for (var k = 0; k < word.length; k++) {
+            if (textWidth(chunk + word[k], font, size) > maxW && chunk) { out.push(chunk); chunk = ""; }
+            chunk += word[k];
+          }
+          line = chunk; continue;
+        }
+        var cand = line ? line + " " + word : word;
+        if (textWidth(cand, font, size) > maxW) { out.push(line); line = word; }
+        else line = cand;
+      }
+      if (line) out.push(line);
+    }
+    return out.length ? out : [""];
+  }
+
+  /* ---------- palette (traced to THEMES.parchment) ---------- */
+  var C = {
+    bg:      [0.969, 0.925, 0.847], // #f7ecd8  bg
+    card:    [1.000, 0.992, 0.969], // #fffdf7  card
+    leather: [0.353, 0.176, 0.047], // #5a2d0c  accentBright
+    brown:   [0.545, 0.271, 0.075], // #8b4513  accent
+    gold:    [0.788, 0.592, 0.227], // #c9973a  nameColor
+    ink:     [0.102, 0.067, 0.031], // #1a1108  text
+    muted:   [0.239, 0.173, 0.078], // #3d2c14  textMuted
+    rule:    [0.847, 0.796, 0.686]
+  };
+  function col(c, stroke) { return c[0].toFixed(3)+" "+c[1].toFixed(3)+" "+c[2].toFixed(3)+" "+(stroke?"RG":"rg"); }
+
+  /* ---------- page geometry ---------- */
+  var PW = 612, PH = 792, M = 34, GUT = 20;
+  var FRAME = 10;                       // inset of the decorative frame from trim
+  var COLW = (PW - 2*M - GUT) / 2;
+  var BODY_TOP_1 = 0, BODY_TOP_N = 0;   // set per page in layout
+  var FOOT_H = 42;   // clearance so no card crowds the footer rule
+
+  var F = { body:"F1", bold:"F2", ital:"F3", sans:"F4", sansB:"F5" };
+  var FONTMAP = { F1:"Times-Roman", F2:"Times-Bold", F3:"Times-Italic", F4:"Helvetica", F5:"Helvetica-Bold" };
+
+  /* ---------- content-stream builder ---------- */
+  function Page() { this.ops = []; }
+  Page.prototype.raw = function (s) { this.ops.push(s); return this; };
+  Page.prototype.rect = function (x, y, w, h, fill, strokeC, lw) {
+    if (fill) this.raw(col(fill));
+    if (strokeC) this.raw(col(strokeC, true) + " " + (lw || 0.6).toFixed(2) + " w");
+    this.raw(x.toFixed(2)+" "+y.toFixed(2)+" "+w.toFixed(2)+" "+h.toFixed(2)+" re "+(fill&&strokeC?"B":fill?"f":"S"));
+    return this;
+  };
+  Page.prototype.line = function (x1, y1, x2, y2, c, lw) {
+    this.raw(col(c, true) + " " + (lw || 0.6).toFixed(2) + " w");
+    this.raw(x1.toFixed(2)+" "+y1.toFixed(2)+" m "+x2.toFixed(2)+" "+y2.toFixed(2)+" l S");
+    return this;
+  };
+  Page.prototype.text = function (x, y, str, font, size, c, opts) {
+    opts = opts || {};
+    var s = toWin(String(str == null ? "" : str));
+    if (!s) return this;
+    var w = textWidth(s, FONTMAP[font], size);
+    if (opts.align === "right") x -= w;
+    else if (opts.align === "center") x -= w / 2;
+    this.raw("BT " + col(c));
+    if (opts.tracking) this.raw(opts.tracking.toFixed(2) + " Tc");
+    this.raw("/" + font + " " + size + " Tf " + x.toFixed(2) + " " + y.toFixed(2) + " Td (" + esc(s) + ") Tj");
+    if (opts.tracking) this.raw("0 Tc");
+    this.raw("ET");
+    return this;
+  };
+  Page.prototype.img = function (name, x, y, w, h) {
+    this.raw("q " + w.toFixed(2)+" 0 0 "+h.toFixed(2)+" "+x.toFixed(2)+" "+y.toFixed(2)+" cm /"+name+" Do Q");
+    return this;
+  };
+
+  /* ---------- ornament: small vector filigree (standard fonts have no glyph for it) ---------- */
+  function ornament(pg, cx, y, w) {
+    var h = 3.2, half = w / 2;
+    pg.raw(col(C.gold, true) + " 0.7 w");
+    pg.raw((cx-half).toFixed(2)+" "+y.toFixed(2)+" m "+(cx-half*0.35).toFixed(2)+" "+y.toFixed(2)+" l S");
+    pg.raw((cx+half*0.35).toFixed(2)+" "+y.toFixed(2)+" m "+(cx+half).toFixed(2)+" "+y.toFixed(2)+" l S");
+    pg.raw(col(C.gold));
+    pg.raw(cx.toFixed(2)+" "+(y+h).toFixed(2)+" m "+
+           (cx+h).toFixed(2)+" "+y.toFixed(2)+" l "+
+           cx.toFixed(2)+" "+(y-h).toFixed(2)+" l "+
+           (cx-h).toFixed(2)+" "+y.toFixed(2)+" l f");
+  }
+
+  /* ---------- measurement ---------- */
+  var TITLE_SZ = 10.5, LBL_SZ = 8.8, VAL_SZ = 9.4;
+  var PAD = 9, ROW_GAP = 3.2, SEC_GAP = 11;
+
+  function measureRows(fields, innerW) {
+    var lblW = Math.min(innerW * 0.46, innerW - 60);
+    var rows = [];
+    for (var i = 0; i < fields.length; i++) {
+      var f = fields[i] || {};
+      var raw = (f.value == null || f.value === "") ? "—" : String(f.value);
+      var vW = innerW - lblW - 8;
+      var V = wrap(raw, "Times-Bold", VAL_SZ, vW);
+
+      /* Prose fields (background, notes, spell text) read terribly as multi-line
+         right-aligned text — ragged left edge. Stack those: label on its own line,
+         value full-width beneath it. Short values keep the elegant label/value row. */
+      if (V.length > 1) {
+        var Ls = wrap(f.label || "", "Times-Bold", LBL_SZ, innerW);
+        var Vs = wrap(raw, "Times-Roman", VAL_SZ, innerW - 6);
+        rows.push({
+          stacked: true, L: Ls, V: Vs,
+          h: Ls.length * (LBL_SZ + 2.2) + 2.6 + Vs.length * (VAL_SZ + 2.4)
+        });
+      } else {
+        var L = wrap(f.label || "", "Times-Roman", LBL_SZ, lblW);
+        rows.push({
+          stacked: false, L: L, V: V, lblW: lblW,
+          h: Math.max(L.length * (LBL_SZ + 2.2), V.length * (VAL_SZ + 2.4))
+        });
+      }
+    }
+    return rows;
+  }
+  /* A single field can legitimately be longer than a whole column (a backstory, a
+     spell description). Pre-split any such row into line-level chunks that each fit,
+     so the placement loop below can always make forward progress. Without this the
+     loop can never place the row and spins forever. */
+  function splitTallRows(rows, innerW, maxH) {
+    var out = [];
+    for (var i = 0; i < rows.length; i++) {
+      var r = rows[i];
+      if (r.h <= maxH) { out.push(r); continue; }
+      var lines = [], a;
+      var Ls = r.stacked ? r.L : wrap(r.L.join(" "), "Times-Bold", LBL_SZ, innerW);
+      var Vs = r.stacked ? r.V : wrap(r.V.join(" "), "Times-Roman", VAL_SZ, innerW - 6);
+      for (a = 0; a < Ls.length; a++) lines.push({ t: Ls[a], lbl: true, lh: LBL_SZ + 2.2 });
+      lines.push({ t: "", lbl: true, lh: 2.6 });
+      for (a = 0; a < Vs.length; a++) lines.push({ t: Vs[a], lbl: false, lh: VAL_SZ + 2.4 });
+      var chunk = [], h = 0;
+      for (a = 0; a < lines.length; a++) {
+        if (h + lines[a].lh > maxH && chunk.length) { out.push({ flow: chunk, h: h }); chunk = []; h = 0; }
+        chunk.push(lines[a]); h += lines[a].lh;
+      }
+      if (chunk.length) out.push({ flow: chunk, h: h });
+    }
+    return out;
+  }
+
+  function fitStr(s, font, size, maxW) {
+    if (textWidth(s, font, size) <= maxW) return s;
+    var e = "…";
+    while (s.length > 1 && textWidth(s + e, font, size) > maxW) s = s.slice(0, -1);
+    return s + e;
+  }
+
+  function headerH() { return TITLE_SZ + 8.5; }
+  function blockH(rows, from, to) {
+    var h = headerH() + PAD * 2;
+    for (var i = from; i < to; i++) h += rows[i].h + (i > from ? ROW_GAP : 0);
+    return h;
+  }
+
+  /* ---------- main ---------- */
+  function build(data, opts) {
+    opts = opts || {};
+    data = data || {};
+    var name = String(data.name || "Character");
+    var system = String(data.system || "");
+    var sections = (data.sections || []).filter(function (s) { return s && (s.fields || []).length; });
+
+    var images = [];            // {name, data(Uint8Array), w, h}
+    if (opts.avatarJpeg && opts.avatarJpeg.bytes) {
+      images.push({ name: "Im1", bytes: opts.avatarJpeg.bytes, w: opts.avatarJpeg.w, h: opts.avatarJpeg.h });
+    }
+
+    var pages = [];
+    function newPage() { var p = new Page(); pages.push(p); return p; }
+
+    /* ---- page 1 masthead ---- */
+    var pg = newPage();
+    var HDR_H = 92;
+    var hdrY = PH - M - HDR_H;
+
+    function chrome(p) {
+      p.rect(0, 0, PW, PH, C.bg);
+      p.rect(FRAME, FRAME, PW - 2*FRAME, PH - 2*FRAME, null, C.leather, 2.2);
+      p.rect(FRAME + 3.2, FRAME + 3.2, PW - 2*(FRAME+3.2), PH - 2*(FRAME+3.2), null, C.gold, 0.6);
+    }
+    chrome(pg);
+
+    // masthead band
+    pg.rect(M, hdrY, PW - 2*M, HDR_H, C.leather);
+    pg.rect(M, hdrY, PW - 2*M, HDR_H, null, C.gold, 0.8);
+
+    var tx = M + 18, avW = 0;
+    if (images.length) {
+      var box = HDR_H - 22, ix = M + 13, iy = hdrY + 11;
+      var ar = (images[0].w && images[0].h) ? images[0].w / images[0].h : 0.75;
+      var iw = Math.min(box, box * ar), ih = iw / ar;
+      if (ih > box) { ih = box; iw = ih * ar; }
+      var iyc = iy + (box - ih) / 2;
+      pg.rect(ix - 1.6, iyc - 1.6, iw + 3.2, ih + 3.2, null, C.gold, 1.1);
+      pg.img("Im1", ix, iyc, iw, ih);
+      avW = iw + 20; tx = ix + iw + 16;
+    }
+    var nameSz = 26;
+    var availW = PW - M - 20 - tx;
+    while (nameSz > 13 && textWidth(toWin(name), "Times-Bold", nameSz) > availW) nameSz -= 0.5;
+    var nameBase = hdrY + HDR_H - (system ? 42 : 52);
+    pg.text(tx, nameBase, fitStr(toWin(name), "Times-Bold", nameSz, availW), F.bold, nameSz, C.gold);
+    if (system) pg.text(tx, nameBase - 17, fitStr(toWin(system), "Times-Italic", 11.5, availW), F.ital, 11.5, [0.94,0.90,0.82]);
+    pg.text(tx, hdrY + 13, "SHEETMANCER", F.sansB, 6.6, [0.72,0.60,0.40], { tracking: 2.1 });
+
+    /* ---- flow sections into two columns, never splitting a field ---- */
+    var colTop1 = hdrY - 16, colTop = PH - M - 6, colBottom = M + FOOT_H;
+    var colIdx = 0, cursorY = colTop1, pageNo = 0;
+
+    function colX() { return M + colIdx * (COLW + GUT); }
+    function nextColumn() {
+      if (colIdx === 0) { colIdx = 1; cursorY = (pageNo === 0) ? colTop1 : colTop; }
+      else { pg = newPage(); pageNo++; chrome(pg); colIdx = 0; cursorY = colTop; }
+    }
+
+    function drawBlock(sec, rows, from, to, cont) {
+      var x = colX(), innerW = COLW - PAD * 2;
+      var h = blockH(rows, from, to);
+      var top = cursorY, bot = top - h;
+      pg.rect(x, bot, COLW, h, C.card, C.rule, 0.7);
+      pg.rect(x, top - 2.2, COLW, 2.2, C.brown);
+
+      var ty = top - PAD - TITLE_SZ + 1.5;
+      var title = toWin(String(sec.title || "Section")) + (cont ? " (cont.)" : "");
+      var tsz = TITLE_SZ;
+      while (tsz > 7 && textWidth(title, "Times-Bold", tsz) > innerW) tsz -= 0.3;
+      pg.text(x + PAD, ty, title, F.bold, tsz, C.leather);
+      pg.line(x + PAD, ty - 4.5, x + COLW - PAD, ty - 4.5, C.rule, 0.6);
+
+      var y = ty - 4.5 - 7;
+      for (var i = from; i < to; i++) {
+        var r = rows[i], a, b;
+        if (r.flow) {
+          var fy2 = y;
+          for (a = 0; a < r.flow.length; a++) {
+            var ln = r.flow[a];
+            if (ln.t) pg.text(x + PAD + (ln.lbl ? 0 : 6), fy2 - (ln.lbl ? LBL_SZ : VAL_SZ), ln.t,
+                              ln.lbl ? F.bold : F.body, ln.lbl ? LBL_SZ : VAL_SZ, ln.lbl ? C.brown : C.ink);
+            fy2 -= ln.lh;
+          }
+        } else if (r.stacked) {
+          var sy = y;
+          for (a = 0; a < r.L.length; a++) { pg.text(x + PAD, sy - LBL_SZ, r.L[a], F.bold, LBL_SZ, C.brown); sy -= LBL_SZ + 2.2; }
+          sy -= 2.6;
+          for (b = 0; b < r.V.length; b++) { pg.text(x + PAD + 6, sy - VAL_SZ, r.V[b], F.body, VAL_SZ, C.ink); sy -= VAL_SZ + 2.4; }
+        } else {
+          var ly = y;
+          for (a = 0; a < r.L.length; a++) { pg.text(x + PAD, ly - LBL_SZ, r.L[a], F.body, LBL_SZ, C.muted); ly -= LBL_SZ + 2.2; }
+          var vy = y;
+          for (b = 0; b < r.V.length; b++) { pg.text(x + COLW - PAD, vy - VAL_SZ, r.V[b], F.bold, VAL_SZ, C.ink, { align: "right" }); vy -= VAL_SZ + 2.4; }
+        }
+        y -= r.h + ROW_GAP;
+      }
+      cursorY = bot - SEC_GAP;
+    }
+
+    for (var s = 0; s < sections.length; s++) {
+      var sec = sections[s];
+      var maxRowH = Math.min(colTop1, colTop) - colBottom - headerH() - PAD * 2;
+      var rows = splitTallRows(measureRows(sec.fields || [], COLW - PAD * 2), COLW - PAD * 2, maxRowH);
+      var placed = 0, cont = false;
+
+      while (placed < rows.length) {
+        var avail = cursorY - colBottom;
+        var fullH = blockH(rows, placed, rows.length);
+
+        if (fullH <= avail) { drawBlock(sec, rows, placed, rows.length, cont); placed = rows.length; break; }
+
+        // how many rows fit here?
+        var fit = placed;
+        while (fit < rows.length && blockH(rows, placed, fit + 1) <= avail) fit++;
+
+        /* Widow control: don't strand a header with <2 rows under it — unless this
+           column is already empty, in which case moving again would never terminate. */
+        var freshTop = (pageNo === 0 && colIdx === 0) ? colTop1 : colTop;
+        var atFresh = cursorY >= freshTop - 0.01;
+        if (fit - placed < 2 && !atFresh) { nextColumn(); continue; }
+        if (fit === placed) fit = placed + 1;   /* safe: splitTallRows guarantees one row fits */
+        drawBlock(sec, rows, placed, fit, cont);
+        placed = fit; cont = true;
+        if (placed < rows.length) nextColumn();
+      }
+    }
+
+    /* ---- footers ---- */
+    for (var i = 0; i < pages.length; i++) {
+      var p = pages[i], fy = M + 12;
+      ornament(p, PW / 2, fy + 15, 150);
+      p.text(PW / 2, fy, "Created with Sheetmancer  ·  DigiRune Studios", F.body, 8.2, C.muted, { align: "center" });
+      p.text(PW - M, fy, "Page " + (i + 1) + " of " + pages.length, F.body, 8.2, C.muted, { align: "right" });
+      p.text(M, fy, fitStr(toWin(name), "Times-Italic", 8.2, PW / 2 - M - 105), F.ital, 8.2, C.muted);
+    }
+
+    return serialize(pages, images, name + (system ? " - " + system : ""));
+  }
+
+  /* ---------- PDF file assembly ---------- */
+  function serialize(pages, images, docTitle) {
+    var objs = [], out = [];
+    function add(s) { objs.push(s); return objs.length; }      // 1-based object numbers
+
+    var fontIds = {};
+    var keys = Object.keys(FONTMAP);
+    for (var i = 0; i < keys.length; i++) {
+      fontIds[keys[i]] = add("<< /Type /Font /Subtype /Type1 /BaseFont /" + FONTMAP[keys[i]] + " /Encoding /WinAnsiEncoding >>");
+    }
+    var imgIds = {};
+    for (var j = 0; j < images.length; j++) {
+      var im = images[j];
+      imgIds[im.name] = add({ dict: "<< /Type /XObject /Subtype /Image /Width " + im.w + " /Height " + im.h +
+        " /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length " + im.bytes.length + " >>", bin: im.bytes });
+    }
+
+    var kids = [], pageIds = [];
+    for (var p = 0; p < pages.length; p++) {
+      var content = pages[p].ops.join("\n");
+      var cid = add({ dict: "<< /Length " + content.length + " >>", str: content });
+      var res = "<< /Font << ";
+      for (var k = 0; k < keys.length; k++) res += "/" + keys[k] + " " + fontIds[keys[k]] + " 0 R ";
+      res += ">>";
+      if (images.length) { res += " /XObject << "; for (var q = 0; q < images.length; q++) res += "/" + images[q].name + " " + imgIds[images[q].name] + " 0 R "; res += ">>"; }
+      res += " >>";
+      var pid = add("<< /Type /Page /Parent __PAGES__ 0 R /MediaBox [0 0 " + PW + " " + PH + "] /Resources " + res + " /Contents " + cid + " 0 R >>");
+      pageIds.push(pid);
+    }
+    var pagesObj = add("<< /Type /Pages /Count " + pages.length + " /Kids [" + pageIds.map(function (n) { return n + " 0 R"; }).join(" ") + "] >>");
+    for (var z = 0; z < objs.length; z++) if (typeof objs[z] === "string") objs[z] = objs[z].replace("__PAGES__", String(pagesObj));
+    var catalogId = add("<< /Type /Catalog /Pages " + pagesObj + " 0 R >>");
+    var infoId = add("<< /Title (" + esc(String(docTitle || "Character Sheet").replace(/[^\x20-\x7E]/g, "-")) +
+      ") /Author (Sheetmancer) /Creator (Sheetmancer by DigiRune Studios) /Producer (Sheetmancer) >>");
+
+    /* byte assembly */
+    var chunks = [], pos = 0, offsets = [0];
+    function push(u8) { chunks.push(u8); pos += u8.length; }
+    function pushStr(s) { var a = new Uint8Array(s.length); for (var i = 0; i < s.length; i++) a[i] = s.charCodeAt(i) & 255; push(a); }
+
+    pushStr("%PDF-1.4\n%\xE2\xE3\xCF\xD3\n");
+    for (var o = 0; o < objs.length; o++) {
+      offsets.push(pos);
+      var body = objs[o];
+      if (typeof body === "string") { pushStr((o + 1) + " 0 obj\n" + body + "\nendobj\n"); }
+      else if (body.str != null) { pushStr((o + 1) + " 0 obj\n" + body.dict + "\nstream\n" + body.str + "\nendstream\nendobj\n"); }
+      else { pushStr((o + 1) + " 0 obj\n" + body.dict + "\nstream\n"); push(body.bin); pushStr("\nendstream\nendobj\n"); }
+    }
+    var xref = pos;
+    var x = "xref\n0 " + (objs.length + 1) + "\n0000000000 65535 f \n";
+    for (var r = 1; r <= objs.length; r++) x += ("0000000000" + offsets[r]).slice(-10) + " 00000 n \n";
+    x += "trailer\n<< /Size " + (objs.length + 1) + " /Root " + catalogId + " 0 R /Info " + infoId + " 0 R >>\nstartxref\n" + xref + "\n%%EOF\n";
+    pushStr(x);
+
+    var total = 0, c;
+    for (c = 0; c < chunks.length; c++) total += chunks[c].length;
+    var buf = new Uint8Array(total), off = 0;
+    for (c = 0; c < chunks.length; c++) { buf.set(chunks[c], off); off += chunks[c].length; }
+    return buf;
+  }
+
+  root.ssPdfBuild = build;
+  root.ssPdfWrap = wrap;
+})(typeof globalThis !== "undefined" ? globalThis : this);
+
+</script>
+
+<script>
+/* Avatar images arrive as arbitrary data URIs; PDF image embedding here uses DCTDecode,
+   so normalise to JPEG via canvas and report intrinsic pixel size. */
+window.ssAvatarToJpeg = function (dataUri, pan, zoom) {
+  /* The app frames portraits 3:4 with a cover-fit + user zoom. Reproduce that here so
+     the PDF shows the same crop instead of squashing the original into a square.
+     NOTE: pan is stored in on-screen CSS pixels relative to the live frame element,
+     which is not knowable at export time — applying it blind could push a face out of
+     frame, so the crop is centred. Zoom is unitless and is applied faithfully. */
+  return new Promise(function (resolve, reject) {
+    var settled = false;
+    var done = function (fn, v) { if (!settled) { settled = true; fn(v); } };
+    setTimeout(function () { done(reject, new Error("avatar timeout")); }, 5000);
+    try {
+      var img = new Image();
+      img.onload = function () {
+        try {
+          var iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height;
+          if (!iw || !ih) return done(reject, new Error("no dimensions"));
+          var AR = 3 / 4;                                  // frame aspect, matches the app
+          var cw = 384, ch = Math.round(cw / AR);          // 384 x 512 output
+          var z = Math.max(1, Math.min(4, +zoom || 1));
+          var cover = Math.max(cw / iw, ch / ih) * z;      // cover-fit, then user zoom
+          var sw = Math.min(iw, cw / cover), sh = Math.min(ih, ch / cover);
+          var sx = (iw - sw) / 2, sy = (ih - sh) / 2;      // centred crop
+          var c = document.createElement("canvas"); c.width = cw; c.height = ch;
+          var x = c.getContext("2d");
+          x.fillStyle = "#ffffff"; x.fillRect(0, 0, cw, ch);   // flatten any alpha
+          x.drawImage(img, sx, sy, sw, sh, 0, 0, cw, ch);
+          var du = c.toDataURL("image/jpeg", 0.9);
+          var b64 = du.slice(du.indexOf(",") + 1);
+          var bin = atob(b64), arr = new Uint8Array(bin.length);
+          for (var i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+          done(resolve, { bytes: arr, w: cw, h: ch });
+        } catch (e) { done(reject, e); }
+      };
+      img.onerror = function () { done(reject, new Error("image load failed")); };
+      img.src = dataUri;
+    } catch (e) { done(reject, e); }
+  });
+};
+</script>
 </head>
 <body>
 <div id="root"></div>
@@ -1836,7 +2300,7 @@ function HomeScreen({
       marginTop: 4,
       letterSpacing: 1
     }
-  }, "Sheetmancer · build v43"))), /*#__PURE__*/React.createElement("button", {
+  }, "Sheetmancer · build v44"))), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowHelp(false),
     className: "ss-press",
     style: {
@@ -4440,7 +4904,7 @@ function Toast({
     style: {
       fontSize: 13
     }
-  }, msg), /*#__PURE__*/React.createElement("button", {
+  }, msg), !onUndo ? null : /*#__PURE__*/React.createElement("button", {
     onClick: onUndo,
     "aria-label": "Undo delete",
     style: {
@@ -4857,16 +5321,17 @@ function CharacterScreen({
   const askConfirm = (title, message, run, confirmLabel) => setConfirm({ title: title, message: message, confirmLabel: confirmLabel, run: () => { run(); setConfirm(null); } });
   const [toast, setToast] = useState(null);
   const toastTimer = useRef(null);
-  const showToast = m => { setToast(m); if (toastTimer.current) clearTimeout(toastTimer.current); toastTimer.current = setTimeout(() => setToast(null), 4500); };
-  const delField = (si, fi) => { const sec = data.sections[si]; const lbl = sec && sec.fields[fi] ? sec.fields[fi].label : "Field"; setMenuKey(null); askConfirm("Delete field?", "Are you sure? “" + lbl + "” will be deleted.", () => { removeField(si, fi); showToast('"' + lbl + '" deleted'); }); };
-  const delSection = si => { const sec = data.sections[si]; const lbl = sec ? sec.title : "Section"; const n = sec ? sec.fields.length : 0; setMenuKey(null); askConfirm("Remove section?", "Are you sure? All content in “" + lbl + "” (" + n + " item" + (n === 1 ? "" : "s") + ") will be deleted.", () => { removeSection(si); showToast('"' + lbl + '" deleted'); }); };
+  const showToast = (m, undoable) => { setToast(m ? { m: m, undoable: !!undoable } : null); if (toastTimer.current) clearTimeout(toastTimer.current); toastTimer.current = setTimeout(() => setToast(null), 4500); };
+  const clearToast = () => { if (toastTimer.current) clearTimeout(toastTimer.current); setToast(null); };
+  const delField = (si, fi) => { const sec = data.sections[si]; const lbl = sec && sec.fields[fi] ? sec.fields[fi].label : "Field"; setMenuKey(null); askConfirm("Delete field?", "Are you sure? “" + lbl + "” will be deleted.", () => { removeField(si, fi); showToast('"' + lbl + '" deleted', true); }); };
+  const delSection = si => { const sec = data.sections[si]; const lbl = sec ? sec.title : "Section"; const n = sec ? sec.fields.length : 0; setMenuKey(null); askConfirm("Remove section?", "Are you sure? All content in “" + lbl + "” (" + n + " item" + (n === 1 ? "" : "s") + ") will be deleted.", () => { removeSection(si); showToast('"' + lbl + '" deleted', true); }); };
   const delNote = nid => askConfirm("Delete note?", "Are you sure? This session note will be deleted.", () => removeNote(nid));
   /* Grouped-pill item controls (labels shown as headings in the pill layout) */
   const renameGroupLabel = (si, oldLabel, name) => {
     const v = String(name || "").trim();
     if (!v || v === oldLabel) return;
     setData(p => { snap(p); const n = JSON.parse(JSON.stringify(p)); n.sections[si].fields.forEach(f => { if (f.label === oldLabel) f.label = v; }); return n; });
-    showToast('Renamed to "' + v + '"');
+    showToast('Renamed to "' + v + '"', true);
   };
   const moveGroup = (si, label, dir) => {
     const flds = data.sections[si] ? data.sections[si].fields : [];
@@ -4875,14 +5340,14 @@ function CharacterScreen({
     if (gi < 0 || ti < 0 || ti >= order.length) return;
     setData(p => { snap(p); const n = JSON.parse(JSON.stringify(p)); const fl = n.sections[si].fields; const o2 = [...new Set(fl.map(f => f.label))]; const g2 = o2.indexOf(label), t2 = g2 + dir; if (g2 < 0 || t2 < 0 || t2 >= o2.length) return p; const tmp = o2[g2]; o2[g2] = o2[t2]; o2[t2] = tmp; n.sections[si].fields = o2.reduce((acc, L) => acc.concat(fl.filter(f => f.label === L)), []); return n; });
   };
-  const delGroup = (si, label) => { const sec = data.sections[si]; const cnt = sec ? sec.fields.filter(f => f.label === label).length : 0; setMenuKey(null); askConfirm("Delete item?", "Are you sure? \u201C" + label + "\u201D" + (cnt > 1 ? " and its " + cnt + " entries" : "") + " will be deleted.", () => { setData(p => { snap(p); const n = JSON.parse(JSON.stringify(p)); n.sections[si].fields = n.sections[si].fields.filter(f => f.label !== label); return n; }); showToast('"' + label + '" deleted'); }); };
+  const delGroup = (si, label) => { const sec = data.sections[si]; const cnt = sec ? sec.fields.filter(f => f.label === label).length : 0; setMenuKey(null); askConfirm("Delete item?", "Are you sure? \u201C" + label + "\u201D" + (cnt > 1 ? " and its " + cnt + " entries" : "") + " will be deleted.", () => { setData(p => { snap(p); const n = JSON.parse(JSON.stringify(p)); n.sections[si].fields = n.sections[si].fields.filter(f => f.label !== label); return n; }); showToast('"' + label + '" deleted', true); }); };
   const delCategory = cat => {
     const label = (CAT_META[cat.key] || {}).label || cat.label || "Category";
     const members = cat.members || [];
     const nSec = members.length;
     const nFld = members.reduce((a, i) => a + ((data.sections[i] && data.sections[i].fields.length) || 0), 0);
     setMenuKey(null);
-    askConfirm("Delete category?", "Are you sure? The “" + label + "” category — " + nSec + " section" + (nSec === 1 ? "" : "s") + " and " + nFld + " field" + (nFld === 1 ? "" : "s") + " — will be permanently deleted.", () => { removeSections(members); showToast('"' + label + '" deleted'); });
+    askConfirm("Delete category?", "Are you sure? The “" + label + "” category — " + nSec + " section" + (nSec === 1 ? "" : "s") + " and " + nFld + " field" + (nFld === 1 ? "" : "s") + " — will be permanently deleted.", () => { removeSections(members); showToast('"' + label + '" deleted', true); });
   };
   const moveCategory = (cat, dir) => {
     setMenuKey(null);
@@ -4912,16 +5377,51 @@ function CharacterScreen({
     setRenameCat({ cat: cat, current: (data.catLabels && data.catLabels[cat.key]) || (CAT_META[cat.key] || {}).label || cat.label || "" });
   };
   const undoToast = () => { buzz(25); undo(); setToast(null); };
-  const exportSheet = () => {
-    const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-    const secs = (data.sections || []).map(sec => {
-      const rows = (sec.fields || []).map(f => `<div class="f"><div class="fl">${esc(f.label)}</div><div class="fv">${esc(f.value) || "&mdash;"}</div></div>`).join("");
-      return `<section class="sec"><h2>${esc(sec.title)}</h2>${rows}</section>`;
-    }).join("");
-    const av = data.avatarImg ? `<img class="pf" src="${data.avatarImg}">` : "";
-    const html = `<!doctype html><html><head><meta charset="utf8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(data.name || "Character")}</title><style>*{box-sizing:border-box;margin:0;font-family:Georgia,'Times New Roman',serif}body{background:#efe7d6;color:#2a2418;padding:22px}.sheet{max-width:820px;margin:0 auto 70px;background:#fbf7ec;border:2px solid #C9A24B;border-radius:12px;padding:26px;box-shadow:0 6px 24px rgba(0,0,0,.15)}header{display:flex;gap:18px;align-items:center;border-bottom:2px solid #C9A24B;padding-bottom:16px;margin-bottom:18px}.pf{width:92px;height:92px;object-fit:cover;border-radius:10px;border:2px solid #C9A24B}h1{font-family:'Cinzel',Georgia,serif;font-size:30px;color:#7a5a12;letter-spacing:.5px}.sys{color:#8a7a52;font-style:italic;margin-top:2px}.grid{column-width:330px;column-gap:22px}.sec{break-inside:avoid;-webkit-column-break-inside:avoid;margin-bottom:16px;border:1px solid #d8cba6;border-radius:8px;padding:12px 14px;background:#fffdf7}.sec h2{font-family:'Cinzel',Georgia,serif;font-size:16px;color:#7a5a12;border-bottom:1px solid #e2d6b4;padding-bottom:6px;margin-bottom:8px;letter-spacing:.5px}.f{display:flex;justify-content:space-between;gap:12px;padding:3px 0;font-size:14px}.fl{color:#6b5f3f}.fv{font-weight:700;text-align:right;white-space:pre-wrap}footer{margin-top:18px;text-align:center;color:#a8996f;font-size:12px;font-style:italic}.bar{position:fixed;left:0;right:0;bottom:0;padding:12px;text-align:center;background:#2a1709}.bar button{padding:11px 24px;font:700 15px 'Cinzel',Georgia,serif;color:#0e0a06;background:#E0B84D;border:none;border-radius:10px;cursor:pointer}@media print{.bar{display:none}body{background:#fff;padding:0}.sheet{border:none;box-shadow:none;max-width:none;margin:0}}</style></head><body><div class="sheet"><header>${av}<div><h1>${esc(data.name || "Character")}</h1>${data.system ? `<div class="sys">${esc(data.system)}</div>` : ""}</div></header><div class="grid">${secs}</div><footer>Created with Sheetmancer &middot; DigiRune Studios</footer></div><div class="bar"><button onclick="window.print()">Save as PDF / Print</button></div></body></html>`;
-    try { const w = window.open("", "_blank"); if (w && w.document) { w.document.open(); w.document.write(html); w.document.close(); showToast("Sheet opened — tap Save as PDF / Print"); return; } } catch (e) {}
-    const b = new Blob([html], { type: "text/html" }); const u = URL.createObjectURL(b); const a = document.createElement("a"); a.href = u; a.download = `${(data.name || "character").replace(/[^a-z0-9]/gi, "_")}_sheet.html`; a.click(); URL.revokeObjectURL(u);
+  const exportBusy = React.useRef(false);
+  const exportSheet = async () => {
+    if (exportBusy.current) return;              /* double-tap would build twice */
+    exportBusy.current = true;
+    const safe = (data.name || "character").replace(/[^a-z0-9]/gi, "_");
+    const fname = safe + "_sheet.pdf";
+    try {
+      showToast("Building PDF…");
+      let av = null;
+      if (data.avatarImg) {
+        try { av = await ssAvatarToJpeg(data.avatarImg, data.avatarPan, data.avatarZoom); }
+        catch (e) { av = null; }                 /* a bad portrait must not lose the export */
+      }
+      /* the Journal is part of the character; the old export silently dropped it */
+      const notes = (data.sessionNotes || []).filter(n => n && n.text).map(n => ({
+        label: (function () { try { return new Date(n.timestamp).toLocaleDateString(); } catch (e) { return "Note"; } })(),
+        value: n.text
+      }));
+      const pdfData = notes.length
+        ? Object.assign({}, data, { sections: (data.sections || []).concat([{ title: "Session Journal", fields: notes }]) })
+        : data;
+
+      const bytes = window.ssPdfBuild(pdfData, { avatarJpeg: av });
+      const blob = new Blob([bytes], { type: "application/pdf" });
+
+      let file = null;
+      try { file = new File([blob], fname, { type: "application/pdf" }); } catch (e) {}
+      if (file && navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({ files: [file], title: (data.name || "Character") + " — character sheet" });
+          showToast("Shared");
+          return;
+        } catch (e) {
+          if (e && e.name === "AbortError") { clearToast(); return; }   /* user dismissed the sheet */
+        }
+      }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a"); a.href = url; a.download = fname; a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 4000);
+      showToast("PDF saved");
+    } catch (err) {
+      showToast("Couldn't build the PDF — please try again");
+    } finally {
+      exportBusy.current = false;
+    }
   };
   const doMoveField = ti => {
     if (!moveItem) return;
@@ -4931,7 +5431,7 @@ function CharacterScreen({
     moveFieldToSection(moveItem.si, moveItem.fi, ti);
     setMoveItem(null);
     setMenuKey(null);
-    showToast('"' + lbl + '" moved to "' + tname + '"');
+    showToast('"' + lbl + '" moved to "' + tname + '"', true);
   };
   const getSectionStyle = sec => {
     if (sec.fields.length <= 10 && sec.fields.every(f => !f.value.includes("%") && f.value.length < 8 && f.label.length < 14)) return "grid";
@@ -5020,7 +5520,7 @@ function CharacterScreen({
     style: {
       color: T.yellow
     }
-  }, "amber"), " ring marks a field to double-check — tap it to confirm. Fields that were read clearly carry no dot."), /*#__PURE__*/React.createElement("div", null, hb(T, "Search"), " — Use the ", hb(T, "Search this character…"), " box on the hub to find any field, value, section, or note. Tap a result to jump straight to it."), /*#__PURE__*/React.createElement("div", null, hb(T, "Editing a field"), " — Tap the ", hb(T, "⋮"), " next to a field, then ", hb(T, "Edit"), " — it opens in a full-screen writing view with ", hb(T, "✓ Save"), " pinned at the top. The ⋮ menu also has ", hb(T, "Move up / down"),", ", hb(T, "Move to section…"), ", and ", hb(T, "Delete"), " (with ", hb(T, "Undo"), ")."), /*#__PURE__*/React.createElement("div", null, hb(T, "Adding"), " — Use ", hb(T, "+ Add Field"), " at the bottom of any section, or the ", hb(T, "+ Add Section"), " card on the hub."), /*#__PURE__*/React.createElement("div", null, hb(T, "Portrait"), " — Tap ", hb(T, "Adjust photo"), " to move, zoom, or replace it; tap ", hb(T, "✓ Done"), " to lock it."), /*#__PURE__*/React.createElement("div", null, hb(T, "Themes"), " — The colored circles in the top bar restyle the whole sheet."), /*#__PURE__*/React.createElement("div", null, hb(T, "Journal"), " — Open the ", hb(T, "Journal"), " card to jot session notes, or to retire the character when you're done."), /*#__PURE__*/React.createElement("div", null, hb(T, "Export & Share"), " — ", hb(T, "⤓ Export / Share Sheet"), " makes a printable PDF; ", hb(T, "⬇ Backup file (.json)"), " saves a re-importable backup."), /*#__PURE__*/React.createElement("div", null, hb(T, "Auto-saved"), " — Your changes save automatically, and an ", hb(T, "Undo"), " button appears after any edit."))), /*#__PURE__*/React.createElement("button", {
+  }, "amber"), " ring marks a field to double-check — tap it to confirm. Fields that were read clearly carry no dot."), /*#__PURE__*/React.createElement("div", null, hb(T, "Search"), " — Use the ", hb(T, "Search this character…"), " box on the hub to find any field, value, section, or note. Tap a result to jump straight to it."), /*#__PURE__*/React.createElement("div", null, hb(T, "Editing a field"), " — Tap the ", hb(T, "⋮"), " next to a field, then ", hb(T, "Edit"), " — it opens in a full-screen writing view with ", hb(T, "✓ Save"), " pinned at the top. The ⋮ menu also has ", hb(T, "Move up / down"),", ", hb(T, "Move to section…"), ", and ", hb(T, "Delete"), " (with ", hb(T, "Undo"), ")."), /*#__PURE__*/React.createElement("div", null, hb(T, "Adding"), " — Use ", hb(T, "+ Add Field"), " at the bottom of any section, or the ", hb(T, "+ Add Section"), " card on the hub."), /*#__PURE__*/React.createElement("div", null, hb(T, "Portrait"), " — Tap ", hb(T, "Adjust photo"), " to move, zoom, or replace it; tap ", hb(T, "✓ Done"), " to lock it."), /*#__PURE__*/React.createElement("div", null, hb(T, "Themes"), " — The colored circles in the top bar restyle the whole sheet."), /*#__PURE__*/React.createElement("div", null, hb(T, "Journal"), " — Open the ", hb(T, "Journal"), " card to jot session notes, or to retire the character when you're done."), /*#__PURE__*/React.createElement("div", null, hb(T, "Export & Share"), " — ", hb(T, "⤓ Export / Share Sheet"), " makes a polished PDF you can share or save; ", hb(T, "⬇ Backup file (.json)"), " saves a re-importable backup."), /*#__PURE__*/React.createElement("div", null, hb(T, "Auto-saved"), " — Your changes save automatically, and an ", hb(T, "Undo"), " button appears after any edit."))), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowHelp(false),
     className: "ss-press",
     style: {
@@ -5226,7 +5726,7 @@ function CharacterScreen({
       }
     }));
   }))), /*#__PURE__*/React.createElement(Toast, {
-    T: T, msg: toast, onUndo: undoToast
+    T: T, msg: toast && toast.m, onUndo: toast && toast.undoable ? undoToast : null
   }), moveItem && /*#__PURE__*/React.createElement(MoveModal, {
     T: T, data: data, from: moveItem, onPick: doMoveField, onClose: () => setMoveItem(null)
   }), confirm && /*#__PURE__*/React.createElement(ConfirmDialog, {
@@ -5449,7 +5949,7 @@ function CharacterScreen({
     style: { display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "12px", background: "none", border: `1px solid ${T.borderLight}`, borderRadius: 12, cursor: "pointer", width: "100%" }
   }, /*#__PURE__*/React.createElement("span", { style: { fontSize: 14, color: T.textMuted } }, "⬇ Backup file (.json)")), /*#__PURE__*/React.createElement("div", {
     style: { textAlign: "center", fontSize: 12, color: T.textMuted, opacity: 0.7, marginTop: 2 }
-  }, "Export a printable sheet, or back up this character.")), data.sections.map((sec, si) => {
+  }, "Share or save a polished PDF, or back up this character.")), data.sections.map((sec, si) => {
     if (activeCat === null || group.catOf[si] !== activeCat) return null;
     if (verifyOnly && !sec.fields.some(f => f.confidence === "low")) return /*#__PURE__*/React.createElement("div", {
       key: sec.id,
