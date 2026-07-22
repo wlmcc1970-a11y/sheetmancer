@@ -64,8 +64,12 @@ input,button{font-family:inherit}
 </style>
 <script>/* translate safety: guard React vs browser-translation DOM swaps */(function(){try{var p=Node.prototype;var rc=p.removeChild;p.removeChild=function(ch){if(ch&&ch.parentNode!==this){return ch;}return rc.apply(this,arguments);};var ib=p.insertBefore;p.insertBefore=function(nn,rn){if(rn&&rn.parentNode!==this){return nn;}return ib.apply(this,arguments);};}catch(_){}})();</script>
 <script>
-/* Sheetmancer PDF export - self-contained, no external dependency, works offline. */
+/* Sheetmancer PDF export - self-contained, no external dependency, works offline.
+   SS_MARK = the SHEETMANCER wordmark as real Cinzel outlines (the app's brand face,
+   which PDF's standard fonts don't include). SS_PAL = per-theme print-safe palettes. */
 var SSPDF_W={"Times-Roman":"250,333,408,500,500,833,778,180,333,333,500,564,250,333,250,278,500,500,500,500,500,500,500,500,500,500,278,278,564,564,564,444,921,722,667,667,722,611,556,722,722,333,389,722,611,889,722,722,556,722,667,556,611,722,722,944,722,722,611,333,278,333,469,500,333,444,500,444,500,444,333,500,500,278,278,500,278,778,500,500,500,500,333,389,278,500,500,722,500,500,444,480,200,480,541,350,500,350,333,500,444,1000,500,500,333,1000,556,333,889,350,611,350,350,333,333,444,444,350,500,1000,333,980,389,333,722,350,444,722,250,333,500,500,500,500,200,500,333,760,276,500,564,333,760,333,400,564,300,300,333,500,453,250,333,300,310,500,750,750,750,444,722,722,722,722,722,722,889,667,611,611,611,611,333,333,333,333,722,722,722,722,722,722,722,564,722,722,722,722,722,722,556,500,444,444,444,444,444,444,667,444,444,444,444,444,278,278,278,278,500,500,500,500,500,500,500,564,500,500,500,500,500,500,500,500","Times-Bold":"250,333,555,500,500,1000,833,278,333,333,500,570,250,333,250,278,500,500,500,500,500,500,500,500,500,500,333,333,570,570,570,500,930,722,667,722,722,667,611,778,778,389,500,778,667,944,722,778,611,778,722,556,667,722,722,1000,722,722,667,333,278,333,581,500,333,500,556,444,556,444,333,500,556,278,333,556,278,833,556,500,556,556,444,389,333,556,500,722,500,500,444,394,220,394,520,350,500,350,333,500,500,1000,500,500,333,1000,556,333,1000,350,667,350,350,333,333,500,500,350,500,1000,333,1000,389,333,722,350,444,722,250,333,500,500,500,500,220,500,333,747,300,500,570,333,747,333,400,570,300,300,333,556,540,250,333,300,330,500,750,750,750,500,722,722,722,722,722,722,1000,722,667,667,667,667,389,389,389,389,722,722,778,778,778,778,778,570,778,722,722,722,722,722,611,556,500,500,500,500,500,500,722,444,444,444,444,444,278,278,278,278,500,556,500,500,500,500,500,570,500,556,556,556,556,500,556,500","Times-Italic":"250,333,420,500,500,833,778,214,333,333,500,675,250,333,250,278,500,500,500,500,500,500,500,500,500,500,333,333,675,675,675,500,920,611,611,667,722,611,611,722,722,333,444,667,556,833,667,722,611,722,611,500,556,722,611,833,611,556,556,389,278,389,422,500,333,500,500,444,500,444,278,500,500,278,278,444,278,722,500,500,500,500,389,389,278,500,444,667,444,444,389,400,275,400,541,350,500,350,333,500,556,889,500,500,333,1000,500,333,944,350,556,350,350,333,333,556,556,350,500,889,333,980,389,333,667,350,389,556,250,389,500,500,500,500,275,500,333,760,276,500,675,333,760,333,400,675,300,300,333,500,523,250,333,300,310,500,750,750,750,500,611,611,611,611,611,611,889,667,611,611,611,611,333,333,333,333,722,667,722,722,722,722,722,675,722,722,722,722,722,556,611,500,500,500,500,500,500,500,667,444,444,444,444,444,278,278,278,278,500,500,500,500,500,500,500,675,500,500,500,500,500,444,500,444","Helvetica":"278,278,355,556,556,889,667,191,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,278,278,584,584,584,556,1015,667,667,722,722,667,611,778,722,278,500,667,556,833,722,778,667,778,722,667,611,722,667,944,667,667,611,278,278,278,469,556,333,556,556,500,556,556,278,556,556,222,222,500,222,833,556,556,556,556,333,500,278,556,500,722,500,500,500,334,260,334,584,350,556,350,222,556,333,1000,556,556,333,1000,667,333,1000,350,611,350,350,222,222,333,333,350,556,1000,333,1000,500,333,944,350,500,667,278,333,556,556,556,556,260,556,333,737,370,556,584,333,737,333,400,584,333,333,333,556,537,278,333,333,365,556,834,834,834,611,667,667,667,667,667,667,1000,722,667,667,667,667,278,278,278,278,722,722,778,778,778,778,778,584,778,722,722,722,722,667,667,611,556,556,556,556,556,556,889,500,556,556,556,556,278,278,278,278,556,556,556,556,556,556,556,584,611,556,556,556,556,500,556,500","Helvetica-Bold":"278,333,474,556,556,889,722,238,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,333,333,584,584,584,611,975,722,722,722,722,667,611,778,722,278,556,722,611,833,722,778,667,778,722,667,611,722,667,944,667,667,611,333,278,333,584,556,333,556,611,556,611,556,333,611,611,278,278,556,278,889,611,611,611,611,389,556,333,611,556,778,556,556,500,389,280,389,584,350,556,350,278,556,500,1000,556,556,333,1000,667,333,1000,350,611,350,350,278,278,500,500,350,556,1000,333,1000,556,333,944,350,500,667,278,333,556,556,556,556,280,556,333,737,370,556,584,333,737,333,400,584,333,333,333,611,556,278,333,333,365,556,834,834,834,611,722,722,722,722,722,722,1000,722,667,667,667,667,278,278,278,278,722,722,778,778,778,778,778,584,778,722,722,722,722,667,667,611,556,556,556,556,556,556,889,556,556,556,556,556,278,278,278,278,611,611,611,611,611,611,611,584,611,611,611,611,611,556,611,556"};
+var SS_MARK={"A":{d:"354 720 m 681 6 l 501 6 l 293 527 l h 139 73 m 134 60 133 48 136 39 c 139 30 145 22 153 18 c 161 12 169 10 177 10 c 186 10 l 186 0 l -28 0 l -28 10 l -28 10 -26 10 -24 10 c -20 10 -19 10 -19 10 c -4 10 12 15 28 24 c 45 34 58 50 69 73 c h 354 720 m 358 598 l 110 3 l 37 3 l 296 589 l 298 593 302 600 306 612 c 312 622 317 635 322 649 c 328 663 333 676 338 690 c 343 702 345 713 345 720 c h 459 238 m 459 196 l 165 196 l 165 238 l h 474 73 m 649 73 l 660 50 674 34 690 24 c 706 15 722 10 737 10 c 737 10 738 10 741 10 c 744 10 745 10 745 10 c 745 0 l 427 0 l 427 10 l 436 10 l 449 10 461 16 471 26 c 481 38 482 53 474 73 c h",w:717},"C":{d:"722 292 m 731 120 l 716 95 697 73 672 53 c 647 33 617 17 580 4 c 543 -8 500 -14 450 -14 c 369 -13 298 2 236 30 c 176 60 128 101 95 155 c 62 209 45 274 45 351 c 45 426 61 490 94 544 c 127 599 174 641 234 670 c 296 699 368 714 453 714 c 506 714 554 709 596 698 c 639 687 674 674 703 659 c 704 488 l 695 488 l 677 554 648 601 607 630 c 566 658 519 672 464 672 c 411 672 365 659 327 633 c 289 607 260 570 239 523 c 218 476 208 419 208 353 c 208 287 218 230 238 182 c 257 134 285 97 322 70 c 358 43 401 29 450 28 c 501 28 545 36 580 53 c 615 70 644 97 666 136 c 687 175 703 227 714 292 c h",w:780},"E":{d:"269 700 m 269 0 l 119 0 l 119 700 l h 533 43 m 557 0 l 266 0 l 266 43 l h 496 366 m 496 324 l 266 324 l 266 366 l h 545 700 m 545 657 l 266 657 l 266 700 l h 606 205 m 560 0 l 364 0 l 400 43 l 433 43 463 50 488 62 c 513 76 535 94 553 118 c 571 143 585 172 596 205 c h 496 326 m 496 230 l 486 230 l 486 238 l 486 263 478 283 462 299 c 446 315 426 323 401 324 c 401 326 l h 496 460 m 496 364 l 401 364 l 401 366 l 426 367 446 375 462 392 c 478 408 486 428 486 453 c 486 460 l h 545 660 m 545 543 l 535 543 l 535 555 l 535 586 526 610 508 629 c 489 648 464 657 433 658 c 433 660 l h 545 718 m 545 689 l 423 700 l 438 700 453 701 470 703 c 486 705 501 707 515 710 c 529 713 539 715 545 718 c h 122 73 m 122 0 l 42 0 l 42 10 l 42 10 44 10 48 10 c 53 10 55 10 55 10 c 72 10 87 16 100 28 c 112 41 118 56 119 73 c h 122 627 m 119 627 l 118 644 112 659 100 672 c 87 684 72 690 55 690 c 55 690 53 690 48 690 c 44 690 42 690 42 690 c 42 700 l 122 700 l h",w:632},"H":{d:"743 700 m 743 0 l 593 0 l 593 700 l h 269 700 m 269 0 l 119 0 l 119 700 l h 602 370 m 602 327 l 259 327 l 259 370 l h 122 73 m 122 0 l 42 0 l 42 10 l 42 10 44 10 48 10 c 53 10 55 10 55 10 c 72 10 87 16 100 28 c 112 41 118 56 119 73 c h 122 627 m 119 627 l 118 644 112 659 100 672 c 87 684 72 690 55 690 c 55 690 53 690 48 690 c 44 690 42 690 42 690 c 42 700 l 122 700 l h 266 73 m 269 73 l 270 56 276 41 288 28 c 301 16 316 10 333 10 c 333 10 335 10 339 10 c 343 10 345 10 346 10 c 346 0 l 266 0 l h 266 627 m 266 700 l 346 700 l 346 690 l 345 690 343 690 339 690 c 335 690 333 690 333 690 c 316 690 301 684 288 672 c 276 659 270 644 269 627 c h 596 73 m 596 0 l 516 0 l 516 10 l 517 10 519 10 523 10 c 527 10 529 10 529 10 c 546 10 561 16 574 28 c 587 41 593 56 593 73 c h 596 627 m 593 627 l 593 644 587 659 574 672 c 561 684 546 690 529 690 c 529 690 527 690 523 690 c 519 690 517 690 516 690 c 516 700 l 596 700 l h 740 73 m 743 73 l 744 56 750 41 762 28 c 775 16 790 10 807 10 c 807 10 809 10 814 10 c 818 10 820 10 820 10 c 820 0 l 740 0 l h 740 627 m 740 700 l 820 700 l 820 690 l 820 690 818 690 814 690 c 809 690 807 690 807 690 c 790 690 775 684 762 672 c 750 659 744 644 743 627 c h",w:862},"M":{d:"780 714 m 788 605 l 491 90 l 491 90 488 84 481 72 c 474 61 468 47 462 30 c 455 13 452 -3 452 -20 c 442 -20 l 403 67 l h 102 73 m 102 0 l -9 0 l -9 10 l -8 10 -6 10 0 10 c 4 10 7 10 7 10 c 25 10 41 16 55 26 c 69 38 77 53 80 73 c h 146 57 m 146 56 146 56 146 55 c 146 54 146 53 146 52 c 146 41 150 32 158 22 c 165 14 174 9 185 9 c 200 9 l 200 0 l 139 0 l 139 57 l h 163 714 m 172 714 l 207 614 l 140 0 l 70 0 l h 172 714 m 499 177 l 442 -20 l 146 477 l h 789 714 m 884 0 l 723 0 l 673 460 l 780 714 l h 853 73 m 874 73 l 877 53 886 38 900 26 c 914 16 930 10 947 10 c 947 10 950 10 955 10 c 960 10 963 10 963 10 c 963 0 l 853 0 l h 717 57 m 724 57 l 724 0 l 663 0 l 663 9 l 678 9 l 689 9 699 14 706 22 c 713 32 717 41 717 52 c 717 53 717 54 717 55 c 717 56 717 56 717 57 c h",w:953},"N":{d:"108 715 m 746 107 l 758 -14 l 120 593 l h 113 71 m 113 0 l 30 0 l 30 10 l 30 10 33 10 39 10 c 45 10 48 10 49 10 c 66 10 80 16 92 28 c 104 40 110 54 110 71 c h 253 71 m 253 54 259 40 271 28 c 283 16 297 10 314 10 c 315 10 318 10 324 10 c 330 10 333 10 333 10 c 333 0 l 250 0 l 250 71 l h 108 715 m 252 562 l 253 0 l 110 0 l 110 590 l 110 627 108 658 104 680 c 100 704 98 715 98 715 c h 755 700 m 755 114 l 755 89 756 67 758 48 c 760 28 762 13 764 2 c 766 -9 767 -14 767 -14 c 758 -14 l 613 148 l 613 700 l h 835 700 m 835 690 l 835 690 832 690 826 690 c 820 690 817 690 817 690 c 800 690 786 684 774 672 c 762 661 756 646 755 629 c 752 629 l 752 700 l h 532 700 m 615 700 l 615 629 l 613 629 l 612 646 606 661 594 672 c 583 684 568 690 551 690 c 551 690 548 690 542 690 c 536 690 533 690 532 690 c h",w:865},"R":{d:"259 700 m 388 700 l 418 700 447 697 476 690 c 505 683 530 673 552 658 c 575 643 593 624 606 600 c 619 576 626 546 626 511 c 626 483 620 455 608 428 c 597 400 579 376 555 356 c 531 337 500 325 462 321 c 483 314 503 302 520 285 c 538 268 553 250 564 233 c 565 232 568 226 576 215 c 582 204 591 191 602 176 c 612 160 623 144 634 128 c 645 112 656 98 665 86 c 680 68 693 54 705 42 c 717 32 730 24 743 18 c 756 14 772 11 789 10 c 789 0 l 691 0 l 655 0 622 3 593 10 c 564 16 538 27 515 42 c 492 57 473 78 456 104 c 451 112 445 122 438 134 c 432 147 426 160 419 174 c 412 188 406 202 400 214 c 393 228 388 239 383 250 c 378 261 375 269 373 275 c 364 296 354 312 342 323 c 331 334 318 340 305 342 c 305 352 l 307 352 311 352 317 352 c 323 352 329 352 336 352 c 354 352 372 356 388 363 c 406 370 421 382 434 399 c 447 416 457 439 462 468 c 463 474 464 481 466 489 c 466 497 467 506 466 516 c 464 564 452 599 430 622 c 408 644 381 655 348 656 c 339 657 328 657 318 656 c 306 656 296 656 288 656 c 278 656 272 656 269 656 c 269 657 268 660 266 668 c 265 674 263 682 262 689 c 260 696 259 700 259 700 c h 272 700 m 272 0 l 122 0 l 122 700 l h 125 73 m 125 0 l 45 0 l 45 10 l 46 10 48 10 52 10 c 55 10 57 10 58 10 c 75 10 90 16 102 28 c 115 41 121 56 122 73 c h 125 627 m 122 627 l 121 644 115 659 102 672 c 90 684 75 690 58 690 c 57 690 55 690 52 690 c 48 690 46 690 45 690 c 45 700 l 125 700 l h 269 73 m 272 73 l 272 56 278 41 291 28 c 304 16 319 10 336 10 c 337 10 340 10 343 10 c 346 10 348 10 348 10 c 348 0 l 269 0 l h",w:747},"S":{d:"277 714 m 290 714 307 713 326 712 c 346 711 366 709 388 706 c 408 704 427 702 442 700 c 458 697 469 695 475 692 c 463 557 l 453 557 l 453 592 440 620 414 640 c 389 662 355 672 312 672 c 273 672 242 663 218 644 c 195 625 182 603 181 576 c 180 556 187 539 200 524 c 213 509 230 496 251 483 c 442 359 l 473 342 496 319 512 291 c 527 263 534 230 532 193 c 529 128 504 77 457 40 c 410 4 347 -14 267 -14 c 238 -14 209 -12 182 -6 c 154 -2 129 6 108 14 c 87 24 70 34 57 47 c 52 62 49 79 50 100 c 51 121 54 142 60 163 c 65 184 72 202 81 216 c 90 216 l 87 182 94 150 108 122 c 124 92 146 70 174 52 c 204 36 238 27 278 28 c 322 29 356 40 380 62 c 404 83 416 109 416 140 c 416 161 410 179 398 196 c 385 213 365 229 337 244 c 162 360 l 127 380 101 406 85 437 c 69 468 63 502 66 539 c 69 574 80 604 97 630 c 114 657 138 677 168 692 c 199 707 235 714 277 714 c h 476 704 m 474 683 l 356 683 l 356 704 l h",w:578},"T":{d:"409 697 m 409 0 l 259 0 l 259 697 l h 654 701 m 654 659 l 14 659 l 14 701 l h 654 662 m 654 544 l 644 545 l 644 556 l 644 587 635 612 616 630 c 598 649 573 658 542 659 c 542 662 l h 654 719 m 654 690 l 532 701 l 547 701 562 702 578 704 c 595 706 610 708 624 711 c 638 714 648 716 654 719 c h 262 73 m 262 0 l 182 0 l 182 10 l 182 10 184 10 188 10 c 193 10 195 10 195 10 c 212 10 227 16 240 28 c 252 41 258 56 259 73 c h 406 73 m 409 73 l 410 56 416 41 428 28 c 441 16 456 10 473 10 c 473 10 475 10 480 10 c 484 10 486 10 486 10 c 486 0 l 406 0 l h 125 662 m 125 659 l 94 658 70 649 52 630 c 33 612 24 587 24 556 c 24 545 l 14 544 l 14 662 l h 14 719 m 21 716 31 714 44 711 c 58 708 73 706 90 704 c 107 702 122 701 136 701 c 14 690 l h",w:667}};
+var SS_PAL={"parchment":{"n":"Parchment & Leather","ground":[0.9796,0.9516,0.9006],"card":[0.9943,0.9864,0.9722],"band":[0.3529,0.1765,0.0471],"mark":[0.7725,0.6353,0.5372],"accent":[0.5451,0.2706,0.0745],"ink":[0.102,0.0667,0.0314],"muted":[0.5451,0.2706,0.0745],"rule":[0.8726,0.7958,0.7409]},"darkGold":{"n":"Candlelit Gold","ground":[0.9924,0.9846,0.9668],"card":[0.9979,0.9957,0.9907],"band":[0.0353,0.0353,0.0424],"mark":[0.8314,0.6588,0.2627],"accent":[0.5404,0.4282,0.1708],"ink":[0.102,0.0824,0.0314],"muted":[0.4573,0.3623,0.1445],"rule":[0.9528,0.9045,0.7936]},"neonCircuit":{"n":"Neon Circuit","ground":[0.955,0.9924,0.9959],"card":[0.9874,0.9979,0.9989],"band":[0.0424,0.0706,0.113],"mark":[0.0,0.8314,0.9098],"accent":[0.0,0.4988,0.5459],"ink":[0.102,0.0824,0.0314],"muted":[0.0,0.4157,0.4549],"rule":[0.72,0.9528,0.9747]},"silverIce":{"n":"Frozen Rune","ground":[0.9414,0.9643,0.9771],"card":[0.9836,0.99,0.9936],"band":[0.1647,0.2431,0.3137],"mark":[0.6157,0.6627,0.7039],"accent":[0.2314,0.3255,0.4078],"ink":[0.102,0.1647,0.2196],"muted":[0.2314,0.3255,0.4078],"rule":[0.7848,0.8111,0.8342]},"crimson":{"n":"Blood & Iron","ground":[0.9905,0.9816,0.9652],"card":[0.9973,0.9948,0.9903],"band":[0.0988,0.0353,0.0494],"mark":[0.7882,0.5922,0.2275],"accent":[0.5517,0.4145,0.1593],"ink":[0.102,0.0824,0.0314],"muted":[0.4729,0.3553,0.1365],"rule":[0.9407,0.8858,0.7837]},"arcaneViolet":{"n":"Arcane Violet","ground":[0.9868,0.979,0.9959],"card":[0.9963,0.9941,0.9989],"band":[0.0918,0.0564,0.1412],"mark":[0.7059,0.5333,0.9098],"accent":[0.4941,0.3733,0.6369],"ink":[0.102,0.0824,0.0314],"muted":[0.4588,0.3466,0.5914],"rule":[0.9177,0.8693,0.9747]},"paper":{"n":"Paper","ground":[1.0,1.0,1.0],"card":[1.0,1.0,1.0],"band":[0.2667,0.2667,0.2667],"mark":[0.7104,0.7104,0.7104],"accent":[0.1725,0.1725,0.1725],"ink":[0.102,0.102,0.102],"muted":[0.1725,0.1725,0.1725],"rule":[0.7683,0.7683,0.7683]}};
 /* Sheetmancer PDF export — dependency-free PDF writer.
    Renders a character sheet as a real, text-based PDF (crisp, selectable, small),
    with typeset pagination that never splits a field across a page boundary.
@@ -135,17 +139,28 @@ var SSPDF_W={"Times-Roman":"250,333,408,500,500,833,778,180,333,333,500,564,250,
     return out.length ? out : [""];
   }
 
-  /* ---------- palette (traced to THEMES.parchment) ---------- */
-  var C = {
-    bg:      [0.969, 0.925, 0.847], // #f7ecd8  bg
-    card:    [1.000, 0.992, 0.969], // #fffdf7  card
-    leather: [0.353, 0.176, 0.047], // #5a2d0c  accentBright
-    brown:   [0.545, 0.271, 0.075], // #8b4513  accent
-    gold:    [0.788, 0.592, 0.227], // #c9973a  nameColor
-    ink:     [0.102, 0.067, 0.031], // #1a1108  text
-    muted:   [0.239, 0.173, 0.078], // #3d2c14  textMuted
-    rule:    [0.847, 0.796, 0.686]
-  };
+  /* ---------- palette: derived per-theme from THEMES, print-first ----------
+     A character sheet gets printed and written on, and 4 of the 7 themes are near-black.
+     So the page ground is always light (faintly tinted by the theme so it still reads as
+     "theirs"), and the theme asserts itself in the masthead band, wordmark, headings and
+     rules. Every colour below was contrast-checked against its own background. */
+  var PAL = root.SS_PAL || {};
+  var C = null;
+  function setTheme(key) {
+    var p = PAL[key] || PAL.parchment || {};
+    C = {
+      bg:      p.ground || [0.98, 0.96, 0.93],
+      card:    p.card   || [1, 0.995, 0.985],
+      leather: p.band   || [0.353, 0.176, 0.047],
+      brown:   p.accent || [0.545, 0.271, 0.075],
+      gold:    p.mark   || [0.788, 0.592, 0.227],
+      ink:     p.ink    || [0.102, 0.067, 0.031],
+      muted:   p.muted  || [0.239, 0.173, 0.078],
+      rule:    p.rule   || [0.847, 0.796, 0.686]
+    };
+  }
+  setTheme("parchment");
+
   function col(c, stroke) { return c[0].toFixed(3)+" "+c[1].toFixed(3)+" "+c[2].toFixed(3)+" "+(stroke?"RG":"rg"); }
 
   /* ---------- page geometry ---------- */
@@ -190,6 +205,39 @@ var SSPDF_W={"Times-Roman":"250,333,408,500,500,833,778,180,333,333,500,564,250,
     this.raw("q " + w.toFixed(2)+" 0 0 "+h.toFixed(2)+" "+x.toFixed(2)+" "+y.toFixed(2)+" cm /"+name+" Do Q");
     return this;
   };
+
+  /* ---------- SHEETMANCER wordmark, drawn as real Cinzel outlines ----------
+     Cinzel is the app's brand face. PDF's standard 14 fonts don't include it, so the
+     letterforms are embedded as vector paths (1000-unit em) — exact match, ~8KB, and
+     it scales and prints crisply at any size. */
+  var MARK = root.SS_MARK || {};
+  var MARK_WORD = "SHEETMANCER";
+  function markWidth(size, track) {
+    var t = 0;
+    for (var i = 0; i < MARK_WORD.length; i++) {
+      var g = MARK[MARK_WORD[i]];
+      t += (g ? g.w : 600) * size / 1000 + (i < MARK_WORD.length - 1 ? track : 0);
+    }
+    return t;
+  }
+  function drawMark(pg, x, y, size, c, track, align) {
+    track = track || 0;
+    var total = markWidth(size, track);
+    if (align === "center") x -= total / 2;
+    else if (align === "right") x -= total;
+    var s = size / 1000, cx = x;
+    pg.raw(col(c));
+    for (var i = 0; i < MARK_WORD.length; i++) {
+      var g = MARK[MARK_WORD[i]];
+      if (g && g.d) {
+        pg.raw("q " + s.toFixed(5) + " 0 0 " + s.toFixed(5) + " " + cx.toFixed(2) + " " + y.toFixed(2) + " cm");
+        pg.raw(g.d + " f");
+        pg.raw("Q");
+      }
+      cx += (g ? g.w : 600) * s + track;
+    }
+    return total;
+  }
 
   /* ---------- ornament: small vector filigree (standard fonts have no glyph for it) ---------- */
   function ornament(pg, cx, y, w) {
@@ -280,6 +328,7 @@ var SSPDF_W={"Times-Roman":"250,333,408,500,500,833,778,180,333,333,500,564,250,
   function build(data, opts) {
     opts = opts || {};
     data = data || {};
+    setTheme(opts.theme || data.themeKey || "parchment");
     var name = String(data.name || "Character");
     var system = String(data.system || "");
     var sections = (data.sections || []).filter(function (s) { return s && (s.fields || []).length; });
@@ -294,7 +343,7 @@ var SSPDF_W={"Times-Roman":"250,333,408,500,500,833,778,180,333,333,500,564,250,
 
     /* ---- page 1 masthead ---- */
     var pg = newPage();
-    var HDR_H = 92;
+    var HDR_H = 118;
     var hdrY = PH - M - HDR_H;
 
     function chrome(p) {
@@ -304,37 +353,61 @@ var SSPDF_W={"Times-Roman":"250,333,408,500,500,833,778,180,333,333,500,564,250,
     }
     chrome(pg);
 
-    // masthead band
+    // masthead band — brand mark leads, character name is the headline
     pg.rect(M, hdrY, PW - 2*M, HDR_H, C.leather);
-    pg.rect(M, hdrY, PW - 2*M, HDR_H, null, C.gold, 0.8);
+    pg.rect(M, hdrY, PW - 2*M, HDR_H, null, C.gold, 0.9);
+    pg.rect(M + 3, hdrY + 3, PW - 2*M - 6, HDR_H - 6, null, C.gold, 0.4);
 
-    var tx = M + 18, avW = 0;
+    var tx = M + 20, avW = 0;
     if (images.length) {
-      var box = HDR_H - 22, ix = M + 13, iy = hdrY + 11;
+      var box = HDR_H - 30, ix = M + 15, iy = hdrY + 15;
       var ar = (images[0].w && images[0].h) ? images[0].w / images[0].h : 0.75;
       var iw = Math.min(box, box * ar), ih = iw / ar;
       if (ih > box) { ih = box; iw = ih * ar; }
       var iyc = iy + (box - ih) / 2;
-      pg.rect(ix - 1.6, iyc - 1.6, iw + 3.2, ih + 3.2, null, C.gold, 1.1);
+      pg.rect(ix - 1.8, iyc - 1.8, iw + 3.6, ih + 3.6, null, C.gold, 1.2);
       pg.img("Im1", ix, iyc, iw, ih);
-      avW = iw + 20; tx = ix + iw + 16;
+      avW = iw + 20; tx = ix + iw + 18;
     }
-    var nameSz = 26;
-    var availW = PW - M - 20 - tx;
-    while (nameSz > 13 && textWidth(toWin(name), "Times-Bold", nameSz) > availW) nameSz -= 0.5;
-    var nameBase = hdrY + HDR_H - (system ? 42 : 52);
-    pg.text(tx, nameBase, fitStr(toWin(name), "Times-Bold", nameSz, availW), F.bold, nameSz, C.gold);
-    if (system) pg.text(tx, nameBase - 17, fitStr(toWin(system), "Times-Italic", 11.5, availW), F.ital, 11.5, [0.94,0.90,0.82]);
-    pg.text(tx, hdrY + 13, "SHEETMANCER", F.sansB, 6.6, [0.72,0.60,0.40], { tracking: 2.1 });
+    var availW = PW - M - 22 - tx;
+
+    /* the brand mark, in real Cinzel, sitting above the character name */
+    var mkSize = 19, mkTrack = 3.4;
+    while (mkSize > 10 && markWidth(mkSize, mkTrack) > availW) mkSize -= 0.5;
+    drawMark(pg, tx, hdrY + HDR_H - 34, mkSize, C.gold, mkTrack);
+    pg.line(tx, hdrY + HDR_H - 42, tx + Math.min(availW, markWidth(mkSize, mkTrack)), hdrY + HDR_H - 42, C.gold, 0.5);
+
+    var nameSz = 25;
+    while (nameSz > 12 && textWidth(toWin(name), "Times-Bold", nameSz) > availW) nameSz -= 0.5;
+    var nameBase = hdrY + (system ? 34 : 26);
+    pg.text(tx, nameBase, fitStr(toWin(name), "Times-Bold", nameSz, availW), F.bold, nameSz, [0.99, 0.98, 0.95]);
+    if (system) pg.text(tx, hdrY + 17, fitStr(toWin(system), "Times-Italic", 11, availW), F.ital, 11, C.gold);
 
     /* ---- flow sections into two columns, never splitting a field ---- */
     var colTop1 = hdrY - 16, colTop = PH - M - 6, colBottom = M + FOOT_H;
     var colIdx = 0, cursorY = colTop1, pageNo = 0;
 
+    /* Measure up front. If the whole sheet fits on page 1, split it evenly between the
+       two columns — otherwise a short character leaves an empty right column, which
+       reads as a broken document rather than a designed one. */
+    var maxRowH0 = Math.min(colTop1, colTop) - colBottom - headerH() - PAD * 2;
+    var pre = [];
+    var totalH = 0;
+    for (var m = 0; m < sections.length; m++) {
+      var mr = splitTallRows(measureRows(sections[m].fields || [], COLW - PAD * 2), COLW - PAD * 2, maxRowH0);
+      var mh = blockH(mr, 0, mr.length);
+      pre.push({ rows: mr, h: mh });
+      totalH += mh + SEC_GAP;
+    }
+    var colCap = colTop1 - colBottom;
+    var balanceTarget = (totalH <= colCap * 2) ? (totalH / 2) : 0;
+    var usedInCol = 0;
+
     function colX() { return M + colIdx * (COLW + GUT); }
     function nextColumn() {
       if (colIdx === 0) { colIdx = 1; cursorY = (pageNo === 0) ? colTop1 : colTop; }
       else { pg = newPage(); pageNo++; chrome(pg); colIdx = 0; cursorY = colTop; }
+      usedInCol = 0;
     }
 
     function drawBlock(sec, rows, from, to, cont) {
@@ -376,13 +449,17 @@ var SSPDF_W={"Times-Roman":"250,333,408,500,500,833,778,180,333,333,500,564,250,
         y -= r.h + ROW_GAP;
       }
       cursorY = bot - SEC_GAP;
+      usedInCol += h + SEC_GAP;
     }
 
     for (var s = 0; s < sections.length; s++) {
       var sec = sections[s];
-      var maxRowH = Math.min(colTop1, colTop) - colBottom - headerH() - PAD * 2;
-      var rows = splitTallRows(measureRows(sec.fields || [], COLW - PAD * 2), COLW - PAD * 2, maxRowH);
+      var rows = pre[s].rows;
       var placed = 0, cont = false;
+
+      /* balanced break: once column 1 holds about half the content, move to column 2 */
+      if (balanceTarget && colIdx === 0 && pageNo === 0 && usedInCol > 0 &&
+          usedInCol + pre[s].h / 2 > balanceTarget) { nextColumn(); usedInCol = 0; }
 
       while (placed < rows.length) {
         var avail = cursorY - colBottom;
@@ -409,8 +486,9 @@ var SSPDF_W={"Times-Roman":"250,333,408,500,500,833,778,180,333,333,500,564,250,
     /* ---- footers ---- */
     for (var i = 0; i < pages.length; i++) {
       var p = pages[i], fy = M + 12;
-      ornament(p, PW / 2, fy + 15, 150);
-      p.text(PW / 2, fy, "Created with Sheetmancer  ·  DigiRune Studios", F.body, 8.2, C.muted, { align: "center" });
+      ornament(p, PW / 2, fy + 19, 170);
+      drawMark(p, PW / 2, fy + 4, 9.5, C.brown, 1.7, "center");
+      p.text(PW / 2, fy - 7, "DigiRune Studios", F.ital, 7.4, C.muted, { align: "center" });
       p.text(PW - M, fy, "Page " + (i + 1) + " of " + pages.length, F.body, 8.2, C.muted, { align: "right" });
       p.text(M, fy, fitStr(toWin(name), "Times-Italic", 8.2, PW / 2 - M - 105), F.ital, 8.2, C.muted);
     }
@@ -2300,7 +2378,7 @@ function HomeScreen({
       marginTop: 4,
       letterSpacing: 1
     }
-  }, "Sheetmancer · build v44"))), /*#__PURE__*/React.createElement("button", {
+  }, "Sheetmancer · build v45"))), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowHelp(false),
     className: "ss-press",
     style: {
@@ -5399,7 +5477,7 @@ function CharacterScreen({
         ? Object.assign({}, data, { sections: (data.sections || []).concat([{ title: "Session Journal", fields: notes }]) })
         : data;
 
-      const bytes = window.ssPdfBuild(pdfData, { avatarJpeg: av });
+      const bytes = window.ssPdfBuild(pdfData, { avatarJpeg: av, theme: themeKey || data.themeKey });
       const blob = new Blob([bytes], { type: "application/pdf" });
 
       let file = null;
