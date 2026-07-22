@@ -2378,7 +2378,7 @@ function HomeScreen({
       marginTop: 4,
       letterSpacing: 1
     }
-  }, "Sheetmancer · build v46"))), /*#__PURE__*/React.createElement("button", {
+  }, "Sheetmancer · build v47"))), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowHelp(false),
     className: "ss-press",
     style: {
@@ -6766,22 +6766,80 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
  function apply(m){var ch=false;Object.keys(m||{}).forEach(function(k){if(KEYS.indexOf(k)>=0&&localStorage.getItem(k)!==m[k]){localStorage.setItem(k,m[k]);ch=true;}});return ch;}
  var user=null,last="",timer=null,syncing=false,lastSyncedAt=0,errState=false,pending=false;
  var authM=null;   /* hoisted: keepTok() below runs at this scope and needs it */
- var appleTok=null,appleTokUid="";
+ /* ---- iOS native sign-in bridge detection (F6) --------------------------------
+    Inside the WKWebView shell the web OAuth popup cannot work: Google refuses to
+    render its consent screen in an embedded webview, and Apple's popup loses the
+    sessionStorage Firebase needs ("auth/missing-initial-state"). The shell runs the
+    real provider sheet natively and hands the credential back through the callbacks
+    below. A provider counts as native ONLY when the shell's user-agent tag is present
+    AND that provider's own message handler exists — two conditions, one flag each, so
+    a shell shipping only one of the two bridges still falls back correctly for the
+    other. Web and Android match neither condition and keep the popup path untouched. */
+ var SS_SHELL=/PWAShell/.test(navigator.userAgent);
+ var googleNative=SS_SHELL&&!!(window.webkit&&window.webkit.messageHandlers&&window.webkit.messageHandlers.startGoogleSignIn);
+ var appleNative=SS_SHELL&&!!(window.webkit&&window.webkit.messageHandlers&&window.webkit.messageHandlers.startAppleSignIn);
+ var appleTok=null,appleTokUid="",appleCode=null,appleCodeUid="";
  /* G2: the Apple OAuth access token, bound to the uid it belongs to. Persisted in
     sessionStorage because sign-in triggers a location.reload() whenever the cloud
     blob differs from local — memory alone is wiped for every returning user, and the
     <5min freshness shortcut then skips the reauth that would recapture it, so the
     revoke would silently never run. Scoped to the tab, cleared on sign-out. An Apple
     access token is short-lived and strictly weaker than the Firebase refresh token
-    already sitting in IndexedDB. */
- function keepTok(res){try{var cr=authM.OAuthProvider.credentialFromResult(res);
-   if(cr&&cr.accessToken){appleTok=cr.accessToken;appleTokUid=(res&&res.user&&res.user.uid)||"";
-   try{sessionStorage.setItem("ss-atok",appleTokUid+"|"+appleTok);}catch(_){}}}catch(_){}}
- function dropTok(){appleTok=null;appleTokUid="";try{sessionStorage.removeItem("ss-atok");}catch(_){}}
+    already sitting in IndexedDB.
+    ⚠️ NATIVE PATH — READ BEFORE "FIXING" THIS. credentialFromResult reads ONLY the
+    raw backend response (_tokenResponse.oauthAccessToken). A native sign-in posts
+    id_token + nonce and NO authorization code, so Firebase never runs an OAuth code
+    exchange with Apple and has no oauthAccessToken to return. keepTok() therefore
+    captures nothing inside the iOS shell — by design, not by accident — and doRevoke()
+    reports the honest skip reason "native-no-token" instead of a false success.
+    keepCode() below is the fix path. */
+ function keepTok(res){
+   /* Deliberately NOT an empty catch: an empty catch around this exact step already
+      hid a total feature failure once (ReferenceError on authM) while the telemetry
+      still read clean. Every outcome is recorded, warned, and returned. */
+   var st={at:Date.now(),got:false};
+   try{
+     var cr=authM.OAuthProvider.credentialFromResult(res);
+     st.credential=!!cr;st.accessToken=!!(cr&&cr.accessToken);
+     if(cr&&cr.accessToken){
+       appleTok=cr.accessToken;appleTokUid=(res&&res.user&&res.user.uid)||"";st.got=true;
+       try{sessionStorage.setItem("ss-atok",appleTokUid+"|"+appleTok);}
+       catch(e){st.persisted=false;st.persistError=String((e&&e.message)||e);}
+     }
+   }catch(e){
+     st.error=String((e&&(e.code||e.message))||e);
+     try{console.warn("Sheetmancer: Apple access-token capture failed",e);}catch(_e){}
+   }
+   window.ssLastTokCapture=st;
+   return st.got;
+ }
+ /* G2 native fix path. Apple's NATIVE credential carries an authorizationCode, and
+    Identity Platform's accounts:revokeToken takes one directly with tokenType CODE —
+    "If an authorization_code is passed in, the API will first exchange the code for
+    access token and then revoke the token exchanged." That is exactly what Firebase's
+    own iOS SDK sends for revokeToken(withAuthorizationCode:). Held under the SAME
+    uid-scoping and tab-scoped persistence as the access token, for the same reason:
+    sign-in can reload the page long before deletion is ever attempted.
+    INERT until the Swift shell passes a 3rd argument to __onNativeAppleCredential. */
+ function keepCode(uid,code){
+   if(!uid||!code)return false;
+   appleCode=String(code);appleCodeUid=String(uid);
+   try{sessionStorage.setItem("ss-acode",appleCodeUid+"|"+appleCode);}
+   catch(e){try{console.warn("Sheetmancer: could not persist Apple authorization code",e);}catch(_e){}}
+   return true;
+ }
+ function dropTok(){appleTok=null;appleTokUid="";appleCode=null;appleCodeUid="";
+   try{sessionStorage.removeItem("ss-atok");}catch(_){}
+   try{sessionStorage.removeItem("ss-acode");}catch(_){}}
  function loadTok(uid){
    if(!appleTok){try{var raw=sessionStorage.getItem("ss-atok")||"",ix=raw.indexOf("|");
      if(ix>0){appleTokUid=raw.slice(0,ix);appleTok=raw.slice(ix+1);}}catch(_){}}
    return (appleTokUid===uid)?appleTok:null;   /* never revoke one account's grant for another */
+ }
+ function loadCode(uid){
+   if(!appleCode){try{var raw=sessionStorage.getItem("ss-acode")||"",ix=raw.indexOf("|");
+     if(ix>0){appleCodeUid=raw.slice(0,ix);appleCode=raw.slice(ix+1);}}catch(_){}}
+   return (appleCodeUid===uid)?appleCode:null;   /* same rule: never one account's grant for another */
  }
  function relTime(ts){if(!ts)return"just now";var s=Math.floor((Date.now()-ts)/1000);if(s<10)return"just now";if(s<60)return s+"s ago";var m=Math.floor(s/60);if(m<60)return m+"m ago";var h=Math.floor(m/60);if(h<24)return h+"h ago";return Math.floor(h/24)+"d ago";}
  function broadcast(){var status,detail;if(pending){status="Signing in…";detail="";}else if(!user){status="Sign in";detail="";}else if(!navigator.onLine){status="Offline";detail="will sync when online";}else if(syncing){status="Syncing…";detail="";}else if(errState){status="Sync error";detail="tap to retry";}else{status="Synced";detail=relTime(lastSyncedAt);}window.ssAuth={signedIn:!!user,email:user?(user.email||""):"",syncing:syncing,err:errState,offline:!navigator.onLine,pending:pending,lastSyncedAt:lastSyncedAt,status:status,detail:detail};try{window.dispatchEvent(new CustomEvent("ss-auth"));}catch(e){}}
@@ -6794,7 +6852,12 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
      identity. Sync stays Google/Apple-sign-in only — anonymous is never a sync account. */
   window.ssGetIdToken=function(){return new Promise(function(res,rej){function tok(u){u.getIdToken().then(res,rej);}if(auth.currentUser){tok(auth.currentUser);return;}authM.signInAnonymously(auth).then(function(c){tok(c.user);}).catch(rej);});};
   var provider=new authM.GoogleAuthProvider();
-  window.ssSignIn=function(){if(user)return;pending=true;broadcast();authM.signInWithPopup(auth,provider).then(function(){pending=false;}).catch(function(){pending=false;broadcast();});};
+  window.ssSignIn=function(){if(user)return;pending=true;broadcast();
+   /* iOS shell: hand off to Google's native sheet. Everything below this branch is the
+      untouched web/Android path. Falling through on a throw is deliberate — a popup
+      that fails loudly beats a button that does nothing. */
+   if(googleNative){try{window.webkit.messageHandlers.startGoogleSignIn.postMessage({});return;}catch(e){}}
+   authM.signInWithPopup(auth,provider).then(function(){pending=false;}).catch(function(){pending=false;broadcast();});};
   /* Sign in with Apple. Apple requires this wherever another social sign-in is
      offered (App Store 4.8). Scopes stay minimal - email + name - to match what
      Google gives us and what the privacy policy discloses. */
@@ -6803,6 +6866,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
    var ap=new authM.OAuthProvider("apple.com");
    ap.addScope("email");ap.addScope("name");
    pending=true;broadcast();
+   /* iOS shell: hand off to Apple's native sheet (see the detection block above). */
+   if(appleNative){try{window.webkit.messageHandlers.startAppleSignIn.postMessage({});return;}catch(e){}}
    authM.signInWithPopup(auth,ap).then(function(res){
      /* G2: keep the Apple access token. Apple requires it to be REVOKED when the
         account is deleted - deleting the Firebase user alone is not sufficient and
@@ -6811,6 +6876,52 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
      pending=false;
    }).catch(function(){pending=false;broadcast();});
   };
+  /* ---- Native bridge callbacks — invoked by ViewController.swift via evaluateJavaScript.
+     The names and the argument order are fixed by the Swift side and must not change:
+       window.__onNativeAppleCredential(idToken, rawNonce[, authorizationCode])
+       window.__onNativeAppleError(reason)     reason: canceled | failed | missing-token
+       window.__onNativeGoogleCredential(idToken, accessToken)   accessToken may be ""
+       window.__onNativeGoogleError(reason)    reason: canceled | failed | missing-token | config
+     Delete re-authentication uses the SAME bridge (Twisted F-038: web OAuth cannot run
+     inside WKWebView, so re-auth must not either). While one is waiting, nativeReauth
+     holds that attempt's resolve/reject pair. It is cleared the instant the attempt
+     finishes, and it can only ever resolve or reject an ALREADY-RUNNING re-auth — it
+     never starts, resumes or authorises a deletion, so a stale value is inert. */
+  var nativeReauth=null;
+  function nativeFail(reason){
+   var h=nativeReauth;nativeReauth=null;
+   if(h){h.fail(reason);return;}          /* a delete re-auth was waiting on this sheet */
+   pending=false;broadcast();             /* ordinary sign-in: never leave "Signing in…" stuck */
+  }
+  function nativeCred(cred,after){
+   var h=nativeReauth;nativeReauth=null;
+   return authM.signInWithCredential(auth,cred).then(function(res){
+     if(after)after(res);
+     if(h)h.ok();
+   },function(e){
+     try{console.warn("Sheetmancer: native sign-in could not be completed",e);}catch(_e){}
+     if(h){h.fail("failed");return;}
+     pending=false;broadcast();
+   });
+  }
+  window.__onNativeAppleCredential=function(idToken,rawNonce,authCode){
+   try{
+    var apc=new authM.OAuthProvider("apple.com");
+    var cred=apc.credential({idToken:idToken,rawNonce:rawNonce});
+    nativeCred(cred,function(res){
+      keepTok(res);                                          /* records what Firebase actually returned */
+      keepCode((res&&res.user&&res.user.uid)||"",authCode);   /* the real G2 grant, once Swift sends it */
+    });
+   }catch(e){try{console.warn("Sheetmancer: Apple credential rejected",e);}catch(_e){}nativeFail("failed");}
+  };
+  window.__onNativeAppleError=function(reason){nativeFail(reason);};
+  window.__onNativeGoogleCredential=function(idToken,accessToken){
+   try{
+    var cred=authM.GoogleAuthProvider.credential(idToken,accessToken||null);
+    nativeCred(cred,null);
+   }catch(e){try{console.warn("Sheetmancer: Google credential rejected",e);}catch(_e){}nativeFail("failed");}
+  };
+  window.__onNativeGoogleError=function(reason){nativeFail(reason);};
   window.ssSignOut=function(){dropTok();try{if(user)authM.signOut(auth);}catch(e){}};
   /* ---- Account deletion (Apple 5.1.1(v)). Self-Review Gate / F-064 discipline: ----
      - NO flag is shared with the sign-in handlers.
@@ -6912,14 +7023,32 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
       if(t0&&(Date.now()-t0)<FRESH_MS)return Promise.resolve();   /* already recent - Firebase will accept the delete */
       return new Promise(function(res,rej){
         var done2=false,poll=null;
-        function finish(ok,e){if(done2)return;done2=true;if(poll){clearInterval(poll);poll=null;}ok?res():rej(e);}
+        function finish(ok,e){if(done2)return;done2=true;if(poll){clearInterval(poll);poll=null;}if(nativeReauth===h)nativeReauth=null;ok?res():rej(e);}
+        /* The native bridge's answer channel for THIS attempt. It can only settle a
+           re-auth that is already running; it never touches the delete sequence. */
+        var h={ok:function(){finish(true);},
+               fail:function(reason){finish(false,reason==="canceled"
+                 ?derr("reauth-cancelled","Confirmation was cancelled — nothing has changed.")
+                 :derr("reauth-unavailable","We couldn't confirm it's you, so nothing has been changed. Please sign out, sign in again, then delete your account."));}};
         /* Safety net: a reauth that succeeded but whose popup message was lost still
            advances lastSignInTime, so watch for that rather than trusting one channel. */
         poll=setInterval(function(){
           var cur=auth.currentUser;
           if(cur&&cur.uid===uid&&signedInAt(cur)>t0)finish(true);
         },1000);
-        setTimeout(function(){if(poll){clearInterval(poll);poll=null;}},REAUTH_MS+2000);
+        setTimeout(function(){if(poll){clearInterval(poll);poll=null;}if(nativeReauth===h)nativeReauth=null;},REAUTH_MS+2000);
+        /* iOS shell: re-authenticate through the SAME native bridge the sign-in buttons
+           use. A web OAuth popup cannot complete inside WKWebView, so opening one here
+           would hang for the whole REAUTH_MS and then fail — the v41 defect, in a worse
+           place. Success arrives twice over (h.ok(), and the poll above, because
+           signInWithCredential advances lastSignInTime); a cancel fails fast via h.fail
+           and reads as a cancel. Nothing below this branch changed for web or Android. */
+        var nat=(pid==="apple.com")?(appleNative?"startAppleSignIn":""):(googleNative?"startGoogleSignIn":"");
+        if(nat){
+          nativeReauth=h;
+          try{window.webkit.messageHandlers[nat].postMessage({});return;}
+          catch(_e){nativeReauth=null;}   /* handler vanished mid-flight — fall through to the popup */
+        }
         try{
           authM.reauthenticateWithPopup(u,rp).then(function(rres){
             if(pid==="apple.com")keepTok(rres);   /* Google credentials also carry an accessToken - never store one as if it were Apple's */
@@ -6974,20 +7103,45 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
         third of the budget and report a false timeout on a deletion that succeeded. */
      var lastRevoked="";
      window.ssLastRevoke={ok:false,attempted:false,skipped:true,reason:"not-reached"};
+     /* G2, native path. Firebase JS 10.12.2's revokeAccessToken() hardcodes
+        tokenType:"ACCESS_TOKEN" (read out of the shipped gstatic bundle), so it cannot
+        carry an authorization code. Identity Platform's accounts:revokeToken DOES take
+        one — tokenType CODE, "the API will first exchange the code for access token and
+        then revoke the token exchanged" — and that is exactly what Firebase's own iOS
+        SDK sends for revokeToken(withAuthorizationCode:): providerId, tokenType, token,
+        idToken, and no redirectUri. Same endpoint, same field set, called directly. */
+     function revokeByCode(code){
+       var cu2=auth.currentUser;
+       if(!cu2)return Promise.reject(new Error("revoke-no-user"));
+       return cu2.getIdToken().then(function(it){
+         return fetch("https://identitytoolkit.googleapis.com/v2/accounts:revokeToken?key="+encodeURIComponent(cfg.apiKey),
+           {method:"POST",headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({providerId:"apple.com",tokenType:"CODE",token:code,idToken:it})});
+       }).then(function(r){
+         if(r&&r.ok)return;
+         return r.text().then(function(t){throw new Error("revoke-http-"+(r&&r.status)+" "+String(t||"").slice(0,180));},
+                              function(){throw new Error("revoke-http-"+(r&&r.status));});
+       });
+     }
      function doRevoke(cu){
        var isApple=false;
        try{isApple=(cu.providerData||[]).some(function(p){return p&&p.providerId==="apple.com";});}catch(_){}
-       var tok=loadTok(uid);
-       if(!isApple||!tok||!authM.revokeAccessToken){
+       var tok=loadTok(uid),code=loadCode(uid);
+       var useCode=!tok&&!!code;        /* an access token, where one exists, is the documented input */
+       var haveApi=useCode?(typeof fetch==="function"):!!authM.revokeAccessToken;
+       if(!isApple||(!tok&&!code)||!haveApi){
+         /* Honest reporting, not optimism: inside the shell there is no OAuth access
+            token to capture, so say "native-no-token" rather than pretending success. */
          window.ssLastRevoke={ok:false,attempted:false,skipped:true,
-           reason:isApple?(tok?"api-missing":"no-token"):"not-apple"};
+           reason:isApple?((tok||code)?"api-missing":(appleNative?"native-no-token":"no-token")):"not-apple"};
          return Promise.resolve();
        }
-       if(tok===lastRevoked)return Promise.resolve();     /* already revoked this exact grant */
-       lastRevoked=tok;
-       return raceOut(authM.revokeAccessToken(auth,tok),8000,derr("revoke-timeout","Revoking the Apple sign-in took too long."))
-         .then(function(){window.ssLastRevoke={ok:true,attempted:true,skipped:false};},
-               function(err){window.ssLastRevoke={ok:false,attempted:true,skipped:false,code:(err&&(err.code||err.message))||""};
+       var grant=(useCode?"code:":"tok:")+(useCode?code:tok);
+       if(grant===lastRevoked)return Promise.resolve();     /* already revoked this exact grant */
+       lastRevoked=grant;
+       return raceOut(useCode?revokeByCode(code):authM.revokeAccessToken(auth,tok),8000,derr("revoke-timeout","Revoking the Apple sign-in took too long."))
+         .then(function(){window.ssLastRevoke={ok:true,attempted:true,skipped:false,via:useCode?"code":"access-token"};},
+               function(err){window.ssLastRevoke={ok:false,attempted:true,skipped:false,via:useCode?"code":"access-token",code:(err&&(err.code||err.message))||""};
                              try{console.warn("Sheetmancer: Apple token revocation failed",err);}catch(_){}})
          .then(function(){if(deleteTimer){clearTimeout(deleteTimer);deleteTimer=setTimeout(timedOut,DESTRUCT_MS);}});
      }
