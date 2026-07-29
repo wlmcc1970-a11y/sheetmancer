@@ -5,6 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0A0A0C">
+<meta name="google" content="notranslate">
 <meta name="description" content="Sheetmancer — Universal Character Sheet Scanner by DigiRune Studios">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -607,7 +608,7 @@ window.ssAvatarToJpeg = function (dataUri, pan, zoom) {
 </script>
 </head>
 <body>
-<div id="root"></div>
+<div id="root" translate="no" class="notranslate"></div>
 <div id="ssToast" role="status" aria-live="polite"></div>
 <div id="ssUpdate" role="alert"><span>Update available</span><span class="pill">Tap to refresh</span></div>
 <script>/**
@@ -1715,6 +1716,27 @@ function EditableValue({
   const [ed, setEd] = useState(false);
   const [d, setD] = useState(value);
   const r = useRef(null);
+  const uStack = useRef([]);
+  const uLast = useRef(0);
+  const [, forceU] = useState(0);
+  const uPrevEd = useRef(false);
+  if (ed !== uPrevEd.current) { uPrevEd.current = ed; if (ed) { uStack.current = []; uLast.current = 0; } }
+  const pushU = prev => {
+    const now = Date.now();
+    if (uStack.current.length === 0 || now - uLast.current > 650) {
+      uStack.current.push(prev);
+      if (uStack.current.length > 120) uStack.current.shift();
+      uLast.current = now;
+      forceU(n => n + 1);
+    }
+  };
+  const doU = () => {
+    if (!uStack.current.length) return;
+    const prev = uStack.current.pop();
+    forceU(n => n + 1);
+    try { buzz(12); } catch (_) {}
+    setD(prev);
+  };
   useEffect(() => {
     if (ed && r.current) r.current.focus();
   }, [ed]);
@@ -1745,13 +1767,18 @@ function EditableValue({
     style: { fontSize: 14, fontWeight: 700, color: T.accent, fontFamily: "'Cinzel',Georgia,serif", letterSpacing: 1 }
   }, "Writing View"), /*#__PURE__*/React.createElement("span", {
     style: { fontSize: 11, color: T.textMuted, marginTop: 1 }
-  }, String(d == null ? "" : d).length + " characters")), /*#__PURE__*/React.createElement("button", {
+  }, String(d == null ? "" : d).length + " characters")), /*#__PURE__*/React.createElement("div", {
+    style: { display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }
+  }, uStack.current.length > 0 && /*#__PURE__*/React.createElement("button", {
+    onClick: doU, className: "ss-press", "aria-label": "Undo last change",
+    style: { minHeight: 40, padding: "8px 12px", background: "none", border: "1px solid " + T.borderLight, borderRadius: 10, cursor: "pointer", fontSize: 14, color: T.textSoft, fontFamily: "'Cinzel',Georgia,serif" }
+  }, "\u21B6 Undo"), /*#__PURE__*/React.createElement("button", {
     onClick: commit, className: "ss-press",
     style: { minHeight: 40, padding: "8px 20px", background: T.metalGrad, border: "none", borderRadius: 10, cursor: "pointer", fontSize: 14, fontWeight: 700, color: T.bg, fontFamily: "'Cinzel',Georgia,serif", flexShrink: 0 }
-  }, "\u2713 Save")), /*#__PURE__*/React.createElement("textarea", {
+  }, "\u2713 Save"))), /*#__PURE__*/React.createElement("textarea", {
     ref: r,
     value: d,
-    onChange: e => setD(e.target.value),
+    onChange: e => { pushU(d); setD(e.target.value); },
     onKeyDown: e => { if (e.key === "Escape") cancelEdit(); },
     inputMode: /^\d+$/.test(String(d || "")) ? "numeric" : undefined,
     translate: noTranslate ? "no" : undefined,
@@ -2378,7 +2405,7 @@ function HomeScreen({
       marginTop: 4,
       letterSpacing: 1
     }
-  }, "Sheetmancer · build v47"))), /*#__PURE__*/React.createElement("button", {
+  }, "Sheetmancer · build v48"))), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowHelp(false),
     className: "ss-press",
     style: {
@@ -4670,7 +4697,7 @@ function ConfirmDialog({
       top: 0,
       left: 0,
       right: 0,
-      bottom: 0,
+      bottom: "var(--ss-kb, 0px)",
       background: "rgba(0,0,0,0.7)",
       zIndex: 1300,
       display: "flex",
@@ -4772,7 +4799,7 @@ function RenameModal({
       top: 0,
       left: 0,
       right: 0,
-      bottom: 0,
+      bottom: "var(--ss-kb, 0px)",
       background: "rgba(0,0,0,0.7)",
       zIndex: 1300,
       display: "flex",
@@ -5598,7 +5625,7 @@ function CharacterScreen({
     style: {
       color: T.yellow
     }
-  }, "amber"), " ring marks a field to double-check — tap it to confirm. Fields that were read clearly carry no dot."), /*#__PURE__*/React.createElement("div", null, hb(T, "Search"), " — Use the ", hb(T, "Search this character…"), " box on the hub to find any field, value, section, or note. Tap a result to jump straight to it."), /*#__PURE__*/React.createElement("div", null, hb(T, "Editing a field"), " — Tap the ", hb(T, "⋮"), " next to a field, then ", hb(T, "Edit"), " — it opens in a full-screen writing view with ", hb(T, "✓ Save"), " pinned at the top. The ⋮ menu also has ", hb(T, "Move up / down"),", ", hb(T, "Move to section…"), ", and ", hb(T, "Delete"), " (with ", hb(T, "Undo"), ")."), /*#__PURE__*/React.createElement("div", null, hb(T, "Adding"), " — Use ", hb(T, "+ Add Field"), " at the bottom of any section, or the ", hb(T, "+ Add Section"), " card on the hub."), /*#__PURE__*/React.createElement("div", null, hb(T, "Portrait"), " — Tap ", hb(T, "Adjust photo"), " to move, zoom, or replace it; tap ", hb(T, "✓ Done"), " to lock it."), /*#__PURE__*/React.createElement("div", null, hb(T, "Themes"), " — The colored circles in the top bar restyle the whole sheet."), /*#__PURE__*/React.createElement("div", null, hb(T, "Journal"), " — Open the ", hb(T, "Journal"), " card to jot session notes, or to retire the character when you're done."), /*#__PURE__*/React.createElement("div", null, hb(T, "Export & Share"), " — ", hb(T, "⤓ Export / Share Sheet"), " makes a polished PDF you can share or save; ", hb(T, "⬇ Backup file (.json)"), " saves a re-importable backup."), /*#__PURE__*/React.createElement("div", null, hb(T, "Auto-saved"), " — Your changes save automatically, and an ", hb(T, "Undo"), " button appears after any edit."))), /*#__PURE__*/React.createElement("button", {
+  }, "amber"), " ring marks a field to double-check — tap it to confirm. Fields that were read clearly carry no dot."), /*#__PURE__*/React.createElement("div", null, hb(T, "Search"), " — Use the ", hb(T, "Search this character…"), " box on the hub to find any field, value, section, or note. Tap a result to jump straight to it."), /*#__PURE__*/React.createElement("div", null, hb(T, "Editing a field"), " — Tap the ", hb(T, "⋮"), " next to a field, then ", hb(T, "Edit"), " — it opens in a full-screen writing view with ", hb(T, "✓ Save"), " pinned at the top, plus an Undo that steps back your last change. The ⋮ menu also has ", hb(T, "Move up / down"),", ", hb(T, "Move to section…"), ", and ", hb(T, "Delete"), " (with ", hb(T, "Undo"), ")."), /*#__PURE__*/React.createElement("div", null, hb(T, "Adding"), " — Use ", hb(T, "+ Add Field"), " at the bottom of any section, or the ", hb(T, "+ Add Section"), " card on the hub."), /*#__PURE__*/React.createElement("div", null, hb(T, "Portrait"), " — Tap ", hb(T, "Adjust photo"), " to move, zoom, or replace it; tap ", hb(T, "✓ Done"), " to lock it."), /*#__PURE__*/React.createElement("div", null, hb(T, "Themes"), " — The colored circles in the top bar restyle the whole sheet."), /*#__PURE__*/React.createElement("div", null, hb(T, "Journal"), " — Open the ", hb(T, "Journal"), " card to jot session notes, or to retire the character when you're done."), /*#__PURE__*/React.createElement("div", null, hb(T, "Export & Share"), " — ", hb(T, "⤓ Export / Share Sheet"), " (also reachable from a button in the top bar) makes a polished PDF you can share or save; ", hb(T, "⬇ Backup file (.json)"), " saves a re-importable backup."), /*#__PURE__*/React.createElement("div", null, hb(T, "Auto-saved"), " — Your changes save automatically. While editing a field, tap Undo to step back a change; after a delete, an ", hb(T, "Undo"), " lets you bring it back."))), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowHelp(false),
     className: "ss-press",
     style: {
@@ -5716,33 +5743,36 @@ function CharacterScreen({
       fontFamily: "'Cinzel',Georgia,serif",
       letterSpacing: 0.5
     }
-  }, "Back")), undoStack.length > 0 && /*#__PURE__*/React.createElement("button", {
-    onClick: undo,
-    style: {
-      display: "flex",
-      alignItems: "center",
-      gap: 3,
-      background: T.metalGrad,
-      border: "none",
-      borderRadius: 8,
-      padding: "4px 8px",
-      cursor: "pointer",
-      boxShadow: "0 1px 4px rgba(0,0,0,0.3)"
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      fontSize: 12,
-      fontWeight: 700,
-      color: T.bg,
-      fontFamily: "'Cinzel',Georgia,serif"
-    }
-  }, "\u21A9"))), /*#__PURE__*/React.createElement("div", {
+  }, "Back"))), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       gap: 2,
       alignItems: "center"
     }
   }, /*#__PURE__*/React.createElement("button", {
+    onClick: exportSheet,
+    "aria-label": "Export or share a PDF of this sheet",
+    title: "Export / Share PDF",
+    className: "ss-press",
+    style: {
+      width: 26,
+      height: 26,
+      borderRadius: "50%",
+      border: "none",
+      background: T.metalGrad,
+      cursor: "pointer",
+      fontSize: 14,
+      fontWeight: 900,
+      color: T.headerText || T.bg,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      flexShrink: 0,
+      fontFamily: "'Cinzel',Georgia,serif",
+      boxShadow: `0 1px 4px rgba(0,0,0,0.3)`,
+      marginRight: 2
+    }
+  }, "⤓"), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowHelp(true),
     style: {
       width: 26,
@@ -7249,5 +7279,6 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
   setInterval(function(){if(user&&!syncing&&navigator.onLine)broadcast();},20000);
  }).catch(function(){window.ssAuth={signedIn:false,email:"",status:"Sign in",detail:"sync offline"};try{window.dispatchEvent(new CustomEvent("ss-auth"));}catch(e){}});
 })();</script>
+<script>/*ss-kb: keeps action buttons above the on-screen keyboard*/(function(){var vv=window.visualViewport;if(!vv)return;function u(){var kb=Math.max(0,(window.innerHeight-vv.height-vv.offsetTop));document.documentElement.style.setProperty('--ss-kb',kb+'px');}vv.addEventListener('resize',u);vv.addEventListener('scroll',u);u();})();</script>
 </body>
 </html>
