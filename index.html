@@ -2405,7 +2405,7 @@ function HomeScreen({
       marginTop: 4,
       letterSpacing: 1
     }
-  }, "Sheetmancer · build v48"))), /*#__PURE__*/React.createElement("button", {
+  }, "Sheetmancer · build v49"))), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowHelp(false),
     className: "ss-press",
     style: {
@@ -4888,6 +4888,140 @@ function RenameModal({
   }, "Save"))));
 }
 
+function FieldEditModal({ T, data, si, fi0, updateBoth, moveField, moveToSection, onClose }) {
+  const secFields = (data.sections[si] && data.sections[si].fields) || [];
+  const [curFi, setCurFi] = useState(fi0);
+  const cur = secFields[curFi] || secFields[fi0] || { label: "", value: "" };
+  const [label, setLabel] = useState(cur.label || "");
+  const [val, setVal] = useState(cur.value == null ? "" : cur.value);
+  const ta = useRef(null);
+  const uStack = useRef([]);
+  const uLast = useRef(0);
+  const [, forceU] = useState(0);
+  const pushU = prev => {
+    const now = Date.now();
+    if (uStack.current.length === 0 || now - uLast.current > 650) {
+      uStack.current.push(prev);
+      if (uStack.current.length > 120) uStack.current.shift();
+      uLast.current = now;
+      forceU(n => n + 1);
+    }
+  };
+  const doU = () => {
+    if (!uStack.current.length) return;
+    const prev = uStack.current.pop();
+    forceU(n => n + 1);
+    try { buzz(12); } catch (_) {}
+    setVal(prev);
+  };
+  useEffect(() => {
+    const h = e => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, []);
+  const nFields = secFields.length;
+  const canUp = curFi > 0;
+  const canDown = curFi < nFields - 1;
+  const save = () => { updateBoth(si, curFi, label, val); onClose(); };
+  const nudge = dir => {
+    const ni = curFi + dir;
+    if (ni < 0 || ni >= nFields) return;
+    moveField(si, curFi, dir);
+    setCurFi(ni);
+    try { buzz(14); } catch (_) {}
+  };
+  const toSection = () => { updateBoth(si, curFi, label, val); moveToSection(si, curFi); onClose(); };
+  const moveBtn = (enabled, txt, fn) => /*#__PURE__*/React.createElement("button", {
+    onClick: () => { if (enabled) fn(); }, className: "ss-press", disabled: !enabled,
+    style: { flex: 1, minHeight: 44, padding: "10px 8px", background: "none", border: "1px solid " + T.borderLight, borderRadius: 10, cursor: enabled ? "pointer" : "default", opacity: enabled ? 1 : 0.4, color: T.textSoft, fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, fontSize: 13 }
+  }, txt);
+  return /*#__PURE__*/React.createElement("div", {
+    style: { position: "fixed", top: 0, left: 0, right: 0, bottom: "var(--ss-kb, 0px)", zIndex: 100450, background: T.bg, display: "flex", flexDirection: "column", paddingTop: "calc(env(safe-area-inset-top, 0px) + 10px)", paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 10px)" }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "4px 14px 10px", borderBottom: "1px solid " + T.borderLight, flex: "none" }
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: onClose, className: "ss-press",
+    style: { minHeight: 44, padding: "8px 15px", background: "none", border: "1px solid " + T.borderLight, borderRadius: 10, cursor: "pointer", fontSize: 14, color: T.textSoft, fontFamily: "'Cinzel',Georgia,serif", flexShrink: 0 }
+  }, "Cancel"), /*#__PURE__*/React.createElement("div", {
+    style: { display: "flex", flexDirection: "column", alignItems: "center", lineHeight: 1.2, minWidth: 0 }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: { fontSize: 14, fontWeight: 700, color: T.accent, fontFamily: "'Cinzel',Georgia,serif", letterSpacing: 1 }
+  }, "Edit Field"), /*#__PURE__*/React.createElement("span", {
+    style: { fontSize: 11, color: T.textMuted, marginTop: 1 }
+  }, String(val == null ? "" : val).length + " characters")), /*#__PURE__*/React.createElement("div", {
+    style: { display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }
+  }, uStack.current.length > 0 && /*#__PURE__*/React.createElement("button", {
+    onClick: doU, className: "ss-press", "aria-label": "Undo last change",
+    style: { minHeight: 44, padding: "8px 12px", background: "none", border: "1px solid " + T.borderLight, borderRadius: 10, cursor: "pointer", fontSize: 14, color: T.textSoft, fontFamily: "'Cinzel',Georgia,serif" }
+  }, "↶ Undo"), /*#__PURE__*/React.createElement("button", {
+    onClick: save, className: "ss-press",
+    style: { minHeight: 44, padding: "8px 20px", background: T.metalGrad, border: "none", borderRadius: 10, cursor: "pointer", fontSize: 14, fontWeight: 700, color: T.bg, fontFamily: "'Cinzel',Georgia,serif", flexShrink: 0 }
+  }, "✓ Save"))), /*#__PURE__*/React.createElement("div", {
+    style: { flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", padding: "14px 16px 4px", minHeight: 0 }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: { fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", color: T.label, fontFamily: "'Cinzel',Georgia,serif", margin: "0 0 6px 2px" }
+  }, "Label"), /*#__PURE__*/React.createElement("input", {
+    value: label, onChange: e => setLabel(e.target.value),
+    onKeyDown: e => { if (e.key === "Enter" && ta.current) ta.current.focus(); },
+    "aria-label": "Field label",
+    style: { colorScheme: kbScheme(T), width: "100%", boxSizing: "border-box", fontSize: 16, fontFamily: "'EB Garamond',Georgia,serif", color: T.text, background: T.accentFaint, border: "1px solid " + T.borderLight, borderRadius: 10, padding: "11px 13px", outline: "none", marginBottom: 16 }
+  }), /*#__PURE__*/React.createElement("div", {
+    style: { fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", color: T.label, fontFamily: "'Cinzel',Georgia,serif", margin: "0 0 6px 2px" }
+  }, "Value"), /*#__PURE__*/React.createElement("textarea", {
+    ref: ta, value: val,
+    onChange: e => { pushU(val); setVal(e.target.value); },
+    "aria-label": "Field value",
+    style: { colorScheme: kbScheme(T), flex: 1, minHeight: 140, width: "100%", boxSizing: "border-box", fontSize: 18, lineHeight: 1.7, fontWeight: 500, color: T.text, background: T.accentFaint, border: "1px solid " + T.borderLight, borderRadius: 10, outline: "none", padding: "14px", fontFamily: "'EB Garamond',Georgia,serif", whiteSpace: "pre-wrap", resize: "none" }
+  })), /*#__PURE__*/React.createElement("div", {
+    style: { flex: "none", borderTop: "1px solid " + T.borderLight, padding: "10px 16px 2px" }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: { fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", color: T.textMuted, fontFamily: "'Cinzel',Georgia,serif", marginBottom: 8, textAlign: "center" }
+  }, nFields > 1 ? ("Position " + (curFi + 1) + " of " + nFields) : "Position"), /*#__PURE__*/React.createElement("div", {
+    style: { display: "flex", gap: 8, marginBottom: (data.sections.length > 1) ? 8 : 0 }
+  }, moveBtn(canUp, "↑ Move up", () => nudge(-1)), moveBtn(canDown, "↓ Move down", () => nudge(1))), (data.sections.length > 1) && /*#__PURE__*/React.createElement("button", {
+    onClick: toSection, className: "ss-press",
+    style: { width: "100%", minHeight: 44, padding: "10px 8px", background: "none", border: "1px solid " + T.borderLight, borderRadius: 10, cursor: "pointer", color: T.textSoft, fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, fontSize: 13 }
+  }, "⇄ Move to section…")));
+}
+
+function ExportInfoDialog({ T, name, onConfirm, onClose }) {
+  const [dontShow, setDontShow] = useState(false);
+  const t0 = useRef(Date.now());
+  useEffect(() => {
+    const h = e => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, []);
+  const who = (name && String(name).trim()) ? String(name).trim() : "your character";
+  return /*#__PURE__*/React.createElement("div", {
+    onClick: () => { if (Date.now() - t0.current > 350) onClose(); },
+    style: { position: "fixed", top: 0, left: 0, right: 0, bottom: "var(--ss-kb, 0px)", background: "rgba(0,0,0,0.7)", zIndex: 1300, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }
+  }, /*#__PURE__*/React.createElement("div", {
+    onClick: e => e.stopPropagation(), role: "dialog", "aria-modal": "true", "aria-label": "Make a PDF",
+    style: { background: T.surface, border: T.frame || ("2px solid " + T.borderLight), borderRadius: 16, padding: "22px 20px", maxWidth: 360, width: "100%", boxShadow: (T.surfaceShadow || "") + ", 0 0 30px " + T.accentFaint }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: { fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, fontSize: 17, color: T.accent, marginBottom: 8 }
+  }, "Make a PDF?"), /*#__PURE__*/React.createElement("div", {
+    style: { fontSize: 14, color: T.textSoft, lineHeight: 1.55, marginBottom: 16 }
+  }, "Sheetmancer will build a nicely formatted PDF of " + who + " that you can save or share. It's just a document — nothing leaves your phone unless you choose to share it."), /*#__PURE__*/React.createElement("div", {
+    onClick: () => { buzz(12); setDontShow(v => !v); },
+    style: { display: "flex", alignItems: "center", gap: 10, minHeight: 44, cursor: "pointer", marginBottom: 18, userSelect: "none" }
+  }, /*#__PURE__*/React.createElement("span", {
+    "aria-hidden": "true",
+    style: { width: 22, height: 22, flexShrink: 0, borderRadius: 6, border: "2px solid " + T.borderLight, background: dontShow ? T.accent : "transparent", color: T.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 700 }
+  }, dontShow ? "✓" : ""), /*#__PURE__*/React.createElement("span", {
+    style: { fontSize: 13.5, color: T.textSoft }
+  }, "Don't show this again")), /*#__PURE__*/React.createElement("div", {
+    style: { display: "flex", gap: 10 }
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: onClose, className: "ss-press",
+    style: { flex: 1, minHeight: 44, padding: 11, background: "none", border: "1px solid " + T.borderLight, borderRadius: 10, cursor: "pointer", color: T.textSoft, fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, fontSize: 14 }
+  }, "Cancel"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => { buzz(20); onConfirm(dontShow); }, className: "ss-press",
+    style: { flex: 1, minHeight: 44, padding: 11, background: T.metalGrad, border: "none", borderRadius: 10, cursor: "pointer", color: T.bg, fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, fontSize: 14 }
+  }, "Make PDF"))));
+}
+
 function SectionTitle({
   T,
   value,
@@ -5293,6 +5427,19 @@ function CharacterScreen({
       return n;
     });
   };
+  const updateFieldBoth = (si, fi, label, value) => {
+    setData(p => {
+      snap(p);
+      const n = JSON.parse(JSON.stringify(p));
+      const f = n.sections[si] && n.sections[si].fields[fi];
+      if (!f) return p;
+      f.label = label;
+      f.value = value;
+      f.confidence = "high";
+      if (f.alt != null) delete f.alt;
+      return n;
+    });
+  };
   const removeField = (si, fi) => {
     setData(p => {
       snap(p);
@@ -5423,6 +5570,8 @@ function CharacterScreen({
   const [confirm, setConfirm] = useState(null);
   const [renameCat, setRenameCat] = useState(null);
   const [renameGroup, setRenameGroup] = useState(null);
+  const [editField, setEditField] = useState(null);
+  const [exportPrompt, setExportPrompt] = useState(false);
   const askConfirm = (title, message, run, confirmLabel) => setConfirm({ title: title, message: message, confirmLabel: confirmLabel, run: () => { run(); setConfirm(null); } });
   const [toast, setToast] = useState(null);
   const toastTimer = useRef(null);
@@ -5527,6 +5676,10 @@ function CharacterScreen({
     } finally {
       exportBusy.current = false;
     }
+  };
+  const requestExport = () => {
+    if (store.get("ss_export_ok")) { exportSheet(); return; }
+    setExportPrompt(true);
   };
   const doMoveField = ti => {
     if (!moveItem) return;
@@ -5750,7 +5903,7 @@ function CharacterScreen({
       alignItems: "center"
     }
   }, /*#__PURE__*/React.createElement("button", {
-    onClick: exportSheet,
+    onClick: requestExport,
     "aria-label": "Export or share a PDF of this sheet",
     title: "Export / Share PDF",
     className: "ss-press",
@@ -5843,6 +5996,10 @@ function CharacterScreen({
     T: T, title: "Rename category", initial: renameCat.current, onSave: name => renameCategory(renameCat.cat, name), onClose: () => setRenameCat(null)
   }), renameGroup && /*#__PURE__*/React.createElement(RenameModal, {
     T: T, title: "Rename item", initial: renameGroup.label, onSave: name => renameGroupLabel(renameGroup.si, renameGroup.label, name), onClose: () => setRenameGroup(null)
+  }), editField && /*#__PURE__*/React.createElement(FieldEditModal, {
+    T: T, data: data, si: editField.si, fi0: editField.fi, updateBoth: updateFieldBoth, moveField: moveField, moveToSection: (s, f) => setMoveItem({ si: s, fi: f }), onClose: () => setEditField(null)
+  }), exportPrompt && /*#__PURE__*/React.createElement(ExportInfoDialog, {
+    T: T, name: data.name, onConfirm: dontShow => { if (dontShow) store.set("ss_export_ok", true); setExportPrompt(false); exportSheet(); }, onClose: () => setExportPrompt(false)
   }), /*#__PURE__*/React.createElement("div", {
     ref: swipeRef,
     style: {
@@ -6050,7 +6207,7 @@ function CharacterScreen({
   }), activeCat === null && /*#__PURE__*/React.createElement("div", {
     style: { width: "100%", maxWidth: 340, margin: "14px auto 0", display: "flex", flexDirection: "column", gap: 10 }
   }, /*#__PURE__*/React.createElement("button", {
-    onClick: exportSheet, className: "ss-press",
+    onClick: requestExport, className: "ss-press",
     style: { display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "14px", background: T.accent, border: "none", borderRadius: 12, cursor: "pointer", width: "100%" }
   }, /*#__PURE__*/React.createElement("span", { style: { fontSize: 15, fontWeight: 700, color: T.bg, fontFamily: "'Cinzel',Georgia,serif", letterSpacing: ".5px" } }, "⤓ Export / Share Sheet")), /*#__PURE__*/React.createElement("button", {
     onClick: () => { const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = `${(data.name || "character").replace(/[^a-z0-9]/gi, "_")}.json`; a.click(); URL.revokeObjectURL(url); },
@@ -6176,7 +6333,7 @@ function CharacterScreen({
       className: hlField === f.id ? "ss-jump" : undefined,
       style: { flex: "1 1 26%", minWidth: 84, background: T.accentFaint, border: `1.5px solid ${T.borderLight}`, borderRadius: 8, padding: "13px 6px 10px", textAlign: "center", position: "relative", display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }
     }, /*#__PURE__*/React.createElement(FieldMenu, {
-      T: T, k: "f" + si + "_" + fi, menuKey: menuKey, setMenuKey: setMenuKey, onEdit: () => setEditKey("f" + si + "_" + fi),
+      T: T, k: "f" + si + "_" + fi, menuKey: menuKey, setMenuKey: setMenuKey, onEdit: () => setEditField({ si: si, fi: fi }),
       onMoveUp: () => moveField(si, fi, -1), onMoveDown: () => moveField(si, fi, 1), onMoveToSection: data.sections.length > 1 ? (() => setMoveItem({ si: si, fi: fi })) : null,
       onDelete: () => delField(si, fi), canUp: fi > 0, canDown: fi < sec.fields.length - 1,
       style: { position: "absolute", top: 3, right: 3 }
@@ -6226,7 +6383,7 @@ function CharacterScreen({
         T: T,
         style: isLong ? { fontSize: 17, fontWeight: 600, color: T.text, textAlign: "left", flex: 1, minWidth: 0, fontFamily: "'Cormorant Garamond',Georgia,serif" } : { fontSize: 21, fontWeight: 700, color: T.text, textAlign: "right", fontFamily: "'Cormorant Garamond',Georgia,serif", whiteSpace: "nowrap" }
       }), /*#__PURE__*/React.createElement(FieldMenu, {
-        T: T, k: "f" + si + "_" + fi, menuKey: menuKey, setMenuKey: setMenuKey, onEdit: () => setEditKey("f" + si + "_" + fi),
+        T: T, k: "f" + si + "_" + fi, menuKey: menuKey, setMenuKey: setMenuKey, onEdit: () => setEditField({ si: si, fi: fi }),
         onMoveUp: () => moveField(si, fi, -1), onMoveDown: () => moveField(si, fi, 1), onMoveToSection: data.sections.length > 1 ? (() => setMoveItem({ si: si, fi: fi })) : null,
         onDelete: () => delField(si, fi), canUp: fi > 0, canDown: fi < sec.fields.length - 1
       }))), isPct && /*#__PURE__*/React.createElement("div", {
@@ -6267,7 +6424,7 @@ function CharacterScreen({
         T: T,
         style: { fontSize: 17, borderBottom: "none", padding: 0, color: T.text, fontWeight: 600, fontFamily: "'Cormorant Garamond',Georgia,serif" }
       }), /*#__PURE__*/React.createElement(FieldMenu, {
-        T: T, k: "f" + si + "_" + fi, menuKey: menuKey, setMenuKey: setMenuKey, onEdit: () => setEditKey("f" + si + "_" + fi),
+        T: T, k: "f" + si + "_" + fi, menuKey: menuKey, setMenuKey: setMenuKey, onEdit: () => setEditField({ si: si, fi: fi }),
         onMoveUp: () => moveField(si, fi, -1), onMoveDown: () => moveField(si, fi, 1), onMoveToSection: data.sections.length > 1 ? (() => setMoveItem({ si: si, fi: fi })) : null,
         onDelete: () => delField(si, fi), canUp: fi > 0, canDown: fi < sec.fields.length - 1,
         style: { marginLeft: 2 }
@@ -6297,7 +6454,7 @@ function CharacterScreen({
       T: T,
       style: { fontSize: 18, color: T.text, fontFamily: "'Cormorant Garamond',Georgia,serif", fontWeight: 600, lineHeight: 1.5 }
     })), /*#__PURE__*/React.createElement(FieldMenu, {
-      T: T, k: "f" + si + "_" + fi, menuKey: menuKey, setMenuKey: setMenuKey, onEdit: () => setEditKey("f" + si + "_" + fi),
+      T: T, k: "f" + si + "_" + fi, menuKey: menuKey, setMenuKey: setMenuKey, onEdit: () => setEditField({ si: si, fi: fi }),
       onMoveUp: () => moveField(si, fi, -1), onMoveDown: () => moveField(si, fi, 1), onMoveToSection: data.sections.length > 1 ? (() => setMoveItem({ si: si, fi: fi })) : null,
       onDelete: () => delField(si, fi), canUp: fi > 0, canDown: fi < sec.fields.length - 1,
       style: { marginTop: 4 }
