@@ -254,7 +254,7 @@ var SS_PAL={"parchment":{"n":"Parchment & Leather","ground":[0.9796,0.9516,0.900
   }
 
   /* ---------- measurement ---------- */
-  var TITLE_SZ = 10.5, LBL_SZ = 8.8, VAL_SZ = 9.4;
+  var TITLE_SZ = 10.5, LBL_SZ = 8.8, VAL_SZ = 9.4, HDR_SZ = 9.2;
   var PAD = 9, ROW_GAP = 3.2, SEC_GAP = 11;
 
   function measureRows(fields, innerW) {
@@ -262,6 +262,11 @@ var SS_PAL={"parchment":{"n":"Parchment & Leather","ground":[0.9796,0.9516,0.900
     var rows = [];
     for (var i = 0; i < fields.length; i++) {
       var f = fields[i] || {};
+      if (f.type === "header") {
+        var Ht = wrap(f.label || "", "Times-Bold", HDR_SZ, innerW);
+        rows.push({ hdr: true, H: Ht, h: Ht.length * (HDR_SZ + 2.4) + 7 });
+        continue;
+      }
       var raw = (f.value == null || f.value === "") ? "—" : String(f.value);
       var vW = innerW - lblW - 8;
       var V = wrap(raw, "Times-Bold", VAL_SZ, vW);
@@ -428,7 +433,11 @@ var SS_PAL={"parchment":{"n":"Parchment & Leather","ground":[0.9796,0.9516,0.900
       var y = ty - 4.5 - 7;
       for (var i = from; i < to; i++) {
         var r = rows[i], a, b;
-        if (r.flow) {
+        if (r.hdr) {
+          var hy = y - 2;
+          for (a = 0; a < r.H.length; a++) { pg.text(x + PAD, hy - HDR_SZ, r.H[a], F.bold, HDR_SZ, C.leather); hy -= HDR_SZ + 2.4; }
+          pg.line(x + PAD, hy - 0.5, x + COLW - PAD, hy - 0.5, C.gold, 0.5);
+        } else if (r.flow) {
           var fy2 = y;
           for (a = 0; a < r.flow.length; a++) {
             var ln = r.flow[a];
@@ -1694,6 +1703,7 @@ function hb(T, t) {
     }
   }, t);
 }
+function ssIsHeader(f) { return !!(f && f.type === "header"); }
 function kbScheme(T) {
   try {
     var b = ((T && T.bg) || "#000").replace("#", "");
@@ -2405,7 +2415,7 @@ function HomeScreen({
       marginTop: 4,
       letterSpacing: 1
     }
-  }, "Sheetmancer · build v49"))), /*#__PURE__*/React.createElement("button", {
+  }, "Sheetmancer · build v50"))), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowHelp(false),
     className: "ss-press",
     style: {
@@ -3197,6 +3207,7 @@ function ProcessingScreen({
           id: s.id || `sec_${si}`,
           title: String(s.title),
           fields: (s.fields || []).filter(f => f && f.label).map((f, fi) => {
+            if (f.type === "header") return { id: f.id || `h_${si}_${fi}`, type: "header", label: String(f.label), value: "", confidence: "high" };
             const unread = isUnreadable(f.value);
             const out = {
               id: f.id || `f_${si}_${fi}`,
@@ -3736,7 +3747,7 @@ function buildGroups(sections, catOrder) {
     var m = map[k];
     m.members.push(i);
     var sec = sections[i];
-    m.fields += sec.fields.length;
+    m.fields += sec.fields.filter(function (f) { return f.type !== "header"; }).length;
     if (sec.fields.some(function (f) {
       return f.confidence === "low";
     })) m.low = true;
@@ -4888,7 +4899,16 @@ function RenameModal({
   }, "Save"))));
 }
 
-function FieldEditModal({ T, data, si, fi0, updateBoth, moveField, moveToSection, onClose }) {
+function HeaderAwareBody({ T, sec, si, hlField, menuKey, setMenuKey, updateField, moveField, delField, delHeader, setEditField, setMoveItem, editKey, setEditKey, sectionsLen }) {
+  return /*#__PURE__*/React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 0 } }, sec.fields.map((f, fi) => {
+    if (ssIsHeader(f)) {
+      return /*#__PURE__*/React.createElement("div", { key: f.id, id: "fld-" + f.id, className: hlField === f.id ? "ss-jump" : undefined, style: { display: "flex", alignItems: "center", gap: 8, padding: "16px 2px 6px", borderBottom: "1px solid " + T.borderLight } }, /*#__PURE__*/React.createElement("span", { style: { flex: 1, minWidth: 0, fontSize: 13, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", color: T.accent, fontFamily: "'Cinzel',Georgia,serif" } }, f.label), /*#__PURE__*/React.createElement(FieldMenu, { T: T, k: "f" + si + "_" + fi, menuKey: menuKey, setMenuKey: setMenuKey, onEdit: () => setEditField({ si: si, fi: fi, header: true }), onMoveUp: () => moveField(si, fi, -1), onMoveDown: () => moveField(si, fi, 1), onDelete: () => delHeader(si, fi), deleteLabel: "Delete header", canUp: fi > 0, canDown: fi < sec.fields.length - 1 }));
+    }
+    return /*#__PURE__*/React.createElement("div", { key: f.id, id: "fld-" + f.id, className: hlField === f.id ? "ss-jump" : undefined, style: { display: "flex", alignItems: "flex-start", gap: 10, padding: "12px 2px", borderBottom: "1px solid " + T.borderLight } }, /*#__PURE__*/React.createElement(Dot, { c: f.confidence, onVerify: () => updateField(si, fi, "confidence", "high"), T: T, s: { marginTop: 7 } }), /*#__PURE__*/React.createElement("div", { style: { flex: 1, display: "flex", flexDirection: "column", gap: 3 } }, /*#__PURE__*/React.createElement(EditableLabel, { value: f.label, onChange: v => updateField(si, fi, "label", v), field: true, forceEdit: editKey === "f" + si + "_" + fi, onClose: () => setEditKey(null), T: T, style: { fontSize: 12, fontWeight: 700, letterSpacing: 0.6, textTransform: "uppercase", color: T.label, fontFamily: "'Cinzel',Georgia,serif" } }), /*#__PURE__*/React.createElement(EditableValue, { value: f.value, onChange: v => updateField(si, fi, "value", v), field: true, forceEdit: editKey === "f" + si + "_" + fi, onClose: () => setEditKey(null), T: T, style: { fontSize: 18, color: T.text, fontFamily: "'Cormorant Garamond',Georgia,serif", fontWeight: 600, lineHeight: 1.5 } })), /*#__PURE__*/React.createElement(FieldMenu, { T: T, k: "f" + si + "_" + fi, menuKey: menuKey, setMenuKey: setMenuKey, onEdit: () => setEditField({ si: si, fi: fi }), onMoveUp: () => moveField(si, fi, -1), onMoveDown: () => moveField(si, fi, 1), onMoveToSection: sectionsLen > 1 ? (() => setMoveItem({ si: si, fi: fi })) : null, onDelete: () => delField(si, fi), canUp: fi > 0, canDown: fi < sec.fields.length - 1, style: { marginTop: 4 } }));
+  }));
+}
+
+function FieldEditModal({ T, data, si, fi0, updateBoth, moveField, moveToSection, onClose, isHeader }) {
   const secFields = (data.sections[si] && data.sections[si].fields) || [];
   const [curFi, setCurFi] = useState(fi0);
   const cur = secFields[curFi] || secFields[fi0] || { label: "", value: "" };
@@ -4946,9 +4966,9 @@ function FieldEditModal({ T, data, si, fi0, updateBoth, moveField, moveToSection
     style: { display: "flex", flexDirection: "column", alignItems: "center", lineHeight: 1.2, minWidth: 0 }
   }, /*#__PURE__*/React.createElement("span", {
     style: { fontSize: 14, fontWeight: 700, color: T.accent, fontFamily: "'Cinzel',Georgia,serif", letterSpacing: 1 }
-  }, "Edit Field"), /*#__PURE__*/React.createElement("span", {
+  }, isHeader ? "Edit Header" : "Edit Field"), /*#__PURE__*/React.createElement("span", {
     style: { fontSize: 11, color: T.textMuted, marginTop: 1 }
-  }, String(val == null ? "" : val).length + " characters")), /*#__PURE__*/React.createElement("div", {
+  }, (isHeader ? "" : String(val == null ? "" : val).length + " characters"))), /*#__PURE__*/React.createElement("div", {
     style: { display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }
   }, uStack.current.length > 0 && /*#__PURE__*/React.createElement("button", {
     onClick: doU, className: "ss-press", "aria-label": "Undo last change",
@@ -4965,9 +4985,9 @@ function FieldEditModal({ T, data, si, fi0, updateBoth, moveField, moveToSection
     onKeyDown: e => { if (e.key === "Enter" && ta.current) ta.current.focus(); },
     "aria-label": "Field label",
     style: { colorScheme: kbScheme(T), width: "100%", boxSizing: "border-box", fontSize: 16, fontFamily: "'EB Garamond',Georgia,serif", color: T.text, background: T.accentFaint, border: "1px solid " + T.borderLight, borderRadius: 10, padding: "11px 13px", outline: "none", marginBottom: 16 }
-  }), /*#__PURE__*/React.createElement("div", {
+  }), !isHeader && /*#__PURE__*/React.createElement("div", {
     style: { fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", color: T.label, fontFamily: "'Cinzel',Georgia,serif", margin: "0 0 6px 2px" }
-  }, "Value"), /*#__PURE__*/React.createElement("textarea", {
+  }, "Value"), !isHeader && /*#__PURE__*/React.createElement("textarea", {
     ref: ta, value: val,
     onChange: e => { pushU(val); setVal(e.target.value); },
     "aria-label": "Field value",
@@ -4977,8 +4997,8 @@ function FieldEditModal({ T, data, si, fi0, updateBoth, moveField, moveToSection
   }, /*#__PURE__*/React.createElement("div", {
     style: { fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", color: T.textMuted, fontFamily: "'Cinzel',Georgia,serif", marginBottom: 8, textAlign: "center" }
   }, nFields > 1 ? ("Position " + (curFi + 1) + " of " + nFields) : "Position"), /*#__PURE__*/React.createElement("div", {
-    style: { display: "flex", gap: 8, marginBottom: (data.sections.length > 1) ? 8 : 0 }
-  }, moveBtn(canUp, "↑ Move up", () => nudge(-1)), moveBtn(canDown, "↓ Move down", () => nudge(1))), (data.sections.length > 1) && /*#__PURE__*/React.createElement("button", {
+    style: { display: "flex", gap: 8, marginBottom: (!isHeader && data.sections.length > 1) ? 8 : 0 }
+  }, moveBtn(canUp, "↑ Move up", () => nudge(-1)), moveBtn(canDown, "↓ Move down", () => nudge(1))), (!isHeader && data.sections.length > 1) && /*#__PURE__*/React.createElement("button", {
     onClick: toSection, className: "ss-press",
     style: { width: "100%", minHeight: 44, padding: "10px 8px", background: "none", border: "1px solid " + T.borderLight, borderRadius: 10, cursor: "pointer", color: T.textSoft, fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, fontSize: 13 }
   }, "⇄ Move to section…")));
@@ -5468,6 +5488,14 @@ function CharacterScreen({
       return n;
     });
   };
+  const addHeader = si => {
+    setData(p => {
+      snap(p);
+      const n = JSON.parse(JSON.stringify(p));
+      n.sections[si].fields.push({ id: "h_" + Date.now(), type: "header", label: "New Header", value: "", confidence: "high" });
+      return n;
+    });
+  };
   const addField = si => {
     setData(p => {
       snap(p);
@@ -5578,6 +5606,7 @@ function CharacterScreen({
   const showToast = (m, undoable) => { setToast(m ? { m: m, undoable: !!undoable } : null); if (toastTimer.current) clearTimeout(toastTimer.current); toastTimer.current = setTimeout(() => setToast(null), 4500); };
   const clearToast = () => { if (toastTimer.current) clearTimeout(toastTimer.current); setToast(null); };
   const delField = (si, fi) => { const sec = data.sections[si]; const lbl = sec && sec.fields[fi] ? sec.fields[fi].label : "Field"; setMenuKey(null); askConfirm("Delete field?", "Are you sure? “" + lbl + "” will be deleted.", () => { removeField(si, fi); showToast('"' + lbl + '" deleted', true); }); };
+  const delHeader = (si, fi) => { const sec = data.sections[si]; const lbl = sec && sec.fields[fi] ? sec.fields[fi].label : "Header"; setMenuKey(null); askConfirm("Delete header?", "Remove the “" + lbl + "” header? The fields under it stay — only the divider is removed.", () => { removeField(si, fi); showToast('"' + lbl + '" removed', true); }); };
   const delSection = si => { const sec = data.sections[si]; const lbl = sec ? sec.title : "Section"; const n = sec ? sec.fields.length : 0; setMenuKey(null); askConfirm("Remove section?", "Are you sure? All content in “" + lbl + "” (" + n + " item" + (n === 1 ? "" : "s") + ") will be deleted.", () => { removeSection(si); showToast('"' + lbl + '" deleted', true); }); };
   const delNote = nid => askConfirm("Delete note?", "Are you sure? This session note will be deleted.", () => removeNote(nid));
   /* Grouped-pill item controls (labels shown as headings in the pill layout) */
@@ -5599,7 +5628,7 @@ function CharacterScreen({
     const label = (CAT_META[cat.key] || {}).label || cat.label || "Category";
     const members = cat.members || [];
     const nSec = members.length;
-    const nFld = members.reduce((a, i) => a + ((data.sections[i] && data.sections[i].fields.length) || 0), 0);
+    const nFld = members.reduce((a, i) => a + ((data.sections[i] && data.sections[i].fields.filter(f => f.type !== "header").length) || 0), 0);
     setMenuKey(null);
     askConfirm("Delete category?", "Are you sure? The “" + label + "” category — " + nSec + " section" + (nSec === 1 ? "" : "s") + " and " + nFld + " field" + (nFld === 1 ? "" : "s") + " — will be permanently deleted.", () => { removeSections(members); showToast('"' + label + '" deleted', true); });
   };
@@ -5692,12 +5721,13 @@ function CharacterScreen({
     showToast('"' + lbl + '" moved to "' + tname + '"', true);
   };
   const getSectionStyle = sec => {
-    if (sec.fields.length <= 10 && sec.fields.every(f => !f.value.includes("%") && f.value.length < 8 && f.label.length < 14)) return "grid";
-    if (sec.fields.some(f => f.value.includes("%"))) return "skills";
+    const rf = sec.fields.filter(f => !ssIsHeader(f));
+    if (rf.length <= 10 && rf.every(f => !f.value.includes("%") && f.value.length < 8 && f.label.length < 14)) return "grid";
+    if (rf.some(f => f.value.includes("%"))) return "skills";
     if (sec.id === "spells" || sec.title.toLowerCase().includes("spell") || sec.title.toLowerCase().includes("cantrip") || sec.title.toLowerCase().includes("magic")) return "spells";
     return "default";
   };
-  const totalFields = data.sections.reduce((a, s) => a + s.fields.length, 0);
+  const totalFields = data.sections.reduce((a, s) => a + s.fields.filter(f => f.type !== "header").length, 0);
   const lowConfCount = data.sections.reduce((a, s) => a + s.fields.filter(f => f.confidence === "low").length, 0) + (data.name_confidence === "low" ? 1 : 0) + (data.system_confidence === "low" ? 1 : 0);
   const secCount = data.sections.length + 1; /* sections + journal */
 
@@ -5997,7 +6027,7 @@ function CharacterScreen({
   }), renameGroup && /*#__PURE__*/React.createElement(RenameModal, {
     T: T, title: "Rename item", initial: renameGroup.label, onSave: name => renameGroupLabel(renameGroup.si, renameGroup.label, name), onClose: () => setRenameGroup(null)
   }), editField && /*#__PURE__*/React.createElement(FieldEditModal, {
-    T: T, data: data, si: editField.si, fi0: editField.fi, updateBoth: updateFieldBoth, moveField: moveField, moveToSection: (s, f) => setMoveItem({ si: s, fi: f }), onClose: () => setEditField(null)
+    T: T, data: data, si: editField.si, fi0: editField.fi, isHeader: !!editField.header, updateBoth: updateFieldBoth, moveField: moveField, moveToSection: (s, f) => setMoveItem({ si: s, fi: f }), onClose: () => setEditField(null)
   }), exportPrompt && /*#__PURE__*/React.createElement(ExportInfoDialog, {
     T: T, name: data.name, onConfirm: dontShow => { if (dontShow) store.set("ss_export_ok", true); setExportPrompt(false); exportSheet(); }, onClose: () => setExportPrompt(false)
   }), /*#__PURE__*/React.createElement("div", {
@@ -6226,7 +6256,9 @@ function CharacterScreen({
         animation: "pageFadeIn 0.3s ease"
       }
     }, "No fields to verify in this section.");
-    const sty = getSectionStyle(sec);
+    const hasHdr = sec.fields.some(ssIsHeader);
+    const nReal = sec.fields.filter(f => !ssIsHeader(f)).length;
+    const sty = hasHdr ? "__hdr" : getSectionStyle(sec);
     return /*#__PURE__*/React.createElement("div", {
       key: sec.id,
       style: {
@@ -6281,7 +6313,7 @@ function CharacterScreen({
         color: T.textMuted,
         marginTop: 6
       }
-    }, sec.fields.length, sec.fields.length === 1 ? " field" : " fields"), false && /*#__PURE__*/React.createElement("div", {
+    }, nReal, nReal === 1 ? " field" : " fields"), false && /*#__PURE__*/React.createElement("div", {
       style: {
         display: "flex",
         gap: 8,
@@ -6458,7 +6490,7 @@ function CharacterScreen({
       onMoveUp: () => moveField(si, fi, -1), onMoveDown: () => moveField(si, fi, 1), onMoveToSection: data.sections.length > 1 ? (() => setMoveItem({ si: si, fi: fi })) : null,
       onDelete: () => delField(si, fi), canUp: fi > 0, canDown: fi < sec.fields.length - 1,
       style: { marginTop: 4 }
-    })))), /*#__PURE__*/React.createElement("button", {
+    })))), sty === "__hdr" && /*#__PURE__*/React.createElement(HeaderAwareBody, { T: T, sec: sec, si: si, hlField: hlField, menuKey: menuKey, setMenuKey: setMenuKey, updateField: updateField, moveField: moveField, delField: delField, delHeader: delHeader, setEditField: setEditField, setMoveItem: setMoveItem, editKey: editKey, setEditKey: setEditKey, sectionsLen: data.sections.length }), /*#__PURE__*/React.createElement("button", {
       onClick: () => addField(si),
       style: {
         display: "flex",
@@ -6478,7 +6510,7 @@ function CharacterScreen({
         fontSize: 14,
         color: T.accentDim
       }
-    }, "+ Add Field")));
+    }, "+ Add Field")), /*#__PURE__*/React.createElement("button", { onClick: () => addHeader(si), style: { display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px", background: "none", border: "1px dashed " + T.borderLight, borderRadius: 8, cursor: "pointer", width: "100%", marginTop: 8 } }, /*#__PURE__*/React.createElement("span", { style: { fontSize: 14, color: T.accentDim } }, "+ Add Header")));
   }), activeCat === "journal" && /*#__PURE__*/React.createElement("div", {
     style: {
       padding: "24px 18px 40px",
