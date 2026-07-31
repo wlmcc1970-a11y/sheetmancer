@@ -2415,7 +2415,7 @@ function HomeScreen({
       marginTop: 4,
       letterSpacing: 1
     }
-  }, "Sheetmancer · build v51"))), /*#__PURE__*/React.createElement("button", {
+  }, "Sheetmancer · build v52"))), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowHelp(false),
     className: "ss-press",
     style: {
@@ -3733,13 +3733,18 @@ function categorize(sec) {
   if (has(["note", "journal", "session", "log", "quest", "mission", "story", "diary", "campaign", "adventure", "ally", "allies", "npc", "contact", "relationship", "clue", "evidence", "secret"])) return "notes";
   return "other";
 }
-function buildGroups(sections, catOrder) {
+function buildGroups(sections, catOrder, groups) {
+  groups = groups || [];
+  var gLabel = {}, gIcon = {};
+  groups.forEach(function (g) { if (g && g.key) { gLabel[g.key] = g.label; gIcon[g.key] = g.icon || "other"; } });
   var map = {};
-  var catOf = sections.map(categorize);
+  var catOf = sections.map(function (s) { return (s && s.catKey) || categorize(s); });
   catOf.forEach(function (k, i) {
     if (!map[k]) map[k] = {
       key: k,
-      label: (CAT_META[k] || {}).label || k,
+      label: (CAT_META[k] || {}).label || gLabel[k] || k,
+      icon: (CAT_META[k] || {}).icon || gIcon[k] || "other",
+      custom: !CAT_META[k],
       members: [],
       fields: 0,
       low: false
@@ -3752,16 +3757,17 @@ function buildGroups(sections, catOrder) {
       return f.confidence === "low";
     })) m.low = true;
   });
-  var order = CAT_ORDER.slice();
-  if (catOrder && catOrder.length) {
-    var pri = catOrder.filter(function (k) { return CAT_ORDER.indexOf(k) >= 0; });
-    var rest = CAT_ORDER.filter(function (k) { return pri.indexOf(k) < 0; });
-    order = pri.concat(rest);
-  }
+  groups.forEach(function (g) {
+    if (g && g.key && !map[g.key]) map[g.key] = { key: g.key, label: g.label, icon: g.icon || "other", custom: true, members: [], fields: 0, low: false };
+  });
+  var order = [];
+  (catOrder || []).forEach(function (k) { if (map[k] && order.indexOf(k) < 0) order.push(k); });
+  CAT_ORDER.forEach(function (k) { if (map[k] && order.indexOf(k) < 0) order.push(k); });
+  Object.keys(map).forEach(function (k) { if (order.indexOf(k) < 0) order.push(k); });
   var cats = order.map(function (k) {
     return map[k];
   }).filter(function (c) {
-    return c && c.members.length > 0;
+    return c && (c.members.length > 0 || c.custom);
   });
   return {
     catOf: catOf,
@@ -3823,11 +3829,13 @@ function HubNav({
   activeCat,
   setActiveCat,
   onAddSection,
+  onAddGroup,
   menuKey,
   setMenuKey,
   onDeleteCategory,
   onRenameCategory,
-  onMoveCategory
+  onMoveCategory,
+  onMergeCategory
 }) {
   const cats = group.cats;
   if (activeCat === null) {
@@ -3838,7 +3846,7 @@ function HubNav({
       fields: 0,
       low: false
     };
-    const cards = cats.concat([journalCard, { key: "__add", label: "Add Section", members: [], fields: 0, low: false }]);
+    const cards = cats.concat([journalCard, { key: "__add", label: "Add Section", members: [], fields: 0, low: false }, { key: "__addgroup", label: "Add Group", members: [], fields: 0, low: false }]);
     return /*#__PURE__*/React.createElement("div", {
       style: {
         padding: "2px 16px 132px"
@@ -3860,9 +3868,10 @@ function HubNav({
       }
     }, cards.map(cat => {
       if (cat.key === "__add") return /*#__PURE__*/React.createElement("button", { key: "__add", onClick: onAddSection, className: "ss-press", style: { display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", background: "none", border: "1.5px dashed " + T.borderLight, borderRadius: 12, padding: "13px 12px", cursor: "pointer", color: T.accent, fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, fontSize: 13, letterSpacing: 0.5, marginTop: 2 } }, "+ Add Section");
+      if (cat.key === "__addgroup") return /*#__PURE__*/React.createElement("button", { key: "__addgroup", onClick: onAddGroup, className: "ss-press", style: { display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", background: "none", border: "1.5px dashed " + T.borderLight, borderRadius: 12, padding: "13px 12px", cursor: "pointer", color: T.textSoft, fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, fontSize: 13, letterSpacing: 0.5 } }, "+ Add Group");
       const meta = CAT_META[cat.key] || {
         label: cat.label,
-        icon: "other"
+        icon: cat.icon || "other"
       };
       const subRaw = cat.key === "journal" ? "Session log" : cat.members.map(i => data.sections[i].title).join("  ·  ");
       const shownLabel = data.catLabels && data.catLabels[cat.key] || meta.label;
@@ -3945,31 +3954,41 @@ function HubNav({
         onEdit: () => onRenameCategory(cat),
         onMoveUp: () => onMoveCategory(cat, -1), onMoveDown: () => onMoveCategory(cat, 1),
         canUp: cats.findIndex(c => c.key === cat.key) > 0, canDown: cats.findIndex(c => c.key === cat.key) < cats.length - 1,
+        onMoveToSection: (onMergeCategory && cats.filter(c => c.key !== "journal").length > 1) ? (() => onMergeCategory(cat)) : null, moveToLabel: "Merge into…",
         onDelete: () => onDeleteCategory(cat), deleteLabel: "Delete category",
-        style: { position: "absolute", top: 7, right: 9 }
+        style: { position: "absolute", top: "50%", right: 4, transform: "translateY(-50%)" }
       }));
     })));
   }
-  const meta = CAT_META[activeCat] || {
-    label: activeCat,
-    icon: "other"
-  };
   const cur = cats.find(c => c.key === activeCat);
+  const meta = CAT_META[activeCat] || {
+    label: (cur && cur.label) || activeCat,
+    icon: (cur && cur.icon) || "other"
+  };
   const showTitle = activeCat === "journal" || cur && cur.members.length > 1;
   const cnt = activeCat === "journal" ? "Session log" : cur ? cur.members.length > 1 ? cur.members.length + " sections · " + cur.fields + (cur.fields === 1 ? " field" : " fields") : cur.fields + (cur.fields === 1 ? " field" : " fields") : "";
-  return /*#__PURE__*/React.createElement("div", {
-    style: {
-      padding: "8px 16px 2px",
-      position: "relative"
-    }
-  }, (activeCat !== "journal" && cur) && /*#__PURE__*/React.createElement(FieldMenu, {
+  const catMenu = (activeCat !== "journal" && cur) ? /*#__PURE__*/React.createElement(FieldMenu, {
     T: T, k: "catpage_" + activeCat, menuKey: menuKey, setMenuKey: setMenuKey,
     onEdit: () => onRenameCategory(cur),
     onMoveUp: () => onMoveCategory(cur, -1), onMoveDown: () => onMoveCategory(cur, 1),
     canUp: cats.findIndex(c => c.key === activeCat) > 0, canDown: cats.findIndex(c => c.key === activeCat) < cats.length - 1,
+    onMoveToSection: (onMergeCategory && cats.filter(c => c.key !== "journal").length > 1) ? (() => onMergeCategory(cur)) : null, moveToLabel: "Merge into…",
     onDelete: () => onDeleteCategory(cur), deleteLabel: "Delete category",
-    style: { position: "absolute", top: 6, right: 10, zIndex: 5 }
-  }), /*#__PURE__*/React.createElement("button", {
+    style: {}
+  }) : null;
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: "8px 16px 2px"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: 8,
+      minHeight: 34
+    }
+  }, /*#__PURE__*/React.createElement("button", {
     onClick: () => window.history.back(),
     className: "ss-press",
     style: {
@@ -3991,7 +4010,7 @@ function HubNav({
     style: {
       fontSize: 14
     }
-  }, "‹"), " All Sections"), showTitle && /*#__PURE__*/React.createElement("div", {
+  }, "‹"), " All Sections"), !showTitle && catMenu), showTitle && /*#__PURE__*/React.createElement("div", {
     style: {
       textAlign: "center",
       marginTop: 12
@@ -4007,15 +4026,22 @@ function HubNav({
     color: T.accent
   })), /*#__PURE__*/React.createElement("div", {
     style: {
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 2,
+      marginTop: 5
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
       fontFamily: "'Cinzel',Georgia,serif",
       fontWeight: 700,
       fontSize: 21,
       letterSpacing: 2.5,
       color: T.accent,
-      textShadow: T.titleShadow,
-      marginTop: 5
+      textShadow: T.titleShadow
     }
-  }, (data.catLabels && data.catLabels[activeCat]) || meta.label), cnt && /*#__PURE__*/React.createElement("div", {
+  }, (data.catLabels && data.catLabels[activeCat]) || meta.label), catMenu), cnt && /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 12,
       color: T.textMuted,
@@ -4466,6 +4492,7 @@ function FieldMenu({
   onMoveUp,
   onMoveDown,
   onMoveToSection,
+  moveToLabel,
   onDelete,
   deleteLabel,
   canUp,
@@ -4588,7 +4615,7 @@ function FieldMenu({
   }), onMoveDown && item(canDown, "↓", "Move down", () => {
     onMoveDown();
     setMenuKey(null);
-  }), onMoveToSection && item(true, "⇄", "Move to section…", () => {
+  }), onMoveToSection && item(true, "⇄", moveToLabel || "Move to section…", () => {
     onMoveToSection();
     setMenuKey(null);
   }), item(true, "✕", deleteLabel || "Delete", () => {
@@ -4604,15 +4631,33 @@ function MoveModal({
   onPick,
   onClose
 }) {
-  const sec = data.sections[from.si];
-  const field = sec && sec.fields[from.fi];
-  const others = [];
-  data.sections.forEach((s, i) => {
-    if (i !== from.si) others.push({
-      s: s,
-      i: i
+  const kind = from.kind || "field";
+  const catLabelOf = k => (data.catLabels && data.catLabels[k]) || (CAT_META[k] || {}).label || ((data.groups || []).find(g => g.key === k) || {}).label || k;
+  let title, subtitle, targets;
+  if (kind === "field") {
+    const sec = data.sections[from.si];
+    const field = sec && sec.fields[from.fi];
+    title = "Move to section";
+    subtitle = field ? `Moving “${field.label}”` : "Choose a section";
+    targets = [];
+    data.sections.forEach((s, i) => {
+      if (i !== from.si) targets.push({ key: i, label: s.title || "Untitled section" });
     });
-  });
+  } else {
+    const grp = buildGroups(data.sections, data.catOrder, data.groups);
+    if (kind === "section") {
+      const sec = data.sections[from.si];
+      const curKey = (sec && sec.catKey) || (sec && categorize(sec));
+      title = "Move to group";
+      subtitle = sec ? `Moving “${sec.title || "section"}”` : "Choose a group";
+      targets = grp.cats.filter(c => c.key !== curKey && c.key !== "journal").map(c => ({ key: c.key, label: catLabelOf(c.key), icon: c.icon, sub: c.members.length + (c.members.length === 1 ? " section" : " sections") }));
+    } else {
+      const fromKey = from.catKey;
+      title = "Merge into";
+      subtitle = `Move everything in “${catLabelOf(fromKey)}” into…`;
+      targets = grp.cats.filter(c => c.key !== fromKey && c.key !== "journal").map(c => ({ key: c.key, label: catLabelOf(c.key), icon: c.icon, sub: c.members.length + (c.members.length === 1 ? " section" : " sections") }));
+    }
+  }
   const t0 = useRef(Date.now());
   return /*#__PURE__*/React.createElement("div", {
     onClick: () => { if (Date.now() - t0.current > 350) onClose(); },
@@ -4650,18 +4695,22 @@ function MoveModal({
       color: T.accent,
       marginBottom: 4
     }
-  }, "Move to section"), /*#__PURE__*/React.createElement("div", {
+  }, title), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 13,
       color: T.textMuted,
       marginBottom: 14
     }
-  }, field ? `Moving “${field.label}”` : "Choose a section"), others.map(o => /*#__PURE__*/React.createElement("button", {
-    key: o.i,
-    onClick: () => onPick(o.i),
+  }, subtitle), targets.length === 0 ? /*#__PURE__*/React.createElement("div", {
+    style: { fontSize: 14, fontStyle: "italic", color: T.textMuted, padding: "6px 2px 14px" }
+  }, "Nowhere else to move this yet.") : targets.map(tg => /*#__PURE__*/React.createElement("button", {
+    key: String(tg.key),
+    onClick: () => onPick(tg.key),
     className: "ss-press",
     style: {
-      display: "block",
+      display: "flex",
+      alignItems: "center",
+      gap: 10,
       width: "100%",
       textAlign: "left",
       padding: "12px 14px",
@@ -4675,7 +4724,7 @@ function MoveModal({
       fontFamily: "Georgia,serif",
       fontSize: 15
     }
-  }, o.s.title || "Untitled section")), /*#__PURE__*/React.createElement("button", {
+  }, tg.icon ? /*#__PURE__*/React.createElement(CatIcon, { name: tg.icon, size: 18, color: T.accent }) : null, /*#__PURE__*/React.createElement("span", { style: { flex: 1, minWidth: 0 } }, tg.label), tg.sub ? /*#__PURE__*/React.createElement("span", { style: { fontSize: 11, color: T.textMuted, flex: "none" } }, tg.sub) : null)), /*#__PURE__*/React.createElement("button", {
     onClick: onClose,
     className: "ss-press",
     style: {
@@ -4693,6 +4742,42 @@ function MoveModal({
       fontSize: 14
     }
   }, "Cancel")));
+}
+
+function GroupCreateModal({ T, onCreate, onClose }) {
+  const [name, setName] = useState("");
+  const [icon, setIcon] = useState("other");
+  const icons = ["identity", "vitals", "combat", "skills", "magic", "inventory", "notes", "globe", "journal", "other"];
+  const t0 = useRef(Date.now());
+  const canCreate = name.trim().length > 0;
+  return /*#__PURE__*/React.createElement("div", {
+    onClick: () => { if (Date.now() - t0.current > 350) onClose(); },
+    style: { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.7)", zIndex: 1200, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }
+  }, /*#__PURE__*/React.createElement("div", {
+    onClick: e => e.stopPropagation(),
+    style: { background: T.surface, border: T.frame || ("2px solid " + T.borderLight), borderRadius: 16, padding: "20px 18px", maxWidth: 360, width: "100%", maxHeight: "85vh", overflowY: "auto", boxShadow: (T.surfaceShadow || "") + ", 0 0 30px " + T.accentFaint }
+  }, /*#__PURE__*/React.createElement("div", { style: { fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, fontSize: 17, color: T.accent, marginBottom: 4 } }, "New group"),
+    /*#__PURE__*/React.createElement("div", { style: { fontSize: 13, color: T.textMuted, marginBottom: 14 } }, "Create a group, then move sections into it."),
+    /*#__PURE__*/React.createElement("div", { style: { fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", color: T.label, fontFamily: "'Cinzel',Georgia,serif", margin: "0 0 6px 2px" } }, "Name"),
+    /*#__PURE__*/React.createElement("input", {
+      value: name, autoFocus: true, onChange: e => setName(e.target.value),
+      onKeyDown: e => { if (e.key === "Enter" && canCreate) onCreate(name.trim(), icon); },
+      placeholder: "e.g. Companions, Homebrew…",
+      style: { colorScheme: kbScheme(T), width: "100%", boxSizing: "border-box", fontSize: 16, fontFamily: "'EB Garamond',Georgia,serif", color: T.text, background: T.accentFaint, border: "1px solid " + T.borderLight, borderRadius: 10, padding: "11px 13px", outline: "none", marginBottom: 16 }
+    }),
+    /*#__PURE__*/React.createElement("div", { style: { fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", color: T.label, fontFamily: "'Cinzel',Georgia,serif", margin: "0 0 8px 2px" } }, "Icon"),
+    /*#__PURE__*/React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 18 } }, icons.map(ic => /*#__PURE__*/React.createElement("button", {
+      key: ic, onClick: () => setIcon(ic), "aria-label": ic, className: "ss-press",
+      style: { width: 44, height: 44, flex: "none", borderRadius: "50%", border: "1px solid " + (icon === ic ? T.accent : T.borderLight), background: icon === ic ? T.accentFaint : "none", boxShadow: icon === ic ? ("0 0 0 2px " + T.accentFaint) : "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }
+    }, /*#__PURE__*/React.createElement(CatIcon, { name: ic, size: 22, color: T.accent })))),
+    /*#__PURE__*/React.createElement("button", {
+      onClick: () => { if (canCreate) onCreate(name.trim(), icon); }, disabled: !canCreate, className: "ss-press",
+      style: { display: "block", width: "100%", padding: 12, marginBottom: 8, background: canCreate ? T.metalGrad : "none", border: canCreate ? "none" : ("1px solid " + T.borderLight), borderRadius: 10, cursor: canCreate ? "pointer" : "default", opacity: canCreate ? 1 : 0.5, color: canCreate ? T.bg : T.textMuted, fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, fontSize: 15 }
+    }, "Create group"),
+    /*#__PURE__*/React.createElement("button", {
+      onClick: onClose, className: "ss-press",
+      style: { display: "block", width: "100%", padding: 11, background: "none", border: "1px solid " + T.borderLight, borderRadius: 10, cursor: "pointer", color: T.textSoft, fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, fontSize: 14 }
+    }, "Cancel")));
 }
 
 function ConfirmDialog({
@@ -4910,7 +4995,7 @@ function RenameModal({
 function HeaderAwareBody({ T, sec, si, hlField, menuKey, setMenuKey, updateField, moveField, delField, delHeader, setEditField, setMoveItem, editKey, setEditKey, sectionsLen }) {
   return /*#__PURE__*/React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 0 } }, sec.fields.map((f, fi) => {
     if (ssIsHeader(f)) {
-      return /*#__PURE__*/React.createElement("div", { key: f.id, id: "fld-" + f.id, className: hlField === f.id ? "ss-jump" : undefined, style: { display: "flex", alignItems: "center", gap: 8, padding: "16px 2px 6px", borderBottom: "1px solid " + T.borderLight } }, /*#__PURE__*/React.createElement("span", { style: { flex: 1, minWidth: 0, fontSize: 13, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", color: T.accent, fontFamily: "'Cinzel',Georgia,serif" } }, f.label), /*#__PURE__*/React.createElement(FieldMenu, { T: T, k: "f" + si + "_" + fi, menuKey: menuKey, setMenuKey: setMenuKey, onEdit: () => setEditField({ si: si, fi: fi, header: true }), onMoveUp: () => moveField(si, fi, -1), onMoveDown: () => moveField(si, fi, 1), onDelete: () => delHeader(si, fi), deleteLabel: "Delete header", canUp: fi > 0, canDown: fi < sec.fields.length - 1 }));
+      return /*#__PURE__*/React.createElement("div", { key: f.id, id: "fld-" + f.id, className: hlField === f.id ? "ss-jump" : undefined, style: { display: "flex", alignItems: "center", gap: 8, padding: "16px 2px 6px", borderBottom: "1px solid " + T.borderLight } }, /*#__PURE__*/React.createElement("span", { style: { flex: 1, minWidth: 0, fontSize: 16, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", color: T.accent, fontFamily: "'Cinzel',Georgia,serif" } }, f.label), /*#__PURE__*/React.createElement(FieldMenu, { T: T, k: "f" + si + "_" + fi, menuKey: menuKey, setMenuKey: setMenuKey, onEdit: () => setEditField({ si: si, fi: fi, header: true }), onMoveUp: () => moveField(si, fi, -1), onMoveDown: () => moveField(si, fi, 1), onDelete: () => delHeader(si, fi), deleteLabel: "Delete header", canUp: fi > 0, canDown: fi < sec.fields.length - 1 }));
     }
     return /*#__PURE__*/React.createElement("div", { key: f.id, id: "fld-" + f.id, className: hlField === f.id ? "ss-jump" : undefined, style: { display: "flex", alignItems: "flex-start", gap: 10, padding: "12px 2px", borderBottom: "1px solid " + T.borderLight } }, /*#__PURE__*/React.createElement(Dot, { c: f.confidence, onVerify: () => updateField(si, fi, "confidence", "high"), T: T, s: { marginTop: 7 } }), /*#__PURE__*/React.createElement("div", { style: { flex: 1, display: "flex", flexDirection: "column", gap: 3 } }, /*#__PURE__*/React.createElement(EditableLabel, { value: f.label, onChange: v => updateField(si, fi, "label", v), field: true, forceEdit: editKey === "f" + si + "_" + fi, onClose: () => setEditKey(null), T: T, style: { fontSize: 12, fontWeight: 700, letterSpacing: 0.6, textTransform: "uppercase", color: T.label, fontFamily: "'Cinzel',Georgia,serif" } }), /*#__PURE__*/React.createElement(EditableValue, { value: f.value, onChange: v => updateField(si, fi, "value", v), field: true, forceEdit: editKey === "f" + si + "_" + fi, onClose: () => setEditKey(null), T: T, style: { fontSize: 18, color: T.text, fontFamily: "'Cormorant Garamond',Georgia,serif", fontWeight: 600, lineHeight: 1.5 } })), /*#__PURE__*/React.createElement(FieldMenu, { T: T, k: "f" + si + "_" + fi, menuKey: menuKey, setMenuKey: setMenuKey, onEdit: () => setEditField({ si: si, fi: fi }), onMoveUp: () => moveField(si, fi, -1), onMoveDown: () => moveField(si, fi, 1), onMoveToSection: sectionsLen > 1 ? (() => setMoveItem({ si: si, fi: fi })) : null, onDelete: () => delField(si, fi), canUp: fi > 0, canDown: fi < sec.fields.length - 1, style: { marginTop: 4 } }));
   }));
@@ -5218,7 +5303,7 @@ function CharacterScreen({
   }, [activeCat]);
   const [showVerify, setShowVerify] = useState(false);
   const verifyTotalRef = useRef(0);
-  const group = buildGroups(data.sections, data.catOrder);
+  const group = buildGroups(data.sections, data.catOrder, data.groups);
   const _q = query.trim().toLowerCase();
   const _tokens = _q ? _q.split(/\s+/).filter(Boolean) : [];
   const _strip = function (v) { return String(v == null ? "" : v).replace(/<[^>]*>/g, " ").toLowerCase(); };
@@ -5496,6 +5581,25 @@ function CharacterScreen({
       return n;
     });
   };
+  const moveSectionToGroup = (si, key) => {
+    setData(p => {
+      snap(p);
+      const n = JSON.parse(JSON.stringify(p));
+      if (n.sections[si]) n.sections[si].catKey = key;
+      return n;
+    });
+  };
+  const mergeCategory = (fromKey, toKey) => {
+    setData(p => {
+      snap(p);
+      const n = JSON.parse(JSON.stringify(p));
+      n.sections.forEach(s => {
+        const k = (s && s.catKey) || categorize(s);
+        if (k === fromKey) s.catKey = toKey;
+      });
+      return n;
+    });
+  };
   const addHeader = si => {
     setData(p => {
       snap(p);
@@ -5547,9 +5651,10 @@ function CharacterScreen({
     setData(p => {
       snap(p);
       const n = JSON.parse(JSON.stringify(p));
-      const cat = categorize(n.sections[si]);
+      const keyOf = s => (s && s.catKey) || categorize(s);
+      const cat = keyOf(n.sections[si]);
       const sibs = [];
-      n.sections.forEach((s, i) => { if (categorize(s) === cat) sibs.push(i); });
+      n.sections.forEach((s, i) => { if (keyOf(s) === cat) sibs.push(i); });
       const pos = sibs.indexOf(si);
       const tpos = pos + dir;
       if (pos < 0 || tpos < 0 || tpos >= sibs.length) return p;
@@ -5597,6 +5702,7 @@ function CharacterScreen({
   const [menuKey, setMenuKey] = useState(null);
   const [editKey, setEditKey] = useState(null);
   const [moveItem, setMoveItem] = useState(null);
+  const [addGroup, setAddGroup] = useState(false);
   const [confirm, setConfirm] = useState(null);
   const [renameCat, setRenameCat] = useState(null);
   const [renameGroup, setRenameGroup] = useState(null);
@@ -5626,7 +5732,42 @@ function CharacterScreen({
     setData(p => { snap(p); const n = JSON.parse(JSON.stringify(p)); const fl = n.sections[si].fields; const o2 = [...new Set(fl.map(f => f.label))]; const g2 = o2.indexOf(label), t2 = g2 + dir; if (g2 < 0 || t2 < 0 || t2 >= o2.length) return p; const tmp = o2[g2]; o2[g2] = o2[t2]; o2[t2] = tmp; n.sections[si].fields = o2.reduce((acc, L) => acc.concat(fl.filter(f => f.label === L)), []); return n; });
   };
   const delGroup = (si, label) => { const sec = data.sections[si]; const cnt = sec ? sec.fields.filter(f => f.label === label).length : 0; setMenuKey(null); askConfirm("Delete item?", "Are you sure? \u201C" + label + "\u201D" + (cnt > 1 ? " and its " + cnt + " entries" : "") + " will be deleted.", () => { setData(p => { snap(p); const n = JSON.parse(JSON.stringify(p)); n.sections[si].fields = n.sections[si].fields.filter(f => f.label !== label); return n; }); showToast('"' + label + '" deleted', true); }); };
+  const createGroup = (label, icon) => {
+    const key = "g_" + Date.now();
+    const nm = (label || "New Group").trim() || "New Group";
+    setData(p => {
+      snap(p);
+      const n = JSON.parse(JSON.stringify(p));
+      n.groups = (n.groups || []).concat([{ key: key, label: nm, icon: icon || "other" }]);
+      return n;
+    });
+    setAddGroup(false);
+    setActiveCat(key);
+    showToast('Group "' + nm + '" created — open a section’s ⋮ to move it in', true);
+  };
+  const deleteCustomGroup = cat => {
+    const label = (data.catLabels && data.catLabels[cat.key]) || cat.label || "Group";
+    const members = (cat.members || []).length;
+    setMenuKey(null);
+    const msg = members
+      ? "Remove the “" + label + "” group? Its " + members + " section" + (members === 1 ? "" : "s") + " will move back to their default categories — nothing is deleted."
+      : "Remove the empty “" + label + "” group?";
+    askConfirm("Remove group?", msg, () => {
+      setData(p => {
+        snap(p);
+        const n = JSON.parse(JSON.stringify(p));
+        n.groups = (n.groups || []).filter(g => g.key !== cat.key);
+        n.sections.forEach(s => { if (s && s.catKey === cat.key) delete s.catKey; });
+        if (n.catLabels) delete n.catLabels[cat.key];
+        if (n.catOrder) n.catOrder = n.catOrder.filter(k => k !== cat.key);
+        return n;
+      });
+      if (activeCat === cat.key) setActiveCat(null);
+      showToast('"' + label + '" group removed', true);
+    });
+  };
   const delCategory = cat => {
+    if (cat.custom) { deleteCustomGroup(cat); return; }
     const label = (CAT_META[cat.key] || {}).label || cat.label || "Category";
     const members = cat.members || [];
     const nSec = members.length;
@@ -5639,7 +5780,7 @@ function CharacterScreen({
     setData(p => {
       snap(p);
       const n = JSON.parse(JSON.stringify(p));
-      const order = buildGroups(n.sections, n.catOrder).cats.map(c => c.key);
+      const order = buildGroups(n.sections, n.catOrder, n.groups).cats.map(c => c.key);
       const i = order.indexOf(cat.key);
       const j = i + dir;
       if (i < 0 || j < 0 || j >= order.length) return p;
@@ -5712,15 +5853,30 @@ function CharacterScreen({
     if (store.get("ss_export_ok")) { exportSheet(); return; }
     setExportPrompt(true);
   };
-  const doMoveField = ti => {
+  const catLabelOf = key => (data.catLabels && data.catLabels[key]) || (CAT_META[key] || {}).label || ((data.groups || []).find(g => g.key === key) || {}).label || key;
+  const openMergeCategory = cat => { setMenuKey(null); setMoveItem({ kind: "category", catKey: cat.key }); };
+  const doMove = target => {
     if (!moveItem) return;
-    const sec = data.sections[moveItem.si];
-    const lbl = sec && sec.fields[moveItem.fi] ? sec.fields[moveItem.fi].label : "Field";
-    const tname = data.sections[ti] ? (data.sections[ti].title || "section") : "section";
-    moveFieldToSection(moveItem.si, moveItem.fi, ti);
+    const kind = moveItem.kind || "field";
+    if (kind === "field") {
+      const sec = data.sections[moveItem.si];
+      const lbl = sec && sec.fields[moveItem.fi] ? sec.fields[moveItem.fi].label : "Field";
+      const tname = data.sections[target] ? (data.sections[target].title || "section") : "section";
+      moveFieldToSection(moveItem.si, moveItem.fi, target);
+      showToast('"' + lbl + '" moved to "' + tname + '"', true);
+    } else if (kind === "section") {
+      const sec = data.sections[moveItem.si];
+      const lbl = sec ? (sec.title || "Section") : "Section";
+      moveSectionToGroup(moveItem.si, target);
+      showToast('"' + lbl + '" moved to ' + catLabelOf(target), true);
+    } else if (kind === "category") {
+      const fromKey = moveItem.catKey;
+      mergeCategory(fromKey, target);
+      if (activeCat === fromKey) setActiveCat(target);
+      showToast(catLabelOf(fromKey) + " merged into " + catLabelOf(target), true);
+    }
     setMoveItem(null);
     setMenuKey(null);
-    showToast('"' + lbl + '" moved to "' + tname + '"', true);
   };
   const getSectionStyle = sec => {
     const rf = sec.fields.filter(f => !ssIsHeader(f));
@@ -5810,7 +5966,7 @@ function CharacterScreen({
     style: {
       color: T.yellow
     }
-  }, "amber"), " ring marks a field to double-check — tap it to confirm. Fields that were read clearly carry no dot."), /*#__PURE__*/React.createElement("div", null, hb(T, "Search"), " — Use the ", hb(T, "Search this character…"), " box on the hub to find any field, value, section, or note. Tap a result to jump straight to it."), /*#__PURE__*/React.createElement("div", null, hb(T, "Editing anything"), " — Tap the ", hb(T, "⋮"), " next to a ", hb(T, "field"), ", ", hb(T, "header"), ", ", hb(T, "section title"), ", or ", hb(T, "category"), " — then ", hb(T, "Edit"), ". A field opens a full-screen writing view with ", hb(T, "✓ Save"), " and an Undo; headers, sections and categories just rename. The ⋮ everywhere also has ", hb(T, "Move up / down"), ", ", hb(T, "Move to section…"), ", and ", hb(T, "Delete"), " (with ", hb(T, "Undo"), "). You can now rename a category from inside its own page too — not just the hub."), /*#__PURE__*/React.createElement("div", null, hb(T, "Adding"), " — At the bottom of any section use ", hb(T, "+ Add Field"), " or ", hb(T, "+ Add Header"), "; the ", hb(T, "+ Add Section"), " card on the hub adds a whole section."), /*#__PURE__*/React.createElement("div", null, hb(T, "Headers"), " — A header is a titled divider that groups the fields beneath it. Tap ", hb(T, "+ Add Header"), " in a section, rename it via its ", hb(T, "⋮ → Edit"), ", and use ", hb(T, "Move up / down"), " to slide it above the fields it should group. Headers also print as sub-headings in your exported PDF."), /*#__PURE__*/React.createElement("div", null, hb(T, "Portrait"), " — Tap ", hb(T, "Adjust photo"), " to move, zoom, or replace it; tap ", hb(T, "✓ Done"), " to lock it."), /*#__PURE__*/React.createElement("div", null, hb(T, "Themes"), " — The colored circles in the top bar restyle the whole sheet."), /*#__PURE__*/React.createElement("div", null, hb(T, "Journal"), " — Open the ", hb(T, "Journal"), " card to jot session notes, or to retire the character when you're done."), /*#__PURE__*/React.createElement("div", null, hb(T, "Export & Share"), " — ", hb(T, "⤓ Export / Share Sheet"), " (also reachable from a button in the top bar) makes a polished PDF you can share or save; ", hb(T, "⬇ Backup file (.json)"), " saves a re-importable backup."), /*#__PURE__*/React.createElement("div", null, hb(T, "Auto-saved"), " — Your changes save automatically. While editing a field, tap Undo to step back a change; after a delete, an ", hb(T, "Undo"), " lets you bring it back."))), /*#__PURE__*/React.createElement("button", {
+  }, "amber"), " ring marks a field to double-check — tap it to confirm. Fields that were read clearly carry no dot."), /*#__PURE__*/React.createElement("div", null, hb(T, "Search"), " — Use the ", hb(T, "Search this character…"), " box on the hub to find any field, value, section, or note. Tap a result to jump straight to it."), /*#__PURE__*/React.createElement("div", null, hb(T, "Editing anything"), " — Tap the ", hb(T, "⋮"), " next to a ", hb(T, "field"), ", ", hb(T, "header"), ", ", hb(T, "section title"), ", or ", hb(T, "category"), " — then ", hb(T, "Edit"), ". A field opens a full-screen writing view with ", hb(T, "✓ Save"), " and an Undo; headers, sections and categories just rename. The ⋮ everywhere also has ", hb(T, "Move up / down"), ", ", hb(T, "Move to section…"), ", and ", hb(T, "Delete"), " (with ", hb(T, "Undo"), "). You can now rename a category from inside its own page too — not just the hub."), /*#__PURE__*/React.createElement("div", null, hb(T, "Adding"), " — At the bottom of any section use ", hb(T, "+ Add Field"), " or ", hb(T, "+ Add Header"), "; the ", hb(T, "+ Add Section"), " card on the hub adds a whole section."), /*#__PURE__*/React.createElement("div", null, hb(T, "Headers"), " — A header is a titled divider that groups the fields beneath it. Tap ", hb(T, "+ Add Header"), " in a section, rename it via its ", hb(T, "⋮ → Edit"), ", and use ", hb(T, "Move up / down"), " to slide it above the fields it should group. Headers also print as sub-headings in your exported PDF."), /*#__PURE__*/React.createElement("div", null, hb(T, "Groups"), " — The hub sorts your sections into groups (Combat, Skills, and so on). Tap ", hb(T, "+ Add Group"), " to make your own — name it and pick an icon — then open any section's ", hb(T, "⋮ → Move to group…"), " to file it there. A category's ", hb(T, "⋮ → Merge into…"), " folds it into another. Deleting a group you made keeps its sections — they simply return to their default groups."), /*#__PURE__*/React.createElement("div", null, hb(T, "Portrait"), " — Tap ", hb(T, "Adjust photo"), " to move, zoom, or replace it; tap ", hb(T, "✓ Done"), " to lock it."), /*#__PURE__*/React.createElement("div", null, hb(T, "Themes"), " — The colored circles in the top bar restyle the whole sheet."), /*#__PURE__*/React.createElement("div", null, hb(T, "Journal"), " — Open the ", hb(T, "Journal"), " card to jot session notes, or to retire the character when you're done."), /*#__PURE__*/React.createElement("div", null, hb(T, "Export & Share"), " — ", hb(T, "⤓ Export / Share Sheet"), " (also reachable from a button in the top bar) makes a polished PDF you can share or save; ", hb(T, "⬇ Backup file (.json)"), " saves a re-importable backup."), /*#__PURE__*/React.createElement("div", null, hb(T, "Auto-saved"), " — Your changes save automatically. While editing a field, tap Undo to step back a change; after a delete, an ", hb(T, "Undo"), " lets you bring it back."))), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowHelp(false),
     className: "ss-press",
     style: {
@@ -6021,7 +6177,9 @@ function CharacterScreen({
   }))), /*#__PURE__*/React.createElement(Toast, {
     T: T, msg: toast && toast.m, onUndo: toast && toast.undoable ? undoToast : null
   }), moveItem && /*#__PURE__*/React.createElement(MoveModal, {
-    T: T, data: data, from: moveItem, onPick: doMoveField, onClose: () => setMoveItem(null)
+    T: T, data: data, from: moveItem, onPick: doMove, onClose: () => setMoveItem(null)
+  }), addGroup && /*#__PURE__*/React.createElement(GroupCreateModal, {
+    T: T, onCreate: createGroup, onClose: () => setAddGroup(false)
   }), confirm && /*#__PURE__*/React.createElement(ConfirmDialog, {
     T: T, title: confirm.title, message: confirm.message, confirmLabel: confirm.confirmLabel, onConfirm: confirm.run, onClose: () => setConfirm(null)
   }), renameCat && /*#__PURE__*/React.createElement(RenameModal, {
@@ -6231,11 +6389,13 @@ function CharacterScreen({
     activeCat: activeCat,
     setActiveCat: setActiveCat,
     onAddSection: addSection,
+    onAddGroup: () => setAddGroup(true),
     menuKey: menuKey,
     setMenuKey: setMenuKey,
     onDeleteCategory: delCategory,
     onRenameCategory: openRenameCategory,
-    onMoveCategory: moveCategory
+    onMoveCategory: moveCategory,
+    onMergeCategory: openMergeCategory
   }), activeCat === null && /*#__PURE__*/React.createElement("div", {
     style: { width: "100%", maxWidth: 340, margin: "14px auto 0", display: "flex", flexDirection: "column", gap: 10 }
   }, /*#__PURE__*/React.createElement("button", {
@@ -6282,6 +6442,7 @@ function CharacterScreen({
     }), /*#__PURE__*/React.createElement(FieldMenu, {
       T: T, k: "s" + si, menuKey: menuKey, setMenuKey: setMenuKey, onEdit: () => setEditKey("s" + si),
       onMoveUp: () => moveSection(si, -1), onMoveDown: () => moveSection(si, 1),
+      onMoveToSection: group.cats.filter(c => c.key !== "journal").length > 1 ? (() => setMoveItem({ kind: "section", si: si })) : null, moveToLabel: "Move to group…",
       onDelete: () => delSection(si), canUp: group.catOf.some((c, i) => c === group.catOf[si] && i < si), canDown: group.catOf.some((c, i) => c === group.catOf[si] && i > si)
     })), /*#__PURE__*/React.createElement("div", {
       style: {
