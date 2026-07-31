@@ -2415,7 +2415,7 @@ function HomeScreen({
       marginTop: 4,
       letterSpacing: 1
     }
-  }, "Sheetmancer · build v50"))), /*#__PURE__*/React.createElement("button", {
+  }, "Sheetmancer · build v51"))), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowHelp(false),
     className: "ss-press",
     style: {
@@ -3959,9 +3959,17 @@ function HubNav({
   const cnt = activeCat === "journal" ? "Session log" : cur ? cur.members.length > 1 ? cur.members.length + " sections · " + cur.fields + (cur.fields === 1 ? " field" : " fields") : cur.fields + (cur.fields === 1 ? " field" : " fields") : "";
   return /*#__PURE__*/React.createElement("div", {
     style: {
-      padding: "8px 16px 2px"
+      padding: "8px 16px 2px",
+      position: "relative"
     }
-  }, /*#__PURE__*/React.createElement("button", {
+  }, (activeCat !== "journal" && cur) && /*#__PURE__*/React.createElement(FieldMenu, {
+    T: T, k: "catpage_" + activeCat, menuKey: menuKey, setMenuKey: setMenuKey,
+    onEdit: () => onRenameCategory(cur),
+    onMoveUp: () => onMoveCategory(cur, -1), onMoveDown: () => onMoveCategory(cur, 1),
+    canUp: cats.findIndex(c => c.key === activeCat) > 0, canDown: cats.findIndex(c => c.key === activeCat) < cats.length - 1,
+    onDelete: () => onDeleteCategory(cur), deleteLabel: "Delete category",
+    style: { position: "absolute", top: 6, right: 10, zIndex: 5 }
+  }), /*#__PURE__*/React.createElement("button", {
     onClick: () => window.history.back(),
     className: "ss-press",
     style: {
@@ -4007,7 +4015,7 @@ function HubNav({
       textShadow: T.titleShadow,
       marginTop: 5
     }
-  }, meta.label), cnt && /*#__PURE__*/React.createElement("div", {
+  }, (data.catLabels && data.catLabels[activeCat]) || meta.label), cnt && /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 12,
       color: T.textMuted,
@@ -5551,21 +5559,15 @@ function CharacterScreen({
     });
   };
   const addSection = () => {
+    const ns = { id: `sec_${Date.now()}`, title: "New Section", fields: [{ id: `f_${Date.now()}`, label: "New Field", value: "", confidence: "high" }] };
     setData(p => {
       snap(p);
       const n = JSON.parse(JSON.stringify(p));
-      n.sections.push({
-        id: `sec_${Date.now()}`,
-        title: "New Section",
-        fields: [{
-          id: `f_${Date.now()}`,
-          label: "New Field",
-          value: "",
-          confidence: "high"
-        }]
-      });
+      n.sections.push(ns);
       return n;
     });
+    setActiveCat(categorize(ns));
+    showToast("New section added \u2014 rename it and add your fields");
   };
   const updateName = v => setData(p => {
     snap(p);
@@ -5808,7 +5810,7 @@ function CharacterScreen({
     style: {
       color: T.yellow
     }
-  }, "amber"), " ring marks a field to double-check — tap it to confirm. Fields that were read clearly carry no dot."), /*#__PURE__*/React.createElement("div", null, hb(T, "Search"), " — Use the ", hb(T, "Search this character…"), " box on the hub to find any field, value, section, or note. Tap a result to jump straight to it."), /*#__PURE__*/React.createElement("div", null, hb(T, "Editing a field"), " — Tap the ", hb(T, "⋮"), " next to a field, then ", hb(T, "Edit"), " — it opens in a full-screen writing view with ", hb(T, "✓ Save"), " pinned at the top, plus an Undo that steps back your last change. The ⋮ menu also has ", hb(T, "Move up / down"),", ", hb(T, "Move to section…"), ", and ", hb(T, "Delete"), " (with ", hb(T, "Undo"), ")."), /*#__PURE__*/React.createElement("div", null, hb(T, "Adding"), " — Use ", hb(T, "+ Add Field"), " at the bottom of any section, or the ", hb(T, "+ Add Section"), " card on the hub."), /*#__PURE__*/React.createElement("div", null, hb(T, "Portrait"), " — Tap ", hb(T, "Adjust photo"), " to move, zoom, or replace it; tap ", hb(T, "✓ Done"), " to lock it."), /*#__PURE__*/React.createElement("div", null, hb(T, "Themes"), " — The colored circles in the top bar restyle the whole sheet."), /*#__PURE__*/React.createElement("div", null, hb(T, "Journal"), " — Open the ", hb(T, "Journal"), " card to jot session notes, or to retire the character when you're done."), /*#__PURE__*/React.createElement("div", null, hb(T, "Export & Share"), " — ", hb(T, "⤓ Export / Share Sheet"), " (also reachable from a button in the top bar) makes a polished PDF you can share or save; ", hb(T, "⬇ Backup file (.json)"), " saves a re-importable backup."), /*#__PURE__*/React.createElement("div", null, hb(T, "Auto-saved"), " — Your changes save automatically. While editing a field, tap Undo to step back a change; after a delete, an ", hb(T, "Undo"), " lets you bring it back."))), /*#__PURE__*/React.createElement("button", {
+  }, "amber"), " ring marks a field to double-check — tap it to confirm. Fields that were read clearly carry no dot."), /*#__PURE__*/React.createElement("div", null, hb(T, "Search"), " — Use the ", hb(T, "Search this character…"), " box on the hub to find any field, value, section, or note. Tap a result to jump straight to it."), /*#__PURE__*/React.createElement("div", null, hb(T, "Editing anything"), " — Tap the ", hb(T, "⋮"), " next to a ", hb(T, "field"), ", ", hb(T, "header"), ", ", hb(T, "section title"), ", or ", hb(T, "category"), " — then ", hb(T, "Edit"), ". A field opens a full-screen writing view with ", hb(T, "✓ Save"), " and an Undo; headers, sections and categories just rename. The ⋮ everywhere also has ", hb(T, "Move up / down"), ", ", hb(T, "Move to section…"), ", and ", hb(T, "Delete"), " (with ", hb(T, "Undo"), "). You can now rename a category from inside its own page too — not just the hub."), /*#__PURE__*/React.createElement("div", null, hb(T, "Adding"), " — At the bottom of any section use ", hb(T, "+ Add Field"), " or ", hb(T, "+ Add Header"), "; the ", hb(T, "+ Add Section"), " card on the hub adds a whole section."), /*#__PURE__*/React.createElement("div", null, hb(T, "Headers"), " — A header is a titled divider that groups the fields beneath it. Tap ", hb(T, "+ Add Header"), " in a section, rename it via its ", hb(T, "⋮ → Edit"), ", and use ", hb(T, "Move up / down"), " to slide it above the fields it should group. Headers also print as sub-headings in your exported PDF."), /*#__PURE__*/React.createElement("div", null, hb(T, "Portrait"), " — Tap ", hb(T, "Adjust photo"), " to move, zoom, or replace it; tap ", hb(T, "✓ Done"), " to lock it."), /*#__PURE__*/React.createElement("div", null, hb(T, "Themes"), " — The colored circles in the top bar restyle the whole sheet."), /*#__PURE__*/React.createElement("div", null, hb(T, "Journal"), " — Open the ", hb(T, "Journal"), " card to jot session notes, or to retire the character when you're done."), /*#__PURE__*/React.createElement("div", null, hb(T, "Export & Share"), " — ", hb(T, "⤓ Export / Share Sheet"), " (also reachable from a button in the top bar) makes a polished PDF you can share or save; ", hb(T, "⬇ Backup file (.json)"), " saves a re-importable backup."), /*#__PURE__*/React.createElement("div", null, hb(T, "Auto-saved"), " — Your changes save automatically. While editing a field, tap Undo to step back a change; after a delete, an ", hb(T, "Undo"), " lets you bring it back."))), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowHelp(false),
     className: "ss-press",
     style: {
