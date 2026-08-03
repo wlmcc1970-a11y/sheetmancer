@@ -2261,7 +2261,7 @@ function ConfirmCreate({ T, count, onConfirm, onClose }) {
     style: { fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, fontSize: 18, color: T.accent, letterSpacing: 0.5 }
   }, "Ready to create?"), /*#__PURE__*/React.createElement("div", {
     style: { color: T.text, fontSize: 14.5, margin: "10px 0 4px", lineHeight: 1.55 }
-  }, "Have you added all the pages you want for this character sheet?"), /*#__PURE__*/React.createElement("div", {
+  }, "Have you added all the pages you want for this character?"), /*#__PURE__*/React.createElement("div", {
     style: { color: T.textMuted, fontSize: 13, margin: "0 0 18px", lineHeight: 1.5 }
   }, "You're creating from ", count, " ", count === 1 ? "page" : "pages", ". This uses one of your character slots."), /*#__PURE__*/React.createElement("button", {
     onClick: onConfirm, className: "ss-press",
@@ -2326,7 +2326,8 @@ function HomeScreen({
   onArchiveChar,
   onRestoreChar,
   onDeleteFallen,
-  onImport
+  onImport,
+  onAddScan
 }) {
   const [showFallen, setShowFallen] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
@@ -2450,7 +2451,7 @@ function HomeScreen({
       color: T.textSoft,
       lineHeight: 1.6
     }
-  }, /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", null, hb(T, "Sign in"), " — Scanning needs a free account (Google or Apple). Use the ", hb(T, "Sign in"), " button at the top — it turns green once you're in. Signing in also syncs your characters between your devices."), /*#__PURE__*/React.createElement("div", null, hb(T, "Scan a character"), " — Tap ", hb(T, "Take Photos"), " or ", hb(T, "Upload from Device"), ", add your pages (up to 10 per character), then ", hb(T, "Create My Character"), ". Reading a sheet can take a few minutes — keep the screen open."), /*#__PURE__*/React.createElement("div", null, hb(T, "Character slots"), " — Each purchase includes 3 character uploads. Deleting a character doesn't return a slot; you can buy more when you run out."), /*#__PURE__*/React.createElement("div", null, hb(T, "Open a character"), " — Tap any character under Your Characters to view and edit it."), /*#__PURE__*/React.createElement("div", null, hb(T, "Retire / Delete"), " — ", hb(T, "Retire"), " moves a character to Fallen Heroes (restore it anytime); ", hb(T, "Delete"), " removes it for good."), /*#__PURE__*/React.createElement("div", null, hb(T, "Themes"), " — The colored circles in the top bar restyle the app. Pick one that fits your character."), /*#__PURE__*/React.createElement("div", null, hb(T, "Help anytime"), " — Tap the ? on any screen to reopen this guide."),/*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", null, hb(T, "Sign in"), " — Scanning needs a free account (Google or Apple). Use the ", hb(T, "Sign in"), " button at the top — it turns green once you're in. Signing in also syncs your characters between your devices."), /*#__PURE__*/React.createElement("div", null, hb(T, "Scan a character"), " — Tap ", hb(T, "Take Photos"), " or ", hb(T, "Upload from Device"), ", add your pages (up to 10 per character), then ", hb(T, "Create My Character"), ". Reading your pages can take a few minutes — keep the screen open."), /*#__PURE__*/React.createElement("div", null, hb(T, "Character slots"), " — Each purchase includes 3 character uploads. Deleting a character doesn't return a slot; you can buy more when you run out."), /*#__PURE__*/React.createElement("div", null, hb(T, "Open a character"), " — Tap any character under Your Characters to view and edit it."), /*#__PURE__*/React.createElement("div", null, hb(T, "Add more pages"), " — Scan another page or two straight into a character you already have — use the ", hb(T, "Add pages"), " button on its card here, or ", hb(T, "+ Scan more pages"), " inside the character. It uses one scan, and the new pages arrive as sections you can arrange."), /*#__PURE__*/React.createElement("div", null, hb(T, "Retire / Delete"), " — ", hb(T, "Retire"), " moves a character to Fallen Heroes (restore it anytime); ", hb(T, "Delete"), " removes it for good."), /*#__PURE__*/React.createElement("div", null, hb(T, "Themes"), " — The colored circles in the top bar restyle the app. Pick one that fits your character."), /*#__PURE__*/React.createElement("div", null, hb(T, "Help anytime"), " — Tap the ? on any screen to reopen this guide."),/*#__PURE__*/React.createElement("div", {
     style: {
       textAlign: "center",
       fontSize: 12,
@@ -2459,7 +2460,7 @@ function HomeScreen({
       marginTop: 4,
       letterSpacing: 1
     }
-  }, "Sheetmancer · build v53"))), /*#__PURE__*/React.createElement("button", {
+  }, "Sheetmancer · build v54"))), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowHelp(false),
     className: "ss-press",
     style: {
@@ -2689,6 +2690,11 @@ function HomeScreen({
         marginTop: 2
       }
     }, c.system))), /*#__PURE__*/React.createElement("button", {
+      onClick: () => onAddScan(i),
+      "aria-label": "Add pages to this character",
+      title: "Add pages (uses one scan)",
+      style: { padding: "12px 9px", background: T.surface, border: "1px solid " + T.border, borderLeft: "none", cursor: "pointer", color: T.accent, alignSelf: "stretch", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3 }
+    }, /*#__PURE__*/React.createElement("span", { style: { fontSize: 17, lineHeight: 1, fontWeight: 700 } }, "＋"), /*#__PURE__*/React.createElement("span", { style: { fontSize: 8.5, letterSpacing: 0.2, whiteSpace: "nowrap" } }, "Add pages")), /*#__PURE__*/React.createElement("button", {
       onClick: () => onArchiveChar(i),
       "aria-label": "Archive to Fallen Heroes",
       title: "Archive to Fallen Heroes",
@@ -3102,7 +3108,7 @@ function CaptureScreen({
     style: { display: "flex", alignItems: "center", gap: 9 }
   }, /*#__PURE__*/React.createElement("span", { style: badgeStyle }, "1"), stepHead("Add your pages")), images.length === 0 && /*#__PURE__*/React.createElement("div", {
     style: { fontSize: 13, color: T.textSoft, lineHeight: 1.45, margin: "-4px 0 0 33px" }
-  }, "Snap a photo of each page — or upload photos you already have."), /*#__PURE__*/React.createElement("div", {
+  }, "Snap a photo of each page (up to 10) — or upload photos you already have."), /*#__PURE__*/React.createElement("div", {
     style: { display: "flex", gap: 10 }
   }, /*#__PURE__*/React.createElement("button", {
     onClick: () => camRef.current?.click(), className: "ss-press", style: tileStyle
@@ -3275,13 +3281,13 @@ function ProcessingScreen({
     })();
   }, []);
   const steps = [{
-    label: "Reading your character sheets...",
+    label: "Reading your pages...",
     done: step > 1
   }, {
     label: "Extracting stats and abilities...",
     done: step > 2
   }, {
-    label: "Double-checking against your sheet...",
+    label: "Double-checking against your pages...",
     done: false
   }];
   if (error) { const es = String(error); const eNet = /failed to fetch|network|load failed/i.test(es); const eSrv = /^API \d|overloaded|rate.?limit/i.test(es); const eClosed = /closed testing/i.test(es); const eBusy = /lot of scanning/i.test(es); const eAuth = /sign.?in required/i.test(es); const eGate = eClosed || eBusy || eAuth; return /*#__PURE__*/React.createElement("div", {
@@ -3323,7 +3329,7 @@ function ProcessingScreen({
       color: "#E8D9BE",
       lineHeight: 1.55
     }
-  }, eNet ? "Your photos are fine — this looks like a connection hiccup, not a bad shot. Check your signal and give it another try in a moment." : eSrv ? "Your photos are fine — our reader is just catching its breath. Give it another try in a minute." : eClosed ? "Your photos look fine — this device just isn't on the tester list yet. Scanning is in closed testing right now, and opens to everyone at launch." : eBusy ? "You've run several scans in a row — take a short breather and give it another go in a minute." : eAuth ? "You'll need to sign in first. Open the menu, tap Sign in to sync, then try the scan again." : "More light or a flatter, straight-on angle usually does the trick. Fill the frame with the sheet and hold steady — then give it another go."), /*#__PURE__*/React.createElement("div", {
+  }, eNet ? "Your photos are fine — this looks like a connection hiccup, not a bad shot. Check your signal and give it another try in a moment." : eSrv ? "Your photos are fine — our reader is just catching its breath. Give it another try in a minute." : eClosed ? "Your photos look fine — this device just isn't on the tester list yet. Scanning is in closed testing right now, and opens to everyone at launch." : eBusy ? "You've run several scans in a row — take a short breather and give it another go in a minute." : eAuth ? "You'll need to sign in first. Open the menu, tap Sign in to sync, then try the scan again." : "More light or a flatter, straight-on angle usually does the trick. Fill the frame with the page and hold steady — then give it another go."), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 12,
       color: "#9A8B76",
@@ -3411,7 +3417,7 @@ function ProcessingScreen({
     style: { color: T.text, fontFamily: "'Cinzel',Georgia,serif", fontSize: 13.5, letterSpacing: 0.4, marginBottom: 4, fontWeight: 700 }
   }, late ? "Almost there — hang tight" : "This can take several minutes"), /*#__PURE__*/React.createElement("div", {
     style: { color: T.textMuted, fontSize: 14, lineHeight: 1.55 }
-  }, late ? "Dense sheets can take a few minutes. We're putting the finishing touches on your character now." : "We read every line carefully so your character comes out right — the longer the sheet, the longer it takes.")), /*#__PURE__*/React.createElement("div", {
+  }, late ? "Dense sheets can take a few minutes. We're putting the finishing touches on your character now." : "We read every line carefully so your character comes out right — the more pages, the longer it takes.")), /*#__PURE__*/React.createElement("div", {
     style: { color: T.textMuted, fontSize: 12, fontStyle: "italic", opacity: 0.8 }
   }, "Keep this screen open.")));
 }
@@ -4398,14 +4404,14 @@ function VerifyModal({
       color: T.textSoft,
       lineHeight: 1.5
     }
-  }, "Every flagged field has been checked. Your sheet is good to go.")) : /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+  }, "Every flagged field has been checked. Your character is good to go.")) : /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 13,
       color: T.textSoft,
       lineHeight: 1.5,
       marginBottom: 14
     }
-  }, "Compare each to your paper sheet, then tap ", /*#__PURE__*/React.createElement("b", {
+  }, "Compare each to your pages, then tap ", /*#__PURE__*/React.createElement("b", {
     style: {
       color: T.green
     }
@@ -4489,7 +4495,7 @@ function VerifyModal({
     style: { cursor: "pointer", background: T.accentFaint, border: `1px solid ${T.borderLight}`, borderRadius: 12, padding: "5px 11px", color: T.text, fontSize: 13, fontWeight: 700, maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }
   }, "Use \u201C" + it.alt + "\u201D")) : null, it.foundOnRecheck ? /*#__PURE__*/React.createElement("div", {
     style: { fontSize: 12, color: T.textMuted, marginTop: 4 }
-  }, "Found on the double-check pass — confirm it's on your sheet.") : null), /*#__PURE__*/React.createElement("button", {
+  }, "Found on the double-check pass — confirm it's on your pages.") : null), /*#__PURE__*/React.createElement("button", {
     onClick: () => onVerify(it),
     className: "ss-press",
     style: {
@@ -4622,7 +4628,7 @@ function FieldMenu({
       lineHeight: 1,
       padding: "11px 13px"
     }
-  }, "⋮"), open && pos && /*#__PURE__*/React.createElement("div", {
+  }, "⋮"), open && pos && /*#__PURE__*/ReactDOM.createPortal(/*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     onClick: e => {
       e.stopPropagation();
       if (Date.now() - openedAt.current > 350) setMenuKey(null);
@@ -4640,7 +4646,7 @@ function FieldMenu({
       bottom: 0,
       zIndex: 1100
     }
-  }), open && pos && /*#__PURE__*/React.createElement("div", {
+  }), /*#__PURE__*/React.createElement("div", {
     onClick: e => e.stopPropagation(),
     style: {
       position: "fixed",
@@ -4669,7 +4675,7 @@ function FieldMenu({
   }), item(true, "✕", deleteLabel || "Delete", () => {
     setMenuKey(null);
     onDelete();
-  }, true)));
+  }, true))), document.body));
 }
 
 function MoveModal({
@@ -6015,7 +6021,7 @@ function CharacterScreen({
     style: {
       color: T.yellow
     }
-  }, "amber"), " ring marks a field to double-check — tap it to confirm. Fields that were read clearly carry no dot."), /*#__PURE__*/React.createElement("div", null, hb(T, "Search"), " — Use the ", hb(T, "Search this character…"), " box on the hub to find any field, value, section, or note. Tap a result to jump straight to it."), /*#__PURE__*/React.createElement("div", null, hb(T, "Editing anything"), " — Tap the ", hb(T, "⋮"), " next to a ", hb(T, "field"), ", ", hb(T, "header"), ", ", hb(T, "section title"), ", or ", hb(T, "category"), " — then ", hb(T, "Edit"), ". A field opens a full-screen writing view with ", hb(T, "✓ Save"), " and an Undo; headers, sections and categories just rename. The ⋮ everywhere also has ", hb(T, "Move up / down"), ", ", hb(T, "Move to section…"), ", and ", hb(T, "Delete"), " (with ", hb(T, "Undo"), "). You can now rename a category from inside its own page too — not just the hub."), /*#__PURE__*/React.createElement("div", null, hb(T, "Adding"), " — At the bottom of any section use ", hb(T, "+ Add Field"), " or ", hb(T, "+ Add Header"), "; the ", hb(T, "+ Add Section"), " card on the hub adds a whole section. Or tap the ", hb(T, "+ Scan more pages"), " card to scan another sheet straight into this character \u2014 it costs one Character Scan, and the new pages arrive as sections you can arrange, rename, or edit."), /*#__PURE__*/React.createElement("div", null, hb(T, "Headers"), " — A header is a titled divider that groups the fields beneath it. Tap ", hb(T, "+ Add Header"), " in a section, rename it via its ", hb(T, "⋮ → Edit"), ", and use ", hb(T, "Move up / down"), " to slide it above the fields it should group. Headers also print as sub-headings in your exported PDF."), /*#__PURE__*/React.createElement("div", null, hb(T, "Groups"), " — The hub sorts your sections into groups (Combat, Skills, and so on). Tap ", hb(T, "+ Add Group"), " to make your own — name it and pick an icon — then open any section's ", hb(T, "⋮ → Move to group…"), " to file it there. A category's ", hb(T, "⋮ → Merge into…"), " folds it into another. Deleting a group you made keeps its sections — they simply return to their default groups."), /*#__PURE__*/React.createElement("div", null, hb(T, "Portrait"), " — Tap ", hb(T, "Adjust photo"), " to move, zoom, or replace it; tap ", hb(T, "✓ Done"), " to lock it."), /*#__PURE__*/React.createElement("div", null, hb(T, "Themes"), " — The colored circles in the top bar restyle the whole sheet."), /*#__PURE__*/React.createElement("div", null, hb(T, "Journal"), " — Open the ", hb(T, "Journal"), " card to jot session notes, or to retire the character when you're done."), /*#__PURE__*/React.createElement("div", null, hb(T, "Export & Share"), " — ", hb(T, "⤓ Export / Share Sheet"), " (also reachable from a button in the top bar) makes a polished PDF you can share or save; ", hb(T, "⬇ Backup file (.json)"), " saves a re-importable backup."), /*#__PURE__*/React.createElement("div", null, hb(T, "Auto-saved"), " — Your changes save automatically. While editing a field, tap Undo to step back a change; after a delete, an ", hb(T, "Undo"), " lets you bring it back."))), /*#__PURE__*/React.createElement("button", {
+  }, "amber"), " ring marks a field to double-check — tap it to confirm. Fields that were read clearly carry no dot."), /*#__PURE__*/React.createElement("div", null, hb(T, "Search"), " — Use the ", hb(T, "Search this character…"), " box on the hub to find any field, value, section, or note. Tap a result to jump straight to it."), /*#__PURE__*/React.createElement("div", null, hb(T, "Editing anything"), " — Tap the ", hb(T, "⋮"), " next to a ", hb(T, "field"), ", ", hb(T, "header"), ", ", hb(T, "section title"), ", or ", hb(T, "category"), " — then ", hb(T, "Edit"), ". A field opens a full-screen writing view with ", hb(T, "✓ Save"), " and an Undo; headers, sections and categories just rename. The ⋮ everywhere also has ", hb(T, "Move up / down"), ", ", hb(T, "Move to section…"), ", and ", hb(T, "Delete"), " (with ", hb(T, "Undo"), "). You can now rename a category from inside its own page too — not just the hub."), /*#__PURE__*/React.createElement("div", null, hb(T, "Adding"), " — At the bottom of any section use ", hb(T, "+ Add Field"), " or ", hb(T, "+ Add Header"), "; the ", hb(T, "+ Add Section"), " card on the hub adds a whole section. Or tap the ", hb(T, "+ Scan more pages"), " card to scan more pages straight into this character \u2014 it costs one Character Scan, and the new pages arrive as sections you can arrange, rename, or edit."), /*#__PURE__*/React.createElement("div", null, hb(T, "Headers"), " — A header is a titled divider that groups the fields beneath it. Tap ", hb(T, "+ Add Header"), " in a section, rename it via its ", hb(T, "⋮ → Edit"), ", and use ", hb(T, "Move up / down"), " to slide it above the fields it should group. Headers also print as sub-headings in your exported PDF."), /*#__PURE__*/React.createElement("div", null, hb(T, "Groups"), " — The hub sorts your sections into groups (Combat, Skills, and so on). Tap ", hb(T, "+ Add Group"), " to make your own — name it and pick an icon — then open any section's ", hb(T, "⋮ → Move to group…"), " to file it there. A category's ", hb(T, "⋮ → Merge into…"), " folds it into another. Deleting a group you made keeps its sections — they simply return to their default groups."), /*#__PURE__*/React.createElement("div", null, hb(T, "Portrait"), " — Tap ", hb(T, "Adjust photo"), " to move, zoom, or replace it; tap ", hb(T, "✓ Done"), " to lock it."), /*#__PURE__*/React.createElement("div", null, hb(T, "Themes"), " — The colored circles in the top bar restyle the whole character."), /*#__PURE__*/React.createElement("div", null, hb(T, "Journal"), " — Open the ", hb(T, "Journal"), " card to jot session notes, or to retire the character when you're done."), /*#__PURE__*/React.createElement("div", null, hb(T, "Export & Share"), " — ", hb(T, "⤓ Export / Share"), " (also reachable from a button in the top bar) makes a polished PDF you can share or save; ", hb(T, "⬇ Backup file (.json)"), " saves a re-importable backup."), /*#__PURE__*/React.createElement("div", null, hb(T, "Auto-saved"), " — Your changes save automatically. While editing a field, tap Undo to step back a change; after a delete, an ", hb(T, "Undo"), " lets you bring it back."))), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowHelp(false),
     className: "ss-press",
     style: {
@@ -6141,7 +6147,7 @@ function CharacterScreen({
     }
   }, /*#__PURE__*/React.createElement("button", {
     onClick: requestExport,
-    "aria-label": "Export or share a PDF of this sheet",
+    "aria-label": "Export or share a PDF of this character",
     title: "Export / Share PDF",
     className: "ss-press",
     style: {
@@ -6451,7 +6457,7 @@ function CharacterScreen({
   }, /*#__PURE__*/React.createElement("button", {
     onClick: requestExport, className: "ss-press",
     style: { display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "14px", background: T.accent, border: "none", borderRadius: 12, cursor: "pointer", width: "100%" }
-  }, /*#__PURE__*/React.createElement("span", { style: { fontSize: 15, fontWeight: 700, color: T.bg, fontFamily: "'Cinzel',Georgia,serif", letterSpacing: ".5px" } }, "⤓ Export / Share Sheet")), /*#__PURE__*/React.createElement("button", {
+  }, /*#__PURE__*/React.createElement("span", { style: { fontSize: 15, fontWeight: 700, color: T.bg, fontFamily: "'Cinzel',Georgia,serif", letterSpacing: ".5px" } }, "⤓ Export / Share")), /*#__PURE__*/React.createElement("button", {
     onClick: () => { const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = `${(data.name || "character").replace(/[^a-z0-9]/gi, "_")}.json`; a.click(); URL.revokeObjectURL(url); },
     style: { display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "12px", background: "none", border: `1px solid ${T.borderLight}`, borderRadius: 12, cursor: "pointer", width: "100%" }
   }, /*#__PURE__*/React.createElement("span", { style: { fontSize: 14, color: T.textMuted } }, "⬇ Backup file (.json)")), /*#__PURE__*/React.createElement("div", {
@@ -7136,7 +7142,8 @@ function Sheetmancer() {
     onArchiveChar: handleArchiveChar,
     onRestoreChar: handleRestoreChar,
     onDeleteFallen: handleDeleteFallen,
-    onImport: handleImport
+    onImport: handleImport,
+    onAddScan: handleStartAddScan
   }), view === "capture" && /*#__PURE__*/React.createElement(CaptureScreen, {
     T: T,
     onBack: handleBack,
