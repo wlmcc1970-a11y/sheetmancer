@@ -2271,6 +2271,50 @@ function ConfirmCreate({ T, count, onConfirm, onClose }) {
     style: { width: "100%", padding: "12px", borderRadius: 12, border: "1px solid " + T.borderLight, background: "none", color: T.text, fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, fontSize: 14, cursor: "pointer" }
   }, "Not yet — add more pages"))), document.body);
 }
+function appendScannedSections(character, scanned) {
+  /* Append freshly-scanned sections into an EXISTING character as NEW sections at the end.
+     NEVER merges into or mutates existing sections, so a user's manual edits can't be clobbered.
+     Re-ids the incoming sections + fields uniquely (guarded against collisions with the
+     character's existing ids) and leaves catKey unset, so each new section auto-files on the hub
+     exactly like any other new section and the user can move / rename / edit / delete it freely.
+     PURE: returns a NEW character object (caller persists + syncs). Headers (type:'header') and
+     every field's metadata (confidence/alt/foundOnRecheck) are preserved verbatim. */
+  const src = (character && typeof character === "object") ? character : {};
+  const existing = Array.isArray(src.sections) ? src.sections : [];
+  const incoming = Array.isArray(scanned) ? scanned : [];
+  const used = new Set(existing.map(sc => sc && sc.id).filter(Boolean));
+  const base = Date.now();
+  const added = incoming.filter(sc => sc && Array.isArray(sc.fields)).map((sc, si) => {
+    let sid = "sec_add_" + base + "_" + si;
+    while (used.has(sid)) sid = "sec_add_" + base + "_" + si + "_" + Math.random().toString(36).slice(2, 6);
+    used.add(sid);
+    const fields = sc.fields.map((f, fi) => Object.assign({}, f, { id: "f_add_" + base + "_" + si + "_" + fi }));
+    return Object.assign({}, sc, { id: sid, fields: fields });
+  });
+  return Object.assign({}, src, { sections: existing.concat(added) });
+}
+function ConfirmAdd({ T, count, targetName, slotsLeft, onConfirm, onClose }) {
+  const nm = targetName || "this character";
+  return ReactDOM.createPortal(/*#__PURE__*/React.createElement("div", {
+    onClick: onClose,
+    style: { position: "fixed", inset: 0, background: "rgba(0,0,0,0.72)", zIndex: 100600, display: "flex", alignItems: "center", justifyContent: "center", padding: 22 }
+  }, /*#__PURE__*/React.createElement("div", {
+    onClick: e => e.stopPropagation(),
+    style: { background: T.surface, border: T.frame || ("2px solid " + T.borderLight), borderRadius: 16, padding: "24px 20px", maxWidth: 340, width: "100%", boxShadow: T.surfaceShadow + ", 0 0 30px " + T.accentFaint, textAlign: "center" }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: { fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, fontSize: 18, color: T.accent, letterSpacing: 0.5 }
+  }, "Add pages to your character?"), /*#__PURE__*/React.createElement("div", {
+    style: { color: T.text, fontSize: 14.5, margin: "10px 0 4px", lineHeight: 1.55 }
+  }, "Your new pages join ", /*#__PURE__*/React.createElement("span", { translate: "no" }, nm), " as fresh sections at the end — ready to rearrange, rename, or edit however you like. Nothing you've already entered is changed."), /*#__PURE__*/React.createElement("div", {
+    style: { color: T.textMuted, fontSize: 13, margin: "0 0 18px", lineHeight: 1.5 }
+  }, "Scanning ", count, " ", count === 1 ? "page" : "pages", ". This uses one Character Scan (up to 10 pages)", (typeof slotsLeft === "number" ? " — you have " + slotsLeft + " left." : ".")), /*#__PURE__*/React.createElement("button", {
+    onClick: onConfirm, className: "ss-press",
+    style: { width: "100%", padding: "14px", borderRadius: 12, border: "none", cursor: "pointer", background: T.metalGrad, color: T.bg, fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, fontSize: 15, marginBottom: 10, boxShadow: "0 3px 14px " + T.accentFaint }
+  }, "Yes — add these pages"), /*#__PURE__*/React.createElement("button", {
+    onClick: onClose, className: "ss-press",
+    style: { width: "100%", padding: "12px", borderRadius: 12, border: "1px solid " + T.borderLight, background: "none", color: T.text, fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, fontSize: 14, cursor: "pointer" }
+  }, "Not yet — add more pages"))), document.body);
+}
 function HomeScreen({
   T,
   characters,
@@ -2415,7 +2459,7 @@ function HomeScreen({
       marginTop: 4,
       letterSpacing: 1
     }
-  }, "Sheetmancer · build v52"))), /*#__PURE__*/React.createElement("button", {
+  }, "Sheetmancer · build v53"))), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowHelp(false),
     className: "ss-press",
     style: {
@@ -2983,7 +3027,9 @@ function HomeScreen({
 function CaptureScreen({
   T,
   onBack,
-  onScan
+  onScan,
+  addMode,
+  targetName
 }) {
   const [images, setImages] = useState([]);
   const fileRef = useRef(null);
@@ -3031,7 +3077,7 @@ function CaptureScreen({
     style: { minHeight: "100vh", display: "flex", flexDirection: "column", background: T.bg, padding: 8 }
   }, /*#__PURE__*/React.createElement(AtmoBg, {
     T: T
-  }), confirmScan && /*#__PURE__*/React.createElement(ConfirmCreate, { T: T, count: images.length, onConfirm: () => { setConfirmScan(false); onScan(images); }, onClose: () => setConfirmScan(false) }), /*#__PURE__*/React.createElement("div", {
+  }), confirmScan && (addMode ? /*#__PURE__*/React.createElement(ConfirmAdd, { T: T, count: images.length, targetName: targetName, slotsLeft: Math.max(0, INCLUDED_SLOTS + (store.get("ss-purchasedSlots") || 0) - (store.get("ss-scanCount") || 0)), onConfirm: () => { setConfirmScan(false); onScan(images); }, onClose: () => setConfirmScan(false) }) : /*#__PURE__*/React.createElement(ConfirmCreate, { T: T, count: images.length, onConfirm: () => { setConfirmScan(false); onScan(images); }, onClose: () => setConfirmScan(false) })), /*#__PURE__*/React.createElement("div", {
     style: { flex: 1, border: T.frame || `2px solid ${T.borderLight}`, outline: T.frameInset, outlineOffset: "-6px", borderRadius: 14, background: T.surface, boxShadow: T.surfaceShadow, overflow: "hidden", display: "flex", flexDirection: "column", position: "relative", zIndex: 1 }
   }, /*#__PURE__*/React.createElement("div", {
     style: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderBottom: `1px solid ${T.border}`, background: T.headerBg || T.surface }
@@ -3044,7 +3090,7 @@ function CaptureScreen({
     style: { fontSize: 16, color: T.headerText || T.textMuted }
   }, "Cancel")), /*#__PURE__*/React.createElement("span", {
     style: { fontSize: 17, fontWeight: 600, color: T.headerText || T.text, fontFamily: "'Cinzel',Georgia,serif" }
-  }, "New Character"), /*#__PURE__*/React.createElement("div", {
+  }, addMode ? "Add Pages" : "New Character"), /*#__PURE__*/React.createElement("div", {
     style: { width: 70 }
   })), /*#__PURE__*/React.createElement("input", {
     ref: fileRef, type: "file", accept: "image/*", multiple: true, onChange: handleFiles, style: { display: "none" }
@@ -3088,12 +3134,12 @@ function CaptureScreen({
     style: { height: 1, background: T.sectionRule, margin: "2px 0" }
   }), /*#__PURE__*/React.createElement("div", {
     style: { display: "flex", alignItems: "center", gap: 9 }
-  }, /*#__PURE__*/React.createElement("span", { style: badgeStyle }, "2"), stepHead("Create")), images.length > 0 ? /*#__PURE__*/React.createElement("button", {
+  }, /*#__PURE__*/React.createElement("span", { style: badgeStyle }, "2"), stepHead(addMode ? "Add" : "Create")), images.length > 0 ? /*#__PURE__*/React.createElement("button", {
     onClick: () => setConfirmScan(true), className: "ss-press",
     style: { display: "flex", flexDirection: "column", alignItems: "center", gap: 3, padding: "16px 24px", background: T.metalGrad, border: "none", borderRadius: 14, cursor: "pointer", boxShadow: `0 6px 26px ${T.accentFaint}, 0 0 40px ${T.accentFaint}, inset 0 1px 0 rgba(255,255,255,0.35), inset 0 -3px 8px rgba(0,0,0,0.25)` }
-  }, /*#__PURE__*/React.createElement("span", { style: { ...createLabel, color: T.bg } }, "Create My Character"), /*#__PURE__*/React.createElement("span", { style: { fontSize: 14, color: "rgba(10,10,12,0.82)" } }, images.length, " ", images.length === 1 ? "page" : "pages", " ready")) : /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("span", { style: { ...createLabel, color: T.bg } }, addMode ? "Add These Pages" : "Create My Character"), /*#__PURE__*/React.createElement("span", { style: { fontSize: 14, color: "rgba(10,10,12,0.82)" } }, images.length, " ", images.length === 1 ? "page" : "pages", " ready")) : /*#__PURE__*/React.createElement("div", {
     style: { display: "flex", flexDirection: "column", alignItems: "center", gap: 3, padding: "16px 24px", background: T.surface, border: `1px dashed ${T.borderLight}`, borderRadius: 14 }
-  }, /*#__PURE__*/React.createElement("span", { style: { ...createLabel, color: T.textMuted } }, "Create My Character"), /*#__PURE__*/React.createElement("span", { style: { fontSize: 14, color: T.textMuted } }, "Add a page to continue")))));
+  }, /*#__PURE__*/React.createElement("span", { style: { ...createLabel, color: T.textMuted } }, addMode ? "Add These Pages" : "Create My Character"), /*#__PURE__*/React.createElement("span", { style: { fontSize: 14, color: T.textMuted } }, "Add a page to continue")))));
 }
 
 /* ━━━━ PROCESSING SCREEN ━━━━ */
@@ -3830,6 +3876,7 @@ function HubNav({
   setActiveCat,
   onAddSection,
   onAddGroup,
+  onAddScan,
   menuKey,
   setMenuKey,
   onDeleteCategory,
@@ -3846,7 +3893,7 @@ function HubNav({
       fields: 0,
       low: false
     };
-    const cards = cats.concat([journalCard, { key: "__add", label: "Add Section", members: [], fields: 0, low: false }, { key: "__addgroup", label: "Add Group", members: [], fields: 0, low: false }]);
+    const cards = cats.concat([journalCard]).concat(onAddScan ? [{ key: "__addscan", label: "Scan more pages", members: [], fields: 0, low: false }] : []).concat([{ key: "__add", label: "Add Section", members: [], fields: 0, low: false }, { key: "__addgroup", label: "Add Group", members: [], fields: 0, low: false }]);
     return /*#__PURE__*/React.createElement("div", {
       style: {
         padding: "2px 16px 132px"
@@ -3867,6 +3914,7 @@ function HubNav({
         gap: 9
       }
     }, cards.map(cat => {
+      if (cat.key === "__addscan") return /*#__PURE__*/React.createElement("button", { key: "__addscan", onClick: onAddScan, className: "ss-press", style: { display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", background: T.accentFaint, border: "1.5px solid " + T.accent, borderRadius: 12, padding: "13px 12px", cursor: "pointer", color: T.accent, fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, fontSize: 13, letterSpacing: 0.5, marginTop: 2 } }, "+ Scan more pages");
       if (cat.key === "__add") return /*#__PURE__*/React.createElement("button", { key: "__add", onClick: onAddSection, className: "ss-press", style: { display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", background: "none", border: "1.5px dashed " + T.borderLight, borderRadius: 12, padding: "13px 12px", cursor: "pointer", color: T.accent, fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, fontSize: 13, letterSpacing: 0.5, marginTop: 2 } }, "+ Add Section");
       if (cat.key === "__addgroup") return /*#__PURE__*/React.createElement("button", { key: "__addgroup", onClick: onAddGroup, className: "ss-press", style: { display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", background: "none", border: "1.5px dashed " + T.borderLight, borderRadius: 12, padding: "13px 12px", cursor: "pointer", color: T.textSoft, fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, fontSize: 13, letterSpacing: 0.5 } }, "+ Add Group");
       const meta = CAT_META[cat.key] || {
@@ -5281,6 +5329,7 @@ function CharacterScreen({
   onBack,
   onSave,
   onArchive,
+  onAddScan,
   themeKey,
   setThemeKey,
   catBackRef
@@ -5966,7 +6015,7 @@ function CharacterScreen({
     style: {
       color: T.yellow
     }
-  }, "amber"), " ring marks a field to double-check — tap it to confirm. Fields that were read clearly carry no dot."), /*#__PURE__*/React.createElement("div", null, hb(T, "Search"), " — Use the ", hb(T, "Search this character…"), " box on the hub to find any field, value, section, or note. Tap a result to jump straight to it."), /*#__PURE__*/React.createElement("div", null, hb(T, "Editing anything"), " — Tap the ", hb(T, "⋮"), " next to a ", hb(T, "field"), ", ", hb(T, "header"), ", ", hb(T, "section title"), ", or ", hb(T, "category"), " — then ", hb(T, "Edit"), ". A field opens a full-screen writing view with ", hb(T, "✓ Save"), " and an Undo; headers, sections and categories just rename. The ⋮ everywhere also has ", hb(T, "Move up / down"), ", ", hb(T, "Move to section…"), ", and ", hb(T, "Delete"), " (with ", hb(T, "Undo"), "). You can now rename a category from inside its own page too — not just the hub."), /*#__PURE__*/React.createElement("div", null, hb(T, "Adding"), " — At the bottom of any section use ", hb(T, "+ Add Field"), " or ", hb(T, "+ Add Header"), "; the ", hb(T, "+ Add Section"), " card on the hub adds a whole section."), /*#__PURE__*/React.createElement("div", null, hb(T, "Headers"), " — A header is a titled divider that groups the fields beneath it. Tap ", hb(T, "+ Add Header"), " in a section, rename it via its ", hb(T, "⋮ → Edit"), ", and use ", hb(T, "Move up / down"), " to slide it above the fields it should group. Headers also print as sub-headings in your exported PDF."), /*#__PURE__*/React.createElement("div", null, hb(T, "Groups"), " — The hub sorts your sections into groups (Combat, Skills, and so on). Tap ", hb(T, "+ Add Group"), " to make your own — name it and pick an icon — then open any section's ", hb(T, "⋮ → Move to group…"), " to file it there. A category's ", hb(T, "⋮ → Merge into…"), " folds it into another. Deleting a group you made keeps its sections — they simply return to their default groups."), /*#__PURE__*/React.createElement("div", null, hb(T, "Portrait"), " — Tap ", hb(T, "Adjust photo"), " to move, zoom, or replace it; tap ", hb(T, "✓ Done"), " to lock it."), /*#__PURE__*/React.createElement("div", null, hb(T, "Themes"), " — The colored circles in the top bar restyle the whole sheet."), /*#__PURE__*/React.createElement("div", null, hb(T, "Journal"), " — Open the ", hb(T, "Journal"), " card to jot session notes, or to retire the character when you're done."), /*#__PURE__*/React.createElement("div", null, hb(T, "Export & Share"), " — ", hb(T, "⤓ Export / Share Sheet"), " (also reachable from a button in the top bar) makes a polished PDF you can share or save; ", hb(T, "⬇ Backup file (.json)"), " saves a re-importable backup."), /*#__PURE__*/React.createElement("div", null, hb(T, "Auto-saved"), " — Your changes save automatically. While editing a field, tap Undo to step back a change; after a delete, an ", hb(T, "Undo"), " lets you bring it back."))), /*#__PURE__*/React.createElement("button", {
+  }, "amber"), " ring marks a field to double-check — tap it to confirm. Fields that were read clearly carry no dot."), /*#__PURE__*/React.createElement("div", null, hb(T, "Search"), " — Use the ", hb(T, "Search this character…"), " box on the hub to find any field, value, section, or note. Tap a result to jump straight to it."), /*#__PURE__*/React.createElement("div", null, hb(T, "Editing anything"), " — Tap the ", hb(T, "⋮"), " next to a ", hb(T, "field"), ", ", hb(T, "header"), ", ", hb(T, "section title"), ", or ", hb(T, "category"), " — then ", hb(T, "Edit"), ". A field opens a full-screen writing view with ", hb(T, "✓ Save"), " and an Undo; headers, sections and categories just rename. The ⋮ everywhere also has ", hb(T, "Move up / down"), ", ", hb(T, "Move to section…"), ", and ", hb(T, "Delete"), " (with ", hb(T, "Undo"), "). You can now rename a category from inside its own page too — not just the hub."), /*#__PURE__*/React.createElement("div", null, hb(T, "Adding"), " — At the bottom of any section use ", hb(T, "+ Add Field"), " or ", hb(T, "+ Add Header"), "; the ", hb(T, "+ Add Section"), " card on the hub adds a whole section. Or tap the ", hb(T, "+ Scan more pages"), " card to scan another sheet straight into this character \u2014 it costs one Character Scan, and the new pages arrive as sections you can arrange, rename, or edit."), /*#__PURE__*/React.createElement("div", null, hb(T, "Headers"), " — A header is a titled divider that groups the fields beneath it. Tap ", hb(T, "+ Add Header"), " in a section, rename it via its ", hb(T, "⋮ → Edit"), ", and use ", hb(T, "Move up / down"), " to slide it above the fields it should group. Headers also print as sub-headings in your exported PDF."), /*#__PURE__*/React.createElement("div", null, hb(T, "Groups"), " — The hub sorts your sections into groups (Combat, Skills, and so on). Tap ", hb(T, "+ Add Group"), " to make your own — name it and pick an icon — then open any section's ", hb(T, "⋮ → Move to group…"), " to file it there. A category's ", hb(T, "⋮ → Merge into…"), " folds it into another. Deleting a group you made keeps its sections — they simply return to their default groups."), /*#__PURE__*/React.createElement("div", null, hb(T, "Portrait"), " — Tap ", hb(T, "Adjust photo"), " to move, zoom, or replace it; tap ", hb(T, "✓ Done"), " to lock it."), /*#__PURE__*/React.createElement("div", null, hb(T, "Themes"), " — The colored circles in the top bar restyle the whole sheet."), /*#__PURE__*/React.createElement("div", null, hb(T, "Journal"), " — Open the ", hb(T, "Journal"), " card to jot session notes, or to retire the character when you're done."), /*#__PURE__*/React.createElement("div", null, hb(T, "Export & Share"), " — ", hb(T, "⤓ Export / Share Sheet"), " (also reachable from a button in the top bar) makes a polished PDF you can share or save; ", hb(T, "⬇ Backup file (.json)"), " saves a re-importable backup."), /*#__PURE__*/React.createElement("div", null, hb(T, "Auto-saved"), " — Your changes save automatically. While editing a field, tap Undo to step back a change; after a delete, an ", hb(T, "Undo"), " lets you bring it back."))), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowHelp(false),
     className: "ss-press",
     style: {
@@ -6388,6 +6437,7 @@ function CharacterScreen({
     group: group,
     activeCat: activeCat,
     setActiveCat: setActiveCat,
+    onAddScan: onAddScan,
     onAddSection: addSection,
     onAddGroup: () => setAddGroup(true),
     menuKey: menuKey,
@@ -6911,6 +6961,7 @@ function Sheetmancer() {
   const [activeCharIdx, setActiveCharIdx] = useState(null);
   const [activeIsFallen, setActiveIsFallen] = useState(false);
   const [captureImages, setCaptureImages] = useState([]);
+  const [scanAddIdx, setScanAddIdx] = useState(null);
   const T = THEMES[themeKey];
   useEffect(() => {
     const c = store.get("ss-chars");
@@ -6955,6 +7006,7 @@ function Sheetmancer() {
         if (catBackRef.current.close) catBackRef.current.close();
         return;
       }
+      setScanAddIdx(null);
       setView(v => v === "home" || v === "loading" ? v : "home");
     };
     window.addEventListener("popstate", onPop);
@@ -6970,8 +7022,10 @@ function Sheetmancer() {
     store.set("ss-auth", true);
     setView("home");
   };
-  const handleStartCapture = () => setView("capture");
+  const handleStartCapture = () => { setScanAddIdx(null); setView("capture"); };
+  const handleStartAddScan = idx => { setScanAddIdx(idx); setView("capture"); };
   const handleBack = () => {
+    setScanAddIdx(null);
     setView("home");
   };
   const handleScan = images => {
@@ -6980,6 +7034,20 @@ function Sheetmancer() {
   };
   const handleExtracted = charData => {
     try { store.set("ss-scanCount", (store.get("ss-scanCount") || 0) + 1); } catch (_) {}
+    if (scanAddIdx != null) {
+      /* Add-to-existing: append the scanned sections onto the targeted character as NEW
+         sections (never merged, existing content untouched), reopen it, and toast the result.
+         Costs a scan exactly like a new character — the Worker already charged one on this same
+         successful scan; there is no separate billing path. */
+      const _added = (charData && Array.isArray(charData.sections)) ? charData.sections.length : 0;
+      setCharacters(prev => prev.map((c, i) => i === scanAddIdx ? appendScannedSections(c, charData.sections) : c));
+      setActiveCharIdx(scanAddIdx);
+      setActiveIsFallen(false);
+      setScanAddIdx(null);
+      setView("character");
+      try { var _t = document.getElementById("ssToast"); if (_t) { _t.onclick = null; _t.textContent = "Added " + _added + (_added === 1 ? " new section" : " new sections") + " \u2014 find them in your character, ready to arrange."; _t.classList.add("show"); setTimeout(function () { _t.classList.remove("show"); }, 5000); } } catch (_) {}
+      return;
+    }
     const nc = [...characters, charData];
     setCharacters(nc);
     setActiveCharIdx(nc.length - 1);
@@ -7072,7 +7140,9 @@ function Sheetmancer() {
   }), view === "capture" && /*#__PURE__*/React.createElement(CaptureScreen, {
     T: T,
     onBack: handleBack,
-    onScan: handleScan
+    onScan: handleScan,
+    addMode: scanAddIdx != null,
+    targetName: (scanAddIdx != null && characters[scanAddIdx]) ? characters[scanAddIdx].name : ""
   }), view === "processing" && /*#__PURE__*/React.createElement(ProcessingScreen, {
     T: T,
     images: captureImages,
@@ -7084,6 +7154,7 @@ function Sheetmancer() {
     isFallen: activeIsFallen,
     onBack: handleBack,
     onSave: handleSaveChar,
+    onAddScan: activeIsFallen ? null : () => handleStartAddScan(activeCharIdx),
     onArchive: activeIsFallen ? null : () => {
       handleArchiveChar(activeCharIdx);
       setView("home");
