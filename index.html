@@ -2307,7 +2307,7 @@ function ConfirmAdd({ T, count, targetName, slotsLeft, onConfirm, onClose }) {
     style: { color: T.text, fontSize: 14.5, margin: "10px 0 4px", lineHeight: 1.55 }
   }, "Your new pages join ", /*#__PURE__*/React.createElement("span", { translate: "no" }, nm), " as fresh sections at the end — ready to rearrange, rename, or edit however you like. Nothing you've already entered is changed."), /*#__PURE__*/React.createElement("div", {
     style: { color: T.textMuted, fontSize: 13, margin: "0 0 18px", lineHeight: 1.5 }
-  }, "Scanning ", count, " ", count === 1 ? "page" : "pages", ". This uses one Character Scan (up to 10 pages)", (typeof slotsLeft === "number" ? " — you have " + slotsLeft + " left." : ".")), /*#__PURE__*/React.createElement("button", {
+  }, "This uses one Character Scan (up to 10 pages)", (typeof slotsLeft === "number" ? " — you have " + slotsLeft + " left." : ".")), /*#__PURE__*/React.createElement("button", {
     onClick: onConfirm, className: "ss-press",
     style: { width: "100%", padding: "14px", borderRadius: 12, border: "none", cursor: "pointer", background: T.metalGrad, color: T.bg, fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, fontSize: 15, marginBottom: 10, boxShadow: "0 3px 14px " + T.accentFaint }
   }, "Yes — add these pages"), /*#__PURE__*/React.createElement("button", {
@@ -2460,7 +2460,7 @@ function HomeScreen({
       marginTop: 4,
       letterSpacing: 1
     }
-  }, "Sheetmancer · build v54"))), /*#__PURE__*/React.createElement("button", {
+  }, "Sheetmancer · build v55"))), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowHelp(false),
     className: "ss-press",
     style: {
@@ -3108,7 +3108,7 @@ function CaptureScreen({
     style: { display: "flex", alignItems: "center", gap: 9 }
   }, /*#__PURE__*/React.createElement("span", { style: badgeStyle }, "1"), stepHead("Add your pages")), images.length === 0 && /*#__PURE__*/React.createElement("div", {
     style: { fontSize: 13, color: T.textSoft, lineHeight: 1.45, margin: "-4px 0 0 33px" }
-  }, "Snap a photo of each page (up to 10) — or upload photos you already have."), /*#__PURE__*/React.createElement("div", {
+  }, "Snap a photo of each page (up to 10) — or upload photos you already have.", addMode ? " This uses one of your available Character Scans (up to 10 pages)." : null), /*#__PURE__*/React.createElement("div", {
     style: { display: "flex", gap: 10 }
   }, /*#__PURE__*/React.createElement("button", {
     onClick: () => camRef.current?.click(), className: "ss-press", style: tileStyle
