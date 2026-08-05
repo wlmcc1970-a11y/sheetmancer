@@ -985,6 +985,53 @@ function downscaleImage(dataUrl, maxDim = 1568, quality = 0.82) {
   });
 }
 
+/* ━━━━ HEIC SUPPORT (lazy) ━━━━ */
+function ssShowToast(msg, ms) {
+  try {
+    var t = document.getElementById("ssToast");
+    if (!t) return;
+    t.onclick = function () { t.classList.remove("show"); };
+    t.textContent = msg;
+    t.classList.add("show");
+    if (t.__ssHide) clearTimeout(t.__ssHide);
+    t.__ssHide = setTimeout(function () { t.classList.remove("show"); }, ms || 8000);
+  } catch (e) {}
+}
+function isHeicFile(file) {
+  if (!file) return false;
+  var t = (file.type || "").toLowerCase();
+  if (t === "image/heic" || t === "image/heif" || t === "image/heic-sequence" || t === "image/heif-sequence") return true;
+  return /\.(heic|heif)$/i.test(file.name || "");
+}
+var __heicDecoderPromise = null;
+function loadHeicDecoder() {
+  if (typeof window !== "undefined" && window.heic2any) return Promise.resolve(window.heic2any);
+  if (__heicDecoderPromise) return __heicDecoderPromise;
+  __heicDecoderPromise = new Promise(function (resolve, reject) {
+    var s = document.createElement("script");
+    s.src = "https://cdnjs.cloudflare.com/ajax/libs/heic2any/0.0.4/heic2any.min.js";
+    s.async = true;
+    s.onload = function () {
+      if (window.heic2any) resolve(window.heic2any);
+      else { __heicDecoderPromise = null; reject(new Error("heic2any unavailable after load")); }
+    };
+    s.onerror = function () { __heicDecoderPromise = null; reject(new Error("heic2any failed to load")); };
+    document.head.appendChild(s);
+  });
+  return __heicDecoderPromise;
+}
+/* Returns a browser-decodable image Blob for HEIC/HEIF inputs (converted to JPEG),
+   or the original file for everything else. Throws on HEIC conversion failure so
+   callers can show a friendly message and NEVER pass an undecodable image onward. */
+async function toDecodableImage(file) {
+  if (!isHeicFile(file)) return file;
+  var heic2any = await loadHeicDecoder();
+  var out = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.92 });
+  var blob = Array.isArray(out) ? out[0] : out;
+  if (!blob || !blob.size) throw new Error("HEIC conversion produced no image");
+  return blob;
+}
+
 /* ━━━━ STORAGE ━━━━ */
 /* P1 haptics: subtle, sparing vibration on key moments (Android; iOS safely ignores) */
 function buzz(p){try{if(navigator.vibrate)navigator.vibrate(p);}catch(_){}}
@@ -2460,7 +2507,7 @@ function HomeScreen({
       marginTop: 4,
       letterSpacing: 1
     }
-  }, "Sheetmancer · build v55"))), /*#__PURE__*/React.createElement("button", {
+  }, "Sheetmancer · build v56"))), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowHelp(false),
     className: "ss-press",
     style: {
@@ -3041,13 +3088,18 @@ function CaptureScreen({
   const fileRef = useRef(null);
   const camRef = useRef(null);
   const [capNotice, setCapNotice] = useState(false);
+  const [heicNotice, setHeicNotice] = useState(false);
   const [confirmScan, setConfirmScan] = useState(false);
   const flashCap = () => {
     setCapNotice(true);
     setTimeout(() => setCapNotice(false), 4000);
   };
+  const flashHeic = () => {
+    setHeicNotice(true);
+    setTimeout(() => setHeicNotice(false), 9000);
+  };
   const handleFiles = async e => {
-    const files = Array.from(e.target.files).filter(f => f.type.startsWith("image/"));
+    const files = Array.from(e.target.files).filter(f => f.type.startsWith("image/") || isHeicFile(f));
     e.target.value = "";
     const slots = MAX_PAGES - images.length;
     if (slots <= 0) {
@@ -3056,12 +3108,20 @@ function CaptureScreen({
     }
     const accept = files.slice(0, slots);
     const processed = [];
+    let heicFailed = false;
     for (const file of accept) {
+      let src = file;
+      try {
+        src = await toDecodableImage(file);
+      } catch (err) {
+        heicFailed = true;
+        continue;
+      }
       const dataUrl = await new Promise(res => {
         const r = new FileReader();
         r.onload = ev => res(ev.target.result);
         r.onerror = () => res(null);
-        r.readAsDataURL(file);
+        r.readAsDataURL(src);
       });
       if (!dataUrl) continue;
       const small = await downscaleImage(dataUrl);
@@ -3071,6 +3131,7 @@ function CaptureScreen({
       });
     }
     if (processed.length) setImages(prev => [...prev, ...processed].slice(0, MAX_PAGES));
+    if (heicFailed) flashHeic();
     if (files.length > slots) flashCap();
   };
   const badgeStyle = { width: 24, height: 24, borderRadius: "50%", background: T.metalGrad, color: "#0A0A0C", fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, boxShadow: `0 0 10px ${T.accentFaint}` };
@@ -3118,7 +3179,9 @@ function CaptureScreen({
     style: { display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 12, color: T.textMuted, textAlign: "center" }
   }, /*#__PURE__*/React.createElement("svg", { width: 13, height: 13, viewBox: "0 0 24 24", fill: T.accent, style: { flexShrink: 0 } }, /*#__PURE__*/React.createElement("path", { d: "M12 2l1.9 6.1L20 10l-6.1 1.9L12 18l-1.9-6.1L4 10l6.1-1.9z" })), "Good light · lay it flat · fill the frame · up to " + MAX_PAGES + " pages"), capNotice && /*#__PURE__*/React.createElement("p", {
     style: { fontSize: 13, color: T.yellow, margin: 0, lineHeight: 1.4, fontWeight: 600, textAlign: "center" }
-  }, "One scan holds up to ", MAX_PAGES, " pages, so the extra photos weren't added. Anything missing is easy to add by hand afterward."), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+  }, "One scan holds up to ", MAX_PAGES, " pages, so the extra photos weren't added. Anything missing is easy to add by hand afterward."), heicNotice && /*#__PURE__*/React.createElement("p", {
+    style: { fontSize: 13, color: T.yellow, margin: 0, lineHeight: 1.4, fontWeight: 600, textAlign: "center" }
+  }, "One of those photos is in Apple’s HEIC format and couldn’t be converted on this device. On your iPhone, open it in Photos → Share → Save to Files as JPEG, or upload a screenshot of it instead."), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     style: { fontFamily: "'Cinzel',Georgia,serif", fontSize: 12, letterSpacing: 0.5, color: T.textMuted, marginBottom: 7 }
   }, images.length ? "Your pages — " + images.length + " of " + MAX_PAGES : "Your pages"), images.length === 0 ? /*#__PURE__*/React.createElement("div", {
     style: { border: `1px dashed ${T.borderLight}`, borderRadius: 10, padding: 14, textAlign: "center", fontSize: 13, color: T.textMuted, fontStyle: "italic" }
@@ -3250,10 +3313,10 @@ function ProcessingScreen({
         const isUnreadable = v => /^\s*unreadable\s*$/i.test(String(v ?? ""));
         const UNREAD = "(couldn't read this)";
         const nameUnread = isUnreadable(parsed.name);
-        parsed.name = nameUnread ? UNREAD : String(parsed.name || "Unknown Character");
+        parsed.name = nameUnread ? "Unnamed Character" : String(parsed.name || "Unknown Character");
         parsed.name_confidence = nameUnread || parsed.name_confidence === "low" ? "low" : "high";
         const sysUnread = isUnreadable(parsed.system);
-        parsed.system = sysUnread ? UNREAD : String(parsed.system || "Unknown System");
+        parsed.system = sysUnread ? "Unknown system" : String(parsed.system || "Unknown System");
         parsed.system_confidence = sysUnread || parsed.system_confidence === "low" ? "low" : "high";
         parsed.sections = (parsed.sections || []).filter(s => s && s.title).map((s, si) => ({
           id: s.id || `sec_${si}`,
@@ -3418,8 +3481,8 @@ function ProcessingScreen({
   }, late ? "Almost there — hang tight" : "This can take several minutes"), /*#__PURE__*/React.createElement("div", {
     style: { color: T.textMuted, fontSize: 14, lineHeight: 1.55 }
   }, late ? "Dense sheets can take a few minutes. We're putting the finishing touches on your character now." : "We read every line carefully so your character comes out right — the more pages, the longer it takes.")), /*#__PURE__*/React.createElement("div", {
-    style: { color: T.textMuted, fontSize: 12, fontStyle: "italic", opacity: 0.8 }
-  }, "Keep this screen open.")));
+    style: { color: T.accentBright || T.accent, fontFamily: "'Cinzel',Georgia,serif", fontSize: 13.5, fontWeight: 700, letterSpacing: 0.6, textAlign: "center", padding: "9px 20px", borderRadius: 999, border: `1px solid ${T.accent}66`, background: T.accentFaint, boxShadow: `0 0 16px ${T.accentFaint}` }
+  }, "Please keep this screen open")));
 }
 
 /* ━━━━ AVATAR EDITOR ━━━━ */
@@ -3484,9 +3547,17 @@ function AvatarEditor({
       };
     });
   };
-  const handleFile = e => {
+  const handleFile = async e => {
     const f = e.target.files[0];
-    if (!f || !f.type.startsWith("image/")) return;
+    e.target.value = "";
+    if (!f || !(f.type.startsWith("image/") || isHeicFile(f))) return;
+    let src = f;
+    try {
+      src = await toDecodableImage(f);
+    } catch (err) {
+      ssShowToast("That photo is in Apple’s HEIC format and couldn’t be converted here. Save it as JPEG (Photos → Share → Save to Files as JPEG) or pick a screenshot instead.");
+      return;
+    }
     const r = new FileReader();
     r.onload = ev => {
       const img2 = new Image();
@@ -3513,10 +3584,15 @@ function AvatarEditor({
           avatarZoom: 1
         }));
       };
+      img2.onerror = () => {
+        ssShowToast("Couldn’t read that image. Please try a different photo, or save it as a JPEG first.");
+      };
       img2.src = ev.target.result;
     };
-    r.readAsDataURL(f);
-    e.target.value = "";
+    r.onerror = () => {
+      ssShowToast("Couldn’t read that image. Please try a different photo, or save it as a JPEG first.");
+    };
+    r.readAsDataURL(src);
   };
   const handleStart = e => {
     if (!img || !adjust) return;
@@ -3672,14 +3748,15 @@ function AvatarEditor({
       userSelect: "none",
       pointerEvents: "none"
     }
-  }) : /*#__PURE__*/React.createElement("span", {
-    style: {
-      fontSize: 72,
-      fontWeight: 700,
-      color: T.accent,
-      fontFamily: "'Cinzel',Georgia,serif"
-    }
-  }, data.name.charAt(0) || "?"), /*#__PURE__*/React.createElement("div", { style: { position: "absolute", top: 10, left: 10, width: 22, height: 22, borderTop: `2px solid ${T.accent}`, borderLeft: `2px solid ${T.accent}`, borderTopLeftRadius: 4, pointerEvents: "none", zIndex: 2, opacity: 0.9 } }), /*#__PURE__*/React.createElement("div", { style: { position: "absolute", top: 10, right: 10, width: 22, height: 22, borderTop: `2px solid ${T.accent}`, borderRight: `2px solid ${T.accent}`, borderTopRightRadius: 4, pointerEvents: "none", zIndex: 2, opacity: 0.9 } }), !adjust && /*#__PURE__*/React.createElement("div", { style: { position: "absolute", bottom: 10, left: 10, width: 22, height: 22, borderBottom: `2px solid ${T.accent}`, borderLeft: `2px solid ${T.accent}`, borderBottomLeftRadius: 4, pointerEvents: "none", zIndex: 2, opacity: 0.9 } }), !adjust && /*#__PURE__*/React.createElement("div", { style: { position: "absolute", bottom: 10, right: 10, width: 22, height: 22, borderBottom: `2px solid ${T.accent}`, borderRight: `2px solid ${T.accent}`, borderBottomRightRadius: 4, pointerEvents: "none", zIndex: 2, opacity: 0.9 } }), img && adjust && /*#__PURE__*/React.createElement("div", {
+  }) : /*#__PURE__*/React.createElement("div", {
+    style: { display: "flex", flexDirection: "column", alignItems: "center", gap: 8, padding: "0 16px", textAlign: "center", pointerEvents: "none" }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: { fontSize: 56, fontWeight: 700, color: T.accent, fontFamily: "'Cinzel',Georgia,serif", lineHeight: 1 }
+  }, data.name.charAt(0) || "?"), /*#__PURE__*/React.createElement("span", {
+    style: { fontFamily: "'Cinzel',Georgia,serif", fontSize: 14.5, fontWeight: 700, color: T.accentBright || T.accent, letterSpacing: 0.5 }
+  }, "Add a portrait"), /*#__PURE__*/React.createElement("span", {
+    style: { fontSize: 12, color: T.textMuted, lineHeight: 1.4 }
+  }, "Tap to choose a photo from your device")), /*#__PURE__*/React.createElement("div", { style: { position: "absolute", top: 10, left: 10, width: 22, height: 22, borderTop: `2px solid ${T.accent}`, borderLeft: `2px solid ${T.accent}`, borderTopLeftRadius: 4, pointerEvents: "none", zIndex: 2, opacity: 0.9 } }), /*#__PURE__*/React.createElement("div", { style: { position: "absolute", top: 10, right: 10, width: 22, height: 22, borderTop: `2px solid ${T.accent}`, borderRight: `2px solid ${T.accent}`, borderTopRightRadius: 4, pointerEvents: "none", zIndex: 2, opacity: 0.9 } }), !adjust && /*#__PURE__*/React.createElement("div", { style: { position: "absolute", bottom: 10, left: 10, width: 22, height: 22, borderBottom: `2px solid ${T.accent}`, borderLeft: `2px solid ${T.accent}`, borderBottomLeftRadius: 4, pointerEvents: "none", zIndex: 2, opacity: 0.9 } }), !adjust && /*#__PURE__*/React.createElement("div", { style: { position: "absolute", bottom: 10, right: 10, width: 22, height: 22, borderBottom: `2px solid ${T.accent}`, borderRight: `2px solid ${T.accent}`, borderBottomRightRadius: 4, pointerEvents: "none", zIndex: 2, opacity: 0.9 } }), img && adjust && /*#__PURE__*/React.createElement("div", {
     style: {
       position: "absolute",
       bottom: 8,
@@ -4273,6 +4350,7 @@ function VerifyModal({
   onVerify,
   onEdit
 }) {
+  const [editKey, setEditKey] = useState(null);
   const items = [];
   if (data.name_confidence === "low") items.push({
     type: "name",
@@ -4411,11 +4489,15 @@ function VerifyModal({
       lineHeight: 1.5,
       marginBottom: 14
     }
-  }, "Compare each to your pages, then tap ", /*#__PURE__*/React.createElement("b", {
+  }, "Compare each to your pages. Tap ", /*#__PURE__*/React.createElement("b", {
     style: {
       color: T.green
     }
-  }, "Looks right"), " — or tap the value to fix it."), /*#__PURE__*/React.createElement("div", {
+  }, "✓ Looks right"), " to keep it, or ", /*#__PURE__*/React.createElement("b", {
+    style: {
+      color: T.accent
+    }
+  }, "✎ Edit"), " to fix it."), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       justifyContent: "space-between",
@@ -4478,6 +4560,8 @@ function VerifyModal({
     value: it.value,
     onChange: v => onEdit(it, v),
     T: T,
+    forceEdit: editKey === it.key,
+    onClose: () => setEditKey(null),
     style: {
       fontSize: 15,
       fontWeight: 700,
@@ -4495,26 +4579,17 @@ function VerifyModal({
     style: { cursor: "pointer", background: T.accentFaint, border: `1px solid ${T.borderLight}`, borderRadius: 12, padding: "5px 11px", color: T.text, fontSize: 13, fontWeight: 700, maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }
   }, "Use \u201C" + it.alt + "\u201D")) : null, it.foundOnRecheck ? /*#__PURE__*/React.createElement("div", {
     style: { fontSize: 12, color: T.textMuted, marginTop: 4 }
-  }, "Found on the double-check pass — confirm it's on your pages.") : null), /*#__PURE__*/React.createElement("button", {
+  }, "Found on the double-check pass — confirm it's on your pages.") : null), /*#__PURE__*/React.createElement("div", {
+    style: { flex: "none", display: "flex", flexDirection: "column", gap: 6 }
+  }, /*#__PURE__*/React.createElement("button", {
     onClick: () => onVerify(it),
     className: "ss-press",
-    style: {
-      flex: "none",
-      display: "flex",
-      alignItems: "center",
-      gap: 4,
-      cursor: "pointer",
-      background: T.green,
-      border: "none",
-      borderRadius: 16,
-      padding: "6px 12px",
-      color: "#fff",
-      fontSize: 11,
-      fontWeight: 700,
-      fontFamily: "'Cinzel',Georgia,serif",
-      whiteSpace: "nowrap"
-    }
-  }, "✓ Looks right")))))), /*#__PURE__*/React.createElement("button", {
+    style: { display: "flex", alignItems: "center", justifyContent: "center", gap: 4, cursor: "pointer", background: T.green, border: "none", borderRadius: 16, padding: "6px 12px", color: "#fff", fontSize: 11, fontWeight: 700, fontFamily: "'Cinzel',Georgia,serif", whiteSpace: "nowrap" }
+  }, "✓ Looks right"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setEditKey(it.key),
+    className: "ss-press",
+    style: { display: "flex", alignItems: "center", justifyContent: "center", gap: 4, cursor: "pointer", background: "none", border: `1px solid ${T.accent}`, borderRadius: 16, padding: "6px 12px", color: T.accent, fontSize: 11, fontWeight: 700, fontFamily: "'Cinzel',Georgia,serif", whiteSpace: "nowrap" }
+  }, "✎ Edit"))))))), /*#__PURE__*/React.createElement("button", {
     onClick: onClose,
     className: "ss-press",
     style: {
