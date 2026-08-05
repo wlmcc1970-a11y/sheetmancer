@@ -1094,12 +1094,44 @@ async function heicToJpegBlob(file) {
    HEIC/HEIF do we spin up the heavy converter, then downscale its JPEG output the same way.
    Throws if the image can't be read — callers skip it and show a friendly note, so a
    blank/undecodable image is NEVER sent onward to the paid scan. */
+/* Decode a File/Blob to a downscaled, correctly-ORIENTED JPEG data URL (or null if the
+   browser can't decode it, e.g. HEIC on Chrome/Android). Uses createImageBitmap with
+   imageOrientation:'from-image', which EXPLICITLY applies the photo's EXIF rotation. The
+   plain <img>/canvas path does NOT reliably honor EXIF on every engine, so EXIF-rotated
+   phone JPEGs were reaching the scanner SIDEWAYS and failing to read (while HEIC — converted
+   upright with no EXIF — read fine). Falls back to the <img> data-URL path if
+   createImageBitmap is unavailable or can't decode this type. */
+async function decodeUprightJpeg(fileOrBlob, maxDim, quality) {
+  if (typeof createImageBitmap === "function") {
+    try {
+      var bmp = await createImageBitmap(fileOrBlob, { imageOrientation: "from-image" });
+      var w = bmp.width, h = bmp.height;
+      if (w && h) {
+        if (Math.max(w, h) > maxDim) { var sc = maxDim / Math.max(w, h); w = Math.round(w * sc); h = Math.round(h * sc); }
+        var c = document.createElement("canvas"); c.width = w; c.height = h;
+        var ctx = c.getContext("2d");
+        if (ctx) {
+          ctx.drawImage(bmp, 0, 0, w, h);
+          try { if (bmp.close) bmp.close(); } catch (e) {}
+          return c.toDataURL("image/jpeg", quality);
+        }
+      }
+      try { if (bmp.close) bmp.close(); } catch (e) {}
+    } catch (e) { /* undecodable here (e.g. HEIC on Android) — fall through to the <img> path */ }
+  }
+  return await downscaleStrict(await readAsDataUrl(fileOrBlob), maxDim, quality);
+}
+/* Turn ANY uploaded image into a downscaled, UPRIGHT JPEG data URL for scanning/portraits.
+   Decode first (JPEG/PNG everywhere + HEIC on Safari/iOS); only if that fails AND the file is
+   HEIC/HEIF do we spin up the heavy converter, then decode its JPEG output the same way.
+   Throws if the image can't be read — callers skip it and show a friendly note, so a
+   blank/undecodable image is NEVER sent onward to the paid scan. */
 async function fileToScanJpeg(file, maxDim, quality) {
-  var jpeg = await downscaleStrict(await readAsDataUrl(file), maxDim, quality);
+  var jpeg = await decodeUprightJpeg(file, maxDim, quality);
   if (jpeg) return jpeg;
   if (isHeicFile(file)) {
     var blob = await heicToJpegBlob(file);
-    jpeg = await downscaleStrict(await readAsDataUrl(blob), maxDim, quality);
+    jpeg = await decodeUprightJpeg(blob, maxDim, quality);
     if (jpeg) return jpeg;
   }
   throw new Error("unreadable image");
@@ -2580,7 +2612,7 @@ function HomeScreen({
       marginTop: 4,
       letterSpacing: 1
     }
-  }, "Sheetmancer · build v60"))), /*#__PURE__*/React.createElement("button", {
+  }, "Sheetmancer · build v61"))), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowHelp(false),
     className: "ss-press",
     style: {
