@@ -1004,33 +1004,92 @@ function isHeicFile(file) {
   if (t === "image/heic" || t === "image/heif" || t === "image/heic-sequence" || t === "image/heif-sequence") return true;
   return /\.(heic|heif)$/i.test(file.name || "");
 }
-var __heicDecoderPromise = null;
-function loadHeicDecoder() {
-  if (typeof window !== "undefined" && window.heic2any) return Promise.resolve(window.heic2any);
-  if (__heicDecoderPromise) return __heicDecoderPromise;
-  __heicDecoderPromise = new Promise(function (resolve, reject) {
+var HEIC_CDN_URL = "https://cdnjs.cloudflare.com/ajax/libs/heic2any/0.0.4/heic2any.min.js";
+/* Decode an image File/Blob with the BROWSER's own decoder and return a downscaled
+   JPEG data URL — or null if the browser can't decode it (e.g. HEIC on Chrome/Android).
+   Handles JPEG/PNG everywhere and HEIC on Safari/iOS (which decodes it natively, so the
+   heavy converter below is never even loaded there). Uses an object URL (memory-light)
+   and always revokes it. */
+function nativeDecodeToJpeg(fileOrBlob, maxDim, quality) {
+  return new Promise(function (resolve) {
+    var url = null;
+    try { url = URL.createObjectURL(fileOrBlob); } catch (e) { resolve(null); return; }
+    var img = new Image();
+    var finish = function (result) { try { URL.revokeObjectURL(url); } catch (e) {} resolve(result); };
+    img.onload = function () {
+      var w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
+      if (!w || !h) { finish(null); return; }
+      if (Math.max(w, h) > maxDim) { var sc = maxDim / Math.max(w, h); w = Math.round(w * sc); h = Math.round(h * sc); }
+      var c = document.createElement("canvas"); c.width = w; c.height = h;
+      var ctx = c.getContext("2d");
+      if (!ctx) { finish(null); return; }
+      try { ctx.drawImage(img, 0, 0, w, h); finish(c.toDataURL("image/jpeg", quality)); }
+      catch (e) { finish(null); }
+    };
+    img.onerror = function () { finish(null); };
+    img.src = url;
+  });
+}
+/* Load a FRESH heic2any module for a single image. heic2any reuses one libheif WASM
+   instance across calls, so its heap GROWS with every image and stalls a multi-page batch
+   (the root cause of the mid-batch freeze). Re-inserting the (HTTP-cached) script re-runs
+   its UMD and hands back a brand-new instance; dropping the reference afterward lets the
+   previous image's memory be reclaimed. The script byte-download is cached, so only the
+   WASM instance is rebuilt per image. */
+function loadFreshHeic2any(timeoutMs) {
+  return new Promise(function (resolve, reject) {
+    try { delete window.heic2any; } catch (e) { try { window.heic2any = undefined; } catch (e2) {} }
     var s = document.createElement("script");
-    s.src = "https://cdnjs.cloudflare.com/ajax/libs/heic2any/0.0.4/heic2any.min.js";
+    var to = setTimeout(function () { try { s.remove(); } catch (e) {} reject(new Error("decoder load timed out")); }, timeoutMs || 30000);
+    s.src = HEIC_CDN_URL;
     s.async = true;
     s.onload = function () {
-      if (window.heic2any) resolve(window.heic2any);
-      else { __heicDecoderPromise = null; reject(new Error("heic2any unavailable after load")); }
+      clearTimeout(to);
+      var fn = window.heic2any;
+      try { s.remove(); } catch (e) {}
+      if (typeof fn === "function") resolve(fn);
+      else reject(new Error("decoder unavailable"));
     };
-    s.onerror = function () { __heicDecoderPromise = null; reject(new Error("heic2any failed to load")); };
+    s.onerror = function () { clearTimeout(to); try { s.remove(); } catch (e) {} reject(new Error("decoder failed to load")); };
     document.head.appendChild(s);
   });
-  return __heicDecoderPromise;
 }
-/* Returns a browser-decodable image Blob for HEIC/HEIF inputs (converted to JPEG),
-   or the original file for everything else. Throws on HEIC conversion failure so
-   callers can show a friendly message and NEVER pass an undecodable image onward. */
-async function toDecodableImage(file) {
-  if (!isHeicFile(file)) return file;
-  var heic2any = await loadHeicDecoder();
-  var out = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.92 });
-  var blob = Array.isArray(out) ? out[0] : out;
-  if (!blob || !blob.size) throw new Error("HEIC conversion produced no image");
-  return blob;
+/* Convert a HEIC/HEIF blob to a JPEG blob using a fresh instance, then release it.
+   Timeout-guarded (heic2any decodes in its OWN internal worker, so this main-thread timer
+   CAN fire even if that worker hangs on a pathological image) and we terminate that worker
+   afterward so its WASM heap is freed immediately instead of waiting on GC — together this
+   is what keeps a multi-page batch from accumulating memory and stalling. */
+async function heicToJpegBlob(file) {
+  var h2a = await loadFreshHeic2any(30000);
+  try {
+    var out = await Promise.race([
+      h2a({ blob: file, toType: "image/jpeg", quality: 0.85 }),
+      new Promise(function (_, rej) { setTimeout(function () { rej(new Error("conversion timed out")); }, 45000); })
+    ]);
+    var blob = Array.isArray(out) ? out[0] : out;
+    if (!blob || !blob.size) throw new Error("HEIC conversion produced no image");
+    return blob;
+  } finally {
+    h2a = null;
+    try { if (window.__heic2any__worker && window.__heic2any__worker.terminate) window.__heic2any__worker.terminate(); } catch (e) {}
+    try { delete window.__heic2any__worker; } catch (e) { try { window.__heic2any__worker = undefined; } catch (e2) {} }
+    try { delete window.heic2any; } catch (e) { try { window.heic2any = undefined; } catch (e2) {} }
+  }
+}
+/* Turn ANY uploaded image into a downscaled JPEG data URL for scanning/portraits.
+   Native decode first (JPEG/PNG + HEIC-on-Safari); only if that fails AND the file is
+   HEIC/HEIF do we spin up the heavy converter, then decode its JPEG output. Throws if the
+   image can't be read — callers skip it and show a friendly note, so a blank/undecodable
+   image is NEVER sent onward to the paid scan. */
+async function fileToScanJpeg(file, maxDim, quality) {
+  var jpeg = await nativeDecodeToJpeg(file, maxDim, quality);
+  if (jpeg) return jpeg;
+  if (isHeicFile(file)) {
+    var blob = await heicToJpegBlob(file);
+    jpeg = await nativeDecodeToJpeg(blob, maxDim, quality);
+    if (jpeg) return jpeg;
+  }
+  throw new Error("unreadable image");
 }
 
 /* ━━━━ STORAGE ━━━━ */
@@ -2508,7 +2567,7 @@ function HomeScreen({
       marginTop: 4,
       letterSpacing: 1
     }
-  }, "Sheetmancer · build v57"))), /*#__PURE__*/React.createElement("button", {
+  }, "Sheetmancer · build v58"))), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowHelp(false),
     className: "ss-press",
     style: {
@@ -3116,25 +3175,19 @@ function CaptureScreen({
       for (let i = 0; i < accept.length; i++) {
         const file = accept[i];
         setBusyMsg("Page " + (i + 1) + " of " + accept.length + (isHeicFile(file) ? " — converting…" : "…"));
-        let src = file;
+        await new Promise(r => setTimeout(r, 0));
+        let jpeg;
         try {
-          src = await toDecodableImage(file);
+          jpeg = await fileToScanJpeg(file, 1568, 0.82);
         } catch (err) {
           heicFailed = true;
           continue;
         }
-        const dataUrl = await new Promise(res => {
-          const r = new FileReader();
-          r.onload = ev => res(ev.target.result);
-          r.onerror = () => res(null);
-          r.readAsDataURL(src);
-        });
-        if (!dataUrl) continue;
-        const small = await downscaleImage(dataUrl);
         setImages(prev => [...prev, {
-          dataUrl: small,
+          dataUrl: jpeg,
           name: file.name
         }].slice(0, MAX_PAGES));
+        await new Promise(r => setTimeout(r, 120));
       }
     } finally {
       setBusy(false);
@@ -3198,7 +3251,7 @@ function CaptureScreen({
     style: { fontSize: 13, color: T.yellow, margin: 0, lineHeight: 1.4, fontWeight: 600, textAlign: "center" }
   }, "One scan holds up to ", MAX_PAGES, " pages, so the extra photos weren't added. Anything missing is easy to add by hand afterward."), heicNotice && /*#__PURE__*/React.createElement("p", {
     style: { fontSize: 13, color: T.yellow, margin: 0, lineHeight: 1.4, fontWeight: 600, textAlign: "center" }
-  }, "One of those photos is in Apple’s HEIC format and couldn’t be converted on this device. On your iPhone, open it in Photos → Share → Save to Files as JPEG, or upload a screenshot of it instead."), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+  }, "Some photos couldn’t be prepared on this device. Try adding a few at a time — or save them as JPEGs (or upload a screenshot) and re-add."), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     style: { fontFamily: "'Cinzel',Georgia,serif", fontSize: 12, letterSpacing: 0.5, color: T.textMuted, marginBottom: 7 }
   }, images.length ? "Your pages — " + images.length + " of " + MAX_PAGES : "Your pages"), images.length === 0 ? /*#__PURE__*/React.createElement("div", {
     style: { border: `1px dashed ${T.borderLight}`, borderRadius: 10, padding: 14, textAlign: "center", fontSize: 13, color: T.textMuted, fontStyle: "italic" }
@@ -3568,48 +3621,23 @@ function AvatarEditor({
     const f = e.target.files[0];
     e.target.value = "";
     if (!f || !(f.type.startsWith("image/") || isHeicFile(f))) return;
-    let src = f;
+    let jpeg;
     try {
-      src = await toDecodableImage(f);
+      jpeg = await fileToScanJpeg(f, 768, 0.85);
     } catch (err) {
-      ssShowToast("That photo is in Apple’s HEIC format and couldn’t be converted here. Save it as JPEG (Photos → Share → Save to Files as JPEG) or pick a screenshot instead.");
+      ssShowToast("Couldn’t prepare that photo. If it’s an iPhone HEIC image, save it as JPEG (or pick a screenshot) and try again.");
       return;
     }
-    const r = new FileReader();
-    r.onload = ev => {
-      const img2 = new Image();
-      img2.onload = () => {
-        const maxDim = 768;
-        let w = img2.width,
-          h = img2.height;
-        const scale = Math.min(1, maxDim / Math.max(w, h));
-        w = Math.round(w * scale);
-        h = Math.round(h * scale);
-        const c = document.createElement("canvas");
-        c.width = w;
-        c.height = h;
-        c.getContext("2d").drawImage(img2, 0, 0, w, h);
-        const compressed = c.toDataURL("image/jpeg", 0.85);
-        snap(data);
-        setData(p => ({
-          ...p,
-          avatarImg: compressed,
-          avatarPan: {
-            x: 0,
-            y: 0
-          },
-          avatarZoom: 1
-        }));
-      };
-      img2.onerror = () => {
-        ssShowToast("Couldn’t read that image. Please try a different photo, or save it as a JPEG first.");
-      };
-      img2.src = ev.target.result;
-    };
-    r.onerror = () => {
-      ssShowToast("Couldn’t read that image. Please try a different photo, or save it as a JPEG first.");
-    };
-    r.readAsDataURL(src);
+    snap(data);
+    setData(p => ({
+      ...p,
+      avatarImg: jpeg,
+      avatarPan: {
+        x: 0,
+        y: 0
+      },
+      avatarZoom: 1
+    }));
   };
   const handleStart = e => {
     if (!img || !adjust) return;
