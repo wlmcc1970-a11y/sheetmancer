@@ -1075,7 +1075,7 @@ async function heicToJpegBlob(file) {
   var h2a = await loadFreshHeic2any(30000);
   try {
     var out = await Promise.race([
-      h2a({ blob: file, toType: "image/jpeg", quality: 0.85 }),
+      h2a({ blob: file, toType: "image/jpeg", quality: 0.92 }),
       new Promise(function (_, rej) { setTimeout(function () { rej(new Error("conversion timed out")); }, 45000); })
     ]);
     var blob = Array.isArray(out) ? out[0] : out;
@@ -2580,7 +2580,7 @@ function HomeScreen({
       marginTop: 4,
       letterSpacing: 1
     }
-  }, "Sheetmancer · build v59"))), /*#__PURE__*/React.createElement("button", {
+  }, "Sheetmancer · build v60"))), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowHelp(false),
     className: "ss-press",
     style: {
