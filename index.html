@@ -2612,7 +2612,7 @@ function HomeScreen({
       marginTop: 4,
       letterSpacing: 1
     }
-  }, "Sheetmancer · build v61"))), /*#__PURE__*/React.createElement("button", {
+  }, "Sheetmancer · build v62"))), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowHelp(false),
     className: "ss-press",
     style: {
@@ -3419,7 +3419,12 @@ function ProcessingScreen({
           throw new Error("The scanner returned an unexpected response — please try again.");
         }
         setStep(3);
-        if (!parsed || !parsed.name || !parsed.sections) throw new Error("Invalid extraction");
+        /* A sheet may legitimately have NO name (esp. pages added via "scan more pages").
+           The engine is supposed to mark that "UNREADABLE" but sometimes returns an empty
+           name — coerce it so the scan is NEVER discarded over a missing name; it renders
+           as "Unnamed Character" below. Only real content (sections) is required. */
+        if (parsed && (parsed.name == null || String(parsed.name).trim() === "")) parsed.name = "UNREADABLE";
+        if (!parsed || !parsed.sections) throw new Error("Invalid extraction");
         /* Validate & sanitize.
            Trust wall (audit B4): the engine returns "UNREADABLE" when it cannot
            read a value. We must NEVER surface that as a confident value. Any
