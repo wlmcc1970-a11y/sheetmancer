@@ -1005,29 +1005,41 @@ function isHeicFile(file) {
   return /\.(heic|heif)$/i.test(file.name || "");
 }
 var HEIC_CDN_URL = "https://cdnjs.cloudflare.com/ajax/libs/heic2any/0.0.4/heic2any.min.js";
-/* Decode an image File/Blob with the BROWSER's own decoder and return a downscaled
-   JPEG data URL — or null if the browser can't decode it (e.g. HEIC on Chrome/Android).
-   Handles JPEG/PNG everywhere and HEIC on Safari/iOS (which decodes it natively, so the
-   heavy converter below is never even loaded there). Uses an object URL (memory-light)
-   and always revokes it. */
-function nativeDecodeToJpeg(fileOrBlob, maxDim, quality) {
+/* Read a File/Blob to a data URL. This is the pre-v58 PROVEN path: a data-URL <img> source
+   is what worked flawlessly for ordinary JPEG/PNG uploads. (v58 briefly switched to
+   URL.createObjectURL, which on some engines does NOT apply EXIF orientation the same way,
+   so EXIF-rotated phone JPEGs came out garbled and failed extraction — reverted here.)
+   Resolves null on error. */
+function readAsDataUrl(fileOrBlob) {
   return new Promise(function (resolve) {
-    var url = null;
-    try { url = URL.createObjectURL(fileOrBlob); } catch (e) { resolve(null); return; }
+    try {
+      var r = new FileReader();
+      r.onload = function (ev) { resolve(ev.target.result); };
+      r.onerror = function () { resolve(null); };
+      r.readAsDataURL(fileOrBlob);
+    } catch (e) { resolve(null); }
+  });
+}
+/* Decode a data URL with the BROWSER's own decoder and return a downscaled JPEG data URL,
+   or null if the browser can't decode it (e.g. HEIC on Chrome/Android). Identical to the
+   proven pre-v58 downscale EXCEPT it reports failure as null (so callers never forward an
+   undecodable image) instead of echoing the original bytes back. */
+function downscaleStrict(dataUrl, maxDim, quality) {
+  return new Promise(function (resolve) {
+    if (!dataUrl) { resolve(null); return; }
     var img = new Image();
-    var finish = function (result) { try { URL.revokeObjectURL(url); } catch (e) {} resolve(result); };
     img.onload = function () {
       var w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
-      if (!w || !h) { finish(null); return; }
+      if (!w || !h) { resolve(null); return; }
       if (Math.max(w, h) > maxDim) { var sc = maxDim / Math.max(w, h); w = Math.round(w * sc); h = Math.round(h * sc); }
       var c = document.createElement("canvas"); c.width = w; c.height = h;
       var ctx = c.getContext("2d");
-      if (!ctx) { finish(null); return; }
-      try { ctx.drawImage(img, 0, 0, w, h); finish(c.toDataURL("image/jpeg", quality)); }
-      catch (e) { finish(null); }
+      if (!ctx) { resolve(null); return; }
+      try { ctx.drawImage(img, 0, 0, w, h); resolve(c.toDataURL("image/jpeg", quality)); }
+      catch (e) { resolve(null); }
     };
-    img.onerror = function () { finish(null); };
-    img.src = url;
+    img.onerror = function () { resolve(null); };
+    img.src = dataUrl;
   });
 }
 /* Load a FRESH heic2any module for a single image. heic2any reuses one libheif WASM
@@ -1076,17 +1088,18 @@ async function heicToJpegBlob(file) {
     try { delete window.heic2any; } catch (e) { try { window.heic2any = undefined; } catch (e2) {} }
   }
 }
-/* Turn ANY uploaded image into a downscaled JPEG data URL for scanning/portraits.
-   Native decode first (JPEG/PNG + HEIC-on-Safari); only if that fails AND the file is
-   HEIC/HEIF do we spin up the heavy converter, then decode its JPEG output. Throws if the
-   image can't be read — callers skip it and show a friendly note, so a blank/undecodable
-   image is NEVER sent onward to the paid scan. */
+/* Turn ANY uploaded image into a downscaled JPEG data URL for scanning/portraits, via the
+   PROVEN FileReader-data-URL path. Native decode first (JPEG/PNG everywhere + HEIC on
+   Safari/iOS, so heic2any is never loaded there); only if that fails AND the file is
+   HEIC/HEIF do we spin up the heavy converter, then downscale its JPEG output the same way.
+   Throws if the image can't be read — callers skip it and show a friendly note, so a
+   blank/undecodable image is NEVER sent onward to the paid scan. */
 async function fileToScanJpeg(file, maxDim, quality) {
-  var jpeg = await nativeDecodeToJpeg(file, maxDim, quality);
+  var jpeg = await downscaleStrict(await readAsDataUrl(file), maxDim, quality);
   if (jpeg) return jpeg;
   if (isHeicFile(file)) {
     var blob = await heicToJpegBlob(file);
-    jpeg = await nativeDecodeToJpeg(blob, maxDim, quality);
+    jpeg = await downscaleStrict(await readAsDataUrl(blob), maxDim, quality);
     if (jpeg) return jpeg;
   }
   throw new Error("unreadable image");
@@ -2567,7 +2580,7 @@ function HomeScreen({
       marginTop: 4,
       letterSpacing: 1
     }
-  }, "Sheetmancer · build v58"))), /*#__PURE__*/React.createElement("button", {
+  }, "Sheetmancer · build v59"))), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowHelp(false),
     className: "ss-press",
     style: {
