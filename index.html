@@ -62,6 +62,7 @@ input,button{font-family:inherit}
 #ssUpdate.show{display:flex;animation:ssRise .35s ease}
 #ssUpdate .pill{padding:4px 12px;border-radius:12px;background:#D4A843;color:#0A0A0C;font-size:12px;white-space:nowrap}
 @keyframes ssRise{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+@keyframes ssSpin{to{transform:rotate(360deg)}}
 </style>
 <script>/* translate safety: guard React vs browser-translation DOM swaps */(function(){try{var p=Node.prototype;var rc=p.removeChild;p.removeChild=function(ch){if(ch&&ch.parentNode!==this){return ch;}return rc.apply(this,arguments);};var ib=p.insertBefore;p.insertBefore=function(nn,rn){if(rn&&rn.parentNode!==this){return nn;}return ib.apply(this,arguments);};}catch(_){}})();</script>
 <script>
@@ -2507,7 +2508,7 @@ function HomeScreen({
       marginTop: 4,
       letterSpacing: 1
     }
-  }, "Sheetmancer · build v56"))), /*#__PURE__*/React.createElement("button", {
+  }, "Sheetmancer · build v57"))), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowHelp(false),
     className: "ss-press",
     style: {
@@ -3089,6 +3090,8 @@ function CaptureScreen({
   const camRef = useRef(null);
   const [capNotice, setCapNotice] = useState(false);
   const [heicNotice, setHeicNotice] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [busyMsg, setBusyMsg] = useState("");
   const [confirmScan, setConfirmScan] = useState(false);
   const flashCap = () => {
     setCapNotice(true);
@@ -3107,30 +3110,36 @@ function CaptureScreen({
       return;
     }
     const accept = files.slice(0, slots);
-    const processed = [];
     let heicFailed = false;
-    for (const file of accept) {
-      let src = file;
-      try {
-        src = await toDecodableImage(file);
-      } catch (err) {
-        heicFailed = true;
-        continue;
+    setBusy(true);
+    try {
+      for (let i = 0; i < accept.length; i++) {
+        const file = accept[i];
+        setBusyMsg("Page " + (i + 1) + " of " + accept.length + (isHeicFile(file) ? " — converting…" : "…"));
+        let src = file;
+        try {
+          src = await toDecodableImage(file);
+        } catch (err) {
+          heicFailed = true;
+          continue;
+        }
+        const dataUrl = await new Promise(res => {
+          const r = new FileReader();
+          r.onload = ev => res(ev.target.result);
+          r.onerror = () => res(null);
+          r.readAsDataURL(src);
+        });
+        if (!dataUrl) continue;
+        const small = await downscaleImage(dataUrl);
+        setImages(prev => [...prev, {
+          dataUrl: small,
+          name: file.name
+        }].slice(0, MAX_PAGES));
       }
-      const dataUrl = await new Promise(res => {
-        const r = new FileReader();
-        r.onload = ev => res(ev.target.result);
-        r.onerror = () => res(null);
-        r.readAsDataURL(src);
-      });
-      if (!dataUrl) continue;
-      const small = await downscaleImage(dataUrl);
-      processed.push({
-        dataUrl: small,
-        name: file.name
-      });
+    } finally {
+      setBusy(false);
+      setBusyMsg("");
     }
-    if (processed.length) setImages(prev => [...prev, ...processed].slice(0, MAX_PAGES));
     if (heicFailed) flashHeic();
     if (files.length > slots) flashCap();
   };
@@ -3165,7 +3174,15 @@ function CaptureScreen({
     ref: camRef, type: "file", accept: "image/*", capture: "environment", onChange: handleFiles, style: { display: "none" }
   }), /*#__PURE__*/React.createElement("div", {
     style: { flex: 1, padding: "18px 20px 24px", display: "flex", flexDirection: "column", gap: 15, overflowY: "auto", position: "relative", zIndex: 1 }
+  }, busy && /*#__PURE__*/React.createElement("div", {
+    style: { position: "absolute", inset: 0, zIndex: 10, background: T.surface, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14, padding: 24, textAlign: "center" }
   }, /*#__PURE__*/React.createElement("div", {
+    "aria-hidden": true, style: { width: 46, height: 46, borderRadius: "50%", border: `3px solid ${T.borderLight}`, borderTopColor: T.accent, animation: "ssSpin 0.9s linear infinite" }
+  }), /*#__PURE__*/React.createElement("div", {
+    role: "status", "aria-live": "polite", style: { fontFamily: "'Cinzel',Georgia,serif", fontSize: 16, fontWeight: 700, color: T.accent }
+  }, "Preparing your pages…"), /*#__PURE__*/React.createElement("div", {
+    style: { fontSize: 13, color: T.textSoft, lineHeight: 1.5, maxWidth: 260 }
+  }, busyMsg, /*#__PURE__*/React.createElement("br", null), "Photos from a phone can take a few seconds each to convert — please keep this screen open."), /*#__PURE__*/React.createElement("span", null)), /*#__PURE__*/React.createElement("div", {
     style: { display: "flex", alignItems: "center", gap: 9 }
   }, /*#__PURE__*/React.createElement("span", { style: badgeStyle }, "1"), stepHead("Add your pages")), images.length === 0 && /*#__PURE__*/React.createElement("div", {
     style: { fontSize: 13, color: T.textSoft, lineHeight: 1.45, margin: "-4px 0 0 33px" }
@@ -3802,7 +3819,7 @@ function AvatarEditor({
       fontSize: 12,
       color: T.textMuted
     }
-  }, "Drag to move · pinch or ± to zoom"), pill("✓ Done", () => setAdjust(false), true)) : pill("Adjust photo", () => setAdjust(true), false)));
+  }, "Drag to move · pinch or ± to zoom"), pill("✓ Done", () => setAdjust(false), true)) : pill("Adjust/Replace Photo", () => setAdjust(true), false)));
 }
 
 /* ====== Sheetmancer Character Hub patch (Option B: grouped categories) ====== */
@@ -6096,7 +6113,7 @@ function CharacterScreen({
     style: {
       color: T.yellow
     }
-  }, "amber"), " ring marks a field to double-check — tap it to confirm. Fields that were read clearly carry no dot."), /*#__PURE__*/React.createElement("div", null, hb(T, "Search"), " — Use the ", hb(T, "Search this character…"), " box on the hub to find any field, value, section, or note. Tap a result to jump straight to it."), /*#__PURE__*/React.createElement("div", null, hb(T, "Editing anything"), " — Tap the ", hb(T, "⋮"), " next to a ", hb(T, "field"), ", ", hb(T, "header"), ", ", hb(T, "section title"), ", or ", hb(T, "category"), " — then ", hb(T, "Edit"), ". A field opens a full-screen writing view with ", hb(T, "✓ Save"), " and an Undo; headers, sections and categories just rename. The ⋮ everywhere also has ", hb(T, "Move up / down"), ", ", hb(T, "Move to section…"), ", and ", hb(T, "Delete"), " (with ", hb(T, "Undo"), "). You can now rename a category from inside its own page too — not just the hub."), /*#__PURE__*/React.createElement("div", null, hb(T, "Adding"), " — At the bottom of any section use ", hb(T, "+ Add Field"), " or ", hb(T, "+ Add Header"), "; the ", hb(T, "+ Add Section"), " card on the hub adds a whole section. Or tap the ", hb(T, "+ Scan more pages"), " card to scan more pages straight into this character \u2014 it costs one Character Scan, and the new pages arrive as sections you can arrange, rename, or edit."), /*#__PURE__*/React.createElement("div", null, hb(T, "Headers"), " — A header is a titled divider that groups the fields beneath it. Tap ", hb(T, "+ Add Header"), " in a section, rename it via its ", hb(T, "⋮ → Edit"), ", and use ", hb(T, "Move up / down"), " to slide it above the fields it should group. Headers also print as sub-headings in your exported PDF."), /*#__PURE__*/React.createElement("div", null, hb(T, "Groups"), " — The hub sorts your sections into groups (Combat, Skills, and so on). Tap ", hb(T, "+ Add Group"), " to make your own — name it and pick an icon — then open any section's ", hb(T, "⋮ → Move to group…"), " to file it there. A category's ", hb(T, "⋮ → Merge into…"), " folds it into another. Deleting a group you made keeps its sections — they simply return to their default groups."), /*#__PURE__*/React.createElement("div", null, hb(T, "Portrait"), " — Tap ", hb(T, "Adjust photo"), " to move, zoom, or replace it; tap ", hb(T, "✓ Done"), " to lock it."), /*#__PURE__*/React.createElement("div", null, hb(T, "Themes"), " — The colored circles in the top bar restyle the whole character."), /*#__PURE__*/React.createElement("div", null, hb(T, "Journal"), " — Open the ", hb(T, "Journal"), " card to jot session notes, or to retire the character when you're done."), /*#__PURE__*/React.createElement("div", null, hb(T, "Export & Share"), " — ", hb(T, "⤓ Export / Share"), " (also reachable from a button in the top bar) makes a polished PDF you can share or save; ", hb(T, "⬇ Backup file (.json)"), " saves a re-importable backup."), /*#__PURE__*/React.createElement("div", null, hb(T, "Auto-saved"), " — Your changes save automatically. While editing a field, tap Undo to step back a change; after a delete, an ", hb(T, "Undo"), " lets you bring it back."))), /*#__PURE__*/React.createElement("button", {
+  }, "amber"), " ring marks a field to double-check — tap it to confirm. Fields that were read clearly carry no dot."), /*#__PURE__*/React.createElement("div", null, hb(T, "Search"), " — Use the ", hb(T, "Search this character…"), " box on the hub to find any field, value, section, or note. Tap a result to jump straight to it."), /*#__PURE__*/React.createElement("div", null, hb(T, "Editing anything"), " — Tap the ", hb(T, "⋮"), " next to a ", hb(T, "field"), ", ", hb(T, "header"), ", ", hb(T, "section title"), ", or ", hb(T, "category"), " — then ", hb(T, "Edit"), ". A field opens a full-screen writing view with ", hb(T, "✓ Save"), " and an Undo; headers, sections and categories just rename. The ⋮ everywhere also has ", hb(T, "Move up / down"), ", ", hb(T, "Move to section…"), ", and ", hb(T, "Delete"), " (with ", hb(T, "Undo"), "). You can now rename a category from inside its own page too — not just the hub."), /*#__PURE__*/React.createElement("div", null, hb(T, "Adding"), " — At the bottom of any section use ", hb(T, "+ Add Field"), " or ", hb(T, "+ Add Header"), "; the ", hb(T, "+ Add Section"), " card on the hub adds a whole section. Or tap the ", hb(T, "+ Scan more pages"), " card to scan more pages straight into this character \u2014 it costs one Character Scan, and the new pages arrive as sections you can arrange, rename, or edit."), /*#__PURE__*/React.createElement("div", null, hb(T, "Headers"), " — A header is a titled divider that groups the fields beneath it. Tap ", hb(T, "+ Add Header"), " in a section, rename it via its ", hb(T, "⋮ → Edit"), ", and use ", hb(T, "Move up / down"), " to slide it above the fields it should group. Headers also print as sub-headings in your exported PDF."), /*#__PURE__*/React.createElement("div", null, hb(T, "Groups"), " — The hub sorts your sections into groups (Combat, Skills, and so on). Tap ", hb(T, "+ Add Group"), " to make your own — name it and pick an icon — then open any section's ", hb(T, "⋮ → Move to group…"), " to file it there. A category's ", hb(T, "⋮ → Merge into…"), " folds it into another. Deleting a group you made keeps its sections — they simply return to their default groups."), /*#__PURE__*/React.createElement("div", null, hb(T, "Portrait"), " — Tap ", hb(T, "Adjust/Replace Photo"), " to move, zoom, or replace it; tap ", hb(T, "✓ Done"), " to lock it."), /*#__PURE__*/React.createElement("div", null, hb(T, "Themes"), " — The colored circles in the top bar restyle the whole character."), /*#__PURE__*/React.createElement("div", null, hb(T, "Journal"), " — Open the ", hb(T, "Journal"), " card to jot session notes, or to retire the character when you're done."), /*#__PURE__*/React.createElement("div", null, hb(T, "Export & Share"), " — ", hb(T, "⤓ Export / Share"), " (also reachable from a button in the top bar) makes a polished PDF you can share or save; ", hb(T, "⬇ Backup file (.json)"), " saves a re-importable backup."), /*#__PURE__*/React.createElement("div", null, hb(T, "Auto-saved"), " — Your changes save automatically. While editing a field, tap Undo to step back a change; after a delete, an ", hb(T, "Undo"), " lets you bring it back."))), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowHelp(false),
     className: "ss-press",
     style: {
