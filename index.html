@@ -2476,6 +2476,11 @@ function usePullToRefresh(scrollRef) {
   pullRef.current = pull;
   busyRef.current = busy;
   useEffect(() => {
+    /* Pull-to-refresh DISABLED 2026-08-06 — too sensitive on the wrapped Android build, and the
+       store app already auto-updates on a cold start so an in-app refresh isn't needed. Flip
+       PTR_ENABLED to true (and retune ACTIVATE/TH for a much more deliberate pull) to restore it. */
+    const PTR_ENABLED = false;
+    if (!PTR_ENABLED) return;
     const el = scrollRef.current;
     if (!el) return;
     const TH = 70, MAX = 110, DAMP = 0.5, ACTIVATE = 22;
@@ -2726,7 +2731,7 @@ function HomeScreen({
       marginTop: 4,
       letterSpacing: 1
     }
-  }, "Sheetmancer · build v66"))), /*#__PURE__*/React.createElement("button", {
+  }, "Sheetmancer · build v67"))), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowHelp(false),
     className: "ss-press",
     style: {
