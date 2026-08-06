@@ -2467,6 +2467,112 @@ function ConfirmAdd({ T, count, targetName, slotsLeft, onConfirm, onClose }) {
     style: { width: "100%", padding: "12px", borderRadius: 12, border: "1px solid " + T.borderLight, background: "none", color: T.text, fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, fontSize: 14, cursor: "pointer" }
   }, "Not yet — add more pages"))), document.body);
 }
+function usePullToRefresh(scrollRef) {
+  const [pull, setPull] = useState(0);
+  const [busy, setBusy] = useState(false);
+  const s = useRef({ y0: 0, x0: 0, on: false, pulling: false });
+  const pullRef = useRef(0);
+  const busyRef = useRef(false);
+  pullRef.current = pull;
+  busyRef.current = busy;
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const TH = 70, MAX = 110, DAMP = 0.5;
+    let reloadTimer = null;
+    const start = e => {
+      if (busyRef.current || e.touches.length !== 1) return;
+      const ae = document.activeElement;
+      const typing = !!(ae && (ae.tagName === "INPUT" || ae.tagName === "TEXTAREA" || ae.tagName === "SELECT" || ae.isContentEditable));
+      s.current.y0 = e.touches[0].clientY;
+      s.current.x0 = e.touches[0].clientX;
+      s.current.on = el.scrollTop <= 0 && !typing;
+      s.current.pulling = false;
+    };
+    const move = e => {
+      if (!s.current.on || busyRef.current || e.touches.length !== 1) return;
+      const dy = e.touches[0].clientY - s.current.y0;
+      const dx = e.touches[0].clientX - s.current.x0;
+      if (el.scrollTop > 0 || dy <= 0) {
+        if (s.current.pulling) { s.current.pulling = false; setPull(0); }
+        s.current.on = el.scrollTop <= 0;
+        return;
+      }
+      if (!s.current.pulling && Math.abs(dx) > Math.abs(dy)) { s.current.on = false; return; }
+      s.current.pulling = true;
+      if (e.cancelable) e.preventDefault();
+      setPull(Math.min(dy * DAMP, MAX));
+    };
+    const end = () => {
+      if (s.current.pulling && pullRef.current >= TH) {
+        setBusy(true);
+        setPull(TH);
+        reloadTimer = setTimeout(() => { try { window.location.reload(); } catch (_) {} }, 450);
+      } else if (pullRef.current !== 0) {
+        setPull(0);
+      }
+      s.current.on = false;
+      s.current.pulling = false;
+    };
+    el.addEventListener("touchstart", start, { passive: true });
+    el.addEventListener("touchmove", move, { passive: false });
+    el.addEventListener("touchend", end, { passive: true });
+    el.addEventListener("touchcancel", end, { passive: true });
+    return () => {
+      if (reloadTimer) clearTimeout(reloadTimer);
+      el.removeEventListener("touchstart", start);
+      el.removeEventListener("touchmove", move);
+      el.removeEventListener("touchend", end);
+      el.removeEventListener("touchcancel", end);
+    };
+  }, []);
+  return { pull: pull, busy: busy };
+}
+function PullIndicator({ T, pull, busy }) {
+  const TH = 70;
+  const shown = pull > 2 || busy;
+  const prog = Math.min(pull / TH, 1);
+  const ready = pull >= TH;
+  return /*#__PURE__*/React.createElement("div", {
+    "aria-hidden": "true",
+    style: {
+      position: "fixed",
+      top: "calc(env(safe-area-inset-top, 0px) + 8px)",
+      left: 0,
+      right: 0,
+      display: "flex",
+      justifyContent: "center",
+      pointerEvents: "none",
+      zIndex: 100470,
+      opacity: shown ? 1 : 0,
+      transform: "translateY(" + (busy ? 6 : Math.min(pull * 0.5, 26)) + "px)",
+      transition: (pull === 0 && !busy) ? "opacity .25s ease, transform .25s ease" : "none"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      width: 36,
+      height: 36,
+      borderRadius: "50%",
+      background: T.surface,
+      border: "1px solid " + T.borderLight,
+      boxShadow: "0 3px 12px rgba(0,0,0,0.28)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      width: 18,
+      height: 18,
+      borderRadius: "50%",
+      border: "2px solid " + (T.accentFaint || "rgba(0,0,0,0.12)"),
+      borderTopColor: T.accent,
+      animation: busy ? "ssSpin .7s linear infinite" : "none",
+      transform: busy ? "none" : ("rotate(" + Math.round(prog * 270) + "deg)"),
+      opacity: ready || busy ? 1 : 0.75
+    }
+  })));
+}
 function HomeScreen({
   T,
   characters,
@@ -2491,6 +2597,8 @@ function HomeScreen({
   const slotsLeft = Math.max(0, INCLUDED_SLOTS + slotsBought - slotsUsed);
   const ssauth = useSsAuth();
   const [signInSheet, setSignInSheet] = useState(false);
+  const ptrRef = useRef(null);
+  const ptr = usePullToRefresh(ptrRef);
   const handleImport = e => {
     const f = e.target.files[0];
     if (!f) return;
@@ -2612,7 +2720,7 @@ function HomeScreen({
       marginTop: 4,
       letterSpacing: 1
     }
-  }, "Sheetmancer · build v63"))), /*#__PURE__*/React.createElement("button", {
+  }, "Sheetmancer · build v64"))), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowHelp(false),
     className: "ss-press",
     style: {
@@ -2697,12 +2805,17 @@ function HomeScreen({
       background: T.sectionRule
     }
   })))), /*#__PURE__*/React.createElement("div", {
+    ref: ptrRef,
     style: {
       flex: 1,
       padding: 8,
       overflowY: "auto"
     }
-  }, /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement(PullIndicator, {
+    T: T,
+    pull: ptr.pull,
+    busy: ptr.busy
+  }), /*#__PURE__*/React.createElement("div", {
     style: {
       border: T.frame || `2px solid ${T.borderLight}`,
       outline: T.frameInset,
@@ -5655,6 +5768,7 @@ function CharacterScreen({
   }, [activeCat]);
   const swipeRef = useRef(null);
   const swipeStart = useRef(null);
+  const ptr = usePullToRefresh(swipeRef);
   const handleSwipe = dir => {
     const cur = activeCat;
     const i = cur === null ? -1 : navKeys.indexOf(cur);
@@ -6466,7 +6580,11 @@ function CharacterScreen({
       overflowY: "auto",
       overflowX: "hidden"
     }
-  }, /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement(PullIndicator, {
+    T: T,
+    pull: ptr.pull,
+    busy: ptr.busy
+  }), /*#__PURE__*/React.createElement("div", {
     key: activeCat === null ? "hub" : activeCat,
     style: {
       padding: "30px 20px 20px",
