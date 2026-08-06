@@ -2478,7 +2478,7 @@ function usePullToRefresh(scrollRef) {
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
-    const TH = 70, MAX = 110, DAMP = 0.5;
+    const TH = 70, MAX = 110, DAMP = 0.5, ACTIVATE = 22;
     let reloadTimer = null;
     const start = e => {
       if (busyRef.current || e.touches.length !== 1) return;
@@ -2498,10 +2498,16 @@ function usePullToRefresh(scrollRef) {
         s.current.on = el.scrollTop <= 0;
         return;
       }
-      if (!s.current.pulling && Math.abs(dx) > Math.abs(dy)) { s.current.on = false; return; }
-      s.current.pulling = true;
+      if (!s.current.pulling) {
+        // Yield to normal scrolling: bail unless the motion is clearly vertical, and don't
+        // take over until the finger has pulled down past a deliberate activation distance.
+        // This stops light/ambiguous flicks at the top from triggering a refresh.
+        if (Math.abs(dx) > Math.abs(dy) * 0.8) { s.current.on = false; return; }
+        if (dy < ACTIVATE) return;
+        s.current.pulling = true;
+      }
       if (e.cancelable) e.preventDefault();
-      setPull(Math.min(dy * DAMP, MAX));
+      setPull(Math.min((dy - ACTIVATE) * DAMP, MAX));
     };
     const end = () => {
       if (s.current.pulling && pullRef.current >= TH) {
@@ -2720,7 +2726,7 @@ function HomeScreen({
       marginTop: 4,
       letterSpacing: 1
     }
-  }, "Sheetmancer · build v65"))), /*#__PURE__*/React.createElement("button", {
+  }, "Sheetmancer · build v66"))), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowHelp(false),
     className: "ss-press",
     style: {
@@ -7535,7 +7541,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
   function ssActivate(worker){if(!worker){ssReload();return;}try{worker.addEventListener('statechange',function(){if(worker.state==='activated')ssReload();});}catch(_){}try{worker.postMessage({type:'SKIP_WAITING'});}catch(_){}setTimeout(ssReload,3000);}
   if('serviceWorker' in navigator){
     window.addEventListener('load',function(){
-      navigator.serviceWorker.register('sw-v1.js',{updateViaCache:'none'}).then(function(reg){
+      navigator.serviceWorker.register('sw-v1.js').then(function(reg){
         if(reg.waiting&&navigator.serviceWorker.controller){showUpdate(function(){ssActivate(reg.waiting);});}
         reg.addEventListener('updatefound',function(){
           var nw=reg.installing; if(!nw)return;
