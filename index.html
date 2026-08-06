@@ -2612,7 +2612,7 @@ function HomeScreen({
       marginTop: 4,
       letterSpacing: 1
     }
-  }, "Sheetmancer · build v62"))), /*#__PURE__*/React.createElement("button", {
+  }, "Sheetmancer · build v63"))), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowHelp(false),
     className: "ss-press",
     style: {
@@ -2888,7 +2888,11 @@ function HomeScreen({
     T: T,
     width: "50%",
     spacing: "4px auto 12px"
-  }), /*#__PURE__*/React.createElement("h1", {
+  }), /*#__PURE__*/React.createElement("div", {
+    style: { position: "relative", display: "flex", flexDirection: "column", gap: 18, border: T.frame || ("2px solid " + T.accent), borderRadius: 18, background: "linear-gradient(160deg," + T.surface + "," + T.accentFaint + ")", boxShadow: (T.surfaceShadow || "") + ", 0 0 26px " + T.accentFaint, padding: "28px 15px 20px", margin: "6px 2px 8px" }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: { position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)", background: T.metalGrad, color: T.bg, fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, fontSize: 11.5, letterSpacing: 1.5, padding: "5px 16px", borderRadius: 20, whiteSpace: "nowrap", boxShadow: "0 2px 10px " + T.accentFaint, textTransform: "uppercase" }
+  }, "Start Here"), /*#__PURE__*/React.createElement("h1", {
     style: {
       fontSize: 26,
       fontWeight: 700,
@@ -2909,7 +2913,7 @@ function HomeScreen({
       maxWidth: 360,
       alignSelf: "center"
     }
-  }, "Upload your character sheet pages \u2014 any game, any system. Your character lives on your devices."), /*#__PURE__*/React.createElement("div", {
+  }, "Upload your character sheet pages \u2014 any game, any system. Your character lives on your devices. To begin, choose an option below."), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       flexDirection: "column",
@@ -3031,7 +3035,7 @@ function HomeScreen({
       fontSize: 15,
       color: T.textSoft
     }
-  }, "\u2B06 Import Character from Backup")), importNote && /*#__PURE__*/React.createElement("div", {
+  }, "\u2B06 Import Character from Backup"))), importNote && /*#__PURE__*/React.createElement("div", {
     role: "status",
     style: {
       textAlign: "center",
@@ -5498,8 +5502,41 @@ function Toast({
   }, "↶ Undo"));
 }
 
+function ArrangeIntroModal({ T, onClose, onHelp }) {
+  const B = (hero, head, body) => /*#__PURE__*/React.createElement("div", {
+    style: { background: T.cardGrad || ("linear-gradient(158deg," + T.surface + "," + T.accentFaint + ")"), border: "1px solid " + T.borderLight, borderLeft: (hero ? "4px" : "3px") + " solid " + T.accent, borderRadius: "0 11px 11px 0", padding: "11px 13px", margin: "0 0 10px", boxShadow: hero ? ("0 2px 7px " + T.accentFaint) : "none" }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: { fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, fontSize: 14, color: T.accent }
+  }, head), /*#__PURE__*/React.createElement("span", {
+    style: { fontSize: 14, lineHeight: 1.5, color: T.text }
+  }, body));
+  return /*#__PURE__*/React.createElement("div", {
+    onClick: onClose,
+    style: { position: "fixed", inset: 0, background: "rgba(0,0,0,0.72)", zIndex: 100650, display: "flex", alignItems: "center", justifyContent: "center", padding: 20, overflowY: "auto" }
+  }, /*#__PURE__*/React.createElement("div", {
+    onClick: e => e.stopPropagation(),
+    style: { background: T.surface, border: T.frame || ("2px solid " + T.borderLight), borderRadius: 16, padding: "22px 20px 18px", maxWidth: 340, width: "100%", maxHeight: "88vh", overflowY: "auto", boxShadow: (T.surfaceShadow || "") + ", 0 0 30px " + T.accentFaint }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: { textAlign: "center", color: T.nameColor || T.accent, fontSize: 20, lineHeight: 1, margin: "0 0 8px" }
+  }, T.ornChar || "❖"), /*#__PURE__*/React.createElement("div", {
+    style: { fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, fontSize: 19, lineHeight: 1.35, color: T.accent, textAlign: "center", letterSpacing: 0.3 }
+  }, "Your character’s ready"), /*#__PURE__*/React.createElement("div", {
+    style: { fontSize: 15, lineHeight: 1.5, color: T.textSoft, textAlign: "center", margin: "4px 0 18px" }
+  }, "Sheetmancer sorted it into groups — and it’s all yours to arrange."), B(true, "Look through every card first.", " If something seems missing, it’s almost always just filed under a different group."), B(false, "Grouped its way, not yours?", " Totally normal — anything here can be moved or renamed."), B(false, "Tap the “⋮” on any section.", " Rename it, move it up or down, send it to another group, or edit. Change titles, split text apart, rename — make it yours."), /*#__PURE__*/React.createElement("button", {
+    onClick: onClose, className: "ss-press",
+    style: { width: "100%", padding: 14, borderRadius: 12, border: "none", cursor: "pointer", background: T.metalGrad, color: T.bg, fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, fontSize: 15, letterSpacing: 0.4, margin: "6px 0 10px", boxShadow: "0 3px 14px " + T.accentFaint }
+  }, "Got it"), /*#__PURE__*/React.createElement("button", {
+    onClick: onHelp, className: "ss-press",
+    style: { width: "100%", padding: 12, borderRadius: 12, border: "1px solid " + T.borderLight, background: "none", color: T.text, fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, fontSize: 14, letterSpacing: 0.3, cursor: "pointer", marginBottom: 14 }
+  }, "Show me how →"), /*#__PURE__*/React.createElement("div", {
+    style: { display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 12.5, lineHeight: 1.45, color: T.textMuted, textAlign: "center" }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: { display: "inline-flex", alignItems: "center", justifyContent: "center", width: 17, height: 17, borderRadius: "50%", background: T.metalGrad, color: T.bg, fontFamily: "'Cinzel',Georgia,serif", fontWeight: 900, fontSize: 10, flexShrink: 0 }
+  }, "?"), /*#__PURE__*/React.createElement("span", null, "Need more help? Tap the ", /*#__PURE__*/React.createElement("b", { style: { color: T.accent } }, "?"), " at the top of any character for the full guide."))));
+}
 function CharacterScreen({
   T,
+  showArrangeIntro,
   character,
   isFallen,
   onBack,
@@ -5515,6 +5552,9 @@ function CharacterScreen({
   const noteRef = useRef(null);
   const [editing, setEditing] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+  const [arrangeIntro, setArrangeIntro] = useState(!!showArrangeIntro && !store.get("ss-seenArrangeIntro"));
+  const dismissArrange = () => { try { store.set("ss-seenArrangeIntro", true); } catch (_) {} setArrangeIntro(false); };
+  useEffect(() => { if (arrangeIntro) { try { store.set("ss-seenArrangeIntro", true); } catch (_) {} } }, [arrangeIntro]);
   const [undoStack, setUndoStack] = useState([]);
   const [verifyOnly, setVerifyOnly] = useState(false);
   const [activeSec, setActiveSec] = useState(0);
@@ -6124,6 +6164,10 @@ function CharacterScreen({
     }
   }, /*#__PURE__*/React.createElement(AtmoBg, {
     T: T
+  }), arrangeIntro && /*#__PURE__*/React.createElement(ArrangeIntroModal, {
+    T: T,
+    onClose: dismissArrange,
+    onHelp: () => { dismissArrange(); setShowHelp(true); }
   }), showHelp && /*#__PURE__*/React.createElement("div", {
     onClick: () => setShowHelp(false),
     style: {
@@ -7136,6 +7180,7 @@ function Sheetmancer() {
   const askAppConfirm = (title, message, run) => setAppConfirm({ title: title, message: message, run: () => { run(); setAppConfirm(null); } });
   const [activeCharIdx, setActiveCharIdx] = useState(null);
   const [activeIsFallen, setActiveIsFallen] = useState(false);
+  const [introPending, setIntroPending] = useState(false);
   const [captureImages, setCaptureImages] = useState([]);
   const [scanAddIdx, setScanAddIdx] = useState(null);
   const T = THEMES[themeKey];
@@ -7202,6 +7247,7 @@ function Sheetmancer() {
   const handleStartAddScan = idx => { setScanAddIdx(idx); setView("capture"); };
   const handleBack = () => {
     setScanAddIdx(null);
+    setIntroPending(false);
     setView("home");
   };
   const handleScan = images => {
@@ -7224,10 +7270,12 @@ function Sheetmancer() {
       try { var _t = document.getElementById("ssToast"); if (_t) { _t.onclick = null; _t.textContent = "Added " + _added + (_added === 1 ? " new section" : " new sections") + " \u2014 find them in your character, ready to arrange."; _t.classList.add("show"); setTimeout(function () { _t.classList.remove("show"); }, 5000); } } catch (_) {}
       return;
     }
+    const _firstEver = !characters.length;
     const nc = [...characters, charData];
     setCharacters(nc);
     setActiveCharIdx(nc.length - 1);
     setActiveIsFallen(false);
+    if (_firstEver && !store.get("ss-seenArrangeIntro")) setIntroPending(true);
     setView("character");
   };
   const handleOpenChar = idx => {
@@ -7338,7 +7386,8 @@ function Sheetmancer() {
     },
     themeKey: themeKey,
     setThemeKey: setThemeKey,
-    catBackRef: catBackRef
+    catBackRef: catBackRef,
+    showArrangeIntro: introPending
   }));
 }
 ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.createElement(Sheetmancer, null));
