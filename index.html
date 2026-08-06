@@ -2720,7 +2720,7 @@ function HomeScreen({
       marginTop: 4,
       letterSpacing: 1
     }
-  }, "Sheetmancer · build v64"))), /*#__PURE__*/React.createElement("button", {
+  }, "Sheetmancer · build v65"))), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowHelp(false),
     className: "ss-press",
     style: {
@@ -7535,7 +7535,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
   function ssActivate(worker){if(!worker){ssReload();return;}try{worker.addEventListener('statechange',function(){if(worker.state==='activated')ssReload();});}catch(_){}try{worker.postMessage({type:'SKIP_WAITING'});}catch(_){}setTimeout(ssReload,3000);}
   if('serviceWorker' in navigator){
     window.addEventListener('load',function(){
-      navigator.serviceWorker.register('sw-v1.js').then(function(reg){
+      navigator.serviceWorker.register('sw-v1.js',{updateViaCache:'none'}).then(function(reg){
         if(reg.waiting&&navigator.serviceWorker.controller){showUpdate(function(){ssActivate(reg.waiting);});}
         reg.addEventListener('updatefound',function(){
           var nw=reg.installing; if(!nw)return;

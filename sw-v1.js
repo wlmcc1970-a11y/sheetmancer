@@ -1,4 +1,4 @@
-const CACHE='sheetmancer-shell-v64';
+const CACHE='sheetmancer-shell-v65';
 const FONT_CSS='https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Cormorant+Garamond:wght@700&family=EB+Garamond:ital,wght@0,400;0,600;0,700;1,400&display=swap';
 self.addEventListener('install',function(e){
   self.skipWaiting();
@@ -19,7 +19,10 @@ self.addEventListener('fetch',function(e){
   var req=e.request; if(req.method!=='GET')return;
   // Network-first for page navigations so updates always land when online; cache is the offline fallback.
   if(req.mode==='navigate'){
-    e.respondWith(fetch(req).then(function(res){
+    // Force the network hop to BYPASS the HTTP cache (GitHub Pages sets ~10min max-age on
+    // index.html; without this, "network-first" quietly returns the browser-cached old HTML
+    // and updates never land). Pass req.url (not req) — fetch(navigateRequest,{init}) throws.
+    e.respondWith(fetch(req.url,{cache:'no-store'}).then(function(res){
       try{var copy=res.clone();caches.open(CACHE).then(function(c){c.put('./index.html',copy);});}catch(_){}
       return res;
     }).catch(function(){
