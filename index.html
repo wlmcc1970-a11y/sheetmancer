@@ -2806,7 +2806,7 @@ function HomeScreen({
       marginTop: 4,
       letterSpacing: 1
     }
-  }, "Sheetmancer · build v70"))), /*#__PURE__*/React.createElement("button", {
+  }, "Sheetmancer · build v71"))), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowHelp(false),
     className: "ss-press",
     style: {
@@ -5423,6 +5423,7 @@ function RenameModal({
 function TableField(props) {
   var T = props.T, f = props.f, si = props.si, fi = props.fi;
   var updateField = props.updateField, moveField = props.moveField, delField = props.delField;
+  var setMoveItem = props.setMoveItem, sectionsLen = props.sectionsLen;
   var h = React.createElement;
   var cols = Array.isArray(f.columns) ? f.columns : [];
   var rows = Array.isArray(f.rows) ? f.rows : [];
@@ -5430,52 +5431,94 @@ function TableField(props) {
   for (var ri = 0; ri < rows.length; ri++) { var rl = Array.isArray(rows[ri]) ? rows[ri].length : 0; if (rl > nCol) nCol = rl; }
   if (nCol < 1) nCol = 1;
   var cloneRows = function () { return rows.map(function (row) { return Array.isArray(row) ? row.slice() : []; }); };
+  var padCols = function () { var nc = cols.slice(); while (nc.length < nCol) nc.push(""); return nc; };
   var setCell = function (r, c, v) { var nr = cloneRows(); while (nr[r].length < nCol) nr[r].push(""); nr[r][c] = v; updateField(si, fi, "rows", nr); };
-  var setCol = function (c, v) { var nc = cols.slice(); while (nc.length < nCol) nc.push(""); nc[c] = v; updateField(si, fi, "columns", nc); };
+  var setCol = function (c, v) { var nc = padCols(); nc[c] = v; updateField(si, fi, "columns", nc); };
   var addRow = function () { var nr = cloneRows(); var blank = []; for (var c = 0; c < nCol; c++) blank.push(""); nr.push(blank); updateField(si, fi, "rows", nr); };
   var delRow = function (r) { updateField(si, fi, "rows", rows.filter(function (_, i) { return i !== r; })); };
+  var addCol = function () { var nc = padCols(); nc.push(""); updateField(si, fi, "columns", nc); };
+  var delCol = function (c) {
+    var nc = padCols(); nc.splice(c, 1);
+    var nr = cloneRows().map(function (row) { var rr = row.slice(); while (rr.length < nCol) rr.push(""); rr.splice(c, 1); return rr; });
+    updateField(si, fi, "columns", nc);
+    updateField(si, fi, "rows", nr);
+  };
+  var scRef = useRef(null);
+  var nudged = useRef(false);
+  var fadeState = useState({ l: false, r: false });
+  var fade = fadeState[0], setFade = fadeState[1];
+  var recompute = function () {
+    var el = scRef.current; if (!el) return;
+    var l = el.scrollLeft > 2;
+    var r = el.scrollLeft + el.clientWidth < el.scrollWidth - 2;
+    setFade(function (p) { return (p.l === l && p.r === r) ? p : { l: l, r: r }; });
+  };
+  useEffect(function () {
+    recompute();
+    var el = scRef.current;
+    if (el && !nudged.current && el.scrollWidth > el.clientWidth + 2) {
+      nudged.current = true;
+      try { el.scrollTo({ left: 20, behavior: "smooth" }); setTimeout(function () { try { el.scrollTo({ left: 0, behavior: "smooth" }); } catch (e) {} }, 380); } catch (e) {}
+    }
+    var onR = function () { recompute(); };
+    window.addEventListener("resize", onR);
+    return function () { window.removeEventListener("resize", onR); };
+  }, [nCol, rows.length]);
   var baseCell = { padding: "7px 9px", borderRight: "1px solid " + T.borderLight, borderBottom: "1px solid " + T.borderLight, verticalAlign: "top", minWidth: 60, maxWidth: 240 };
   var stick = { position: "sticky", left: 0, zIndex: 1, background: T.surface };
   var headCells = [];
-  for (var hc = 0; hc < nCol; hc++) {
+  for (var hcx = 0; hcx < nCol; hcx++) {
     (function (c) {
       var first = c === 0;
-      var st = Object.assign({}, baseCell, { borderBottom: "2px solid " + T.accent }, first ? stick : {});
-      headCells.push(h("th", { key: "h" + c, style: st }, h(EditableValue, { value: cols[c] == null ? "" : cols[c], onChange: function (v) { setCol(c, v); }, T: T, placeholder: "—", noTranslate: true, style: { fontSize: 11.5, fontWeight: 700, letterSpacing: 0.5, textTransform: "uppercase", color: T.label, borderBottom: "none", padding: 0, fontFamily: "'Cinzel',Georgia,serif" } })));
-    })(hc);
+      var st = Object.assign({}, baseCell, { borderBottom: "2px solid " + T.accent }, first ? Object.assign({}, stick, { zIndex: 2 }) : {});
+      headCells.push(h("th", { key: "h" + c, style: st }, h("div", { style: { display: "flex", alignItems: "center", gap: 4 } },
+        h("div", { style: { flex: 1, minWidth: 0 } }, h(EditableValue, { value: cols[c] == null ? "" : cols[c], onChange: function (v) { setCol(c, v); }, T: T, placeholder: "—", noTranslate: true, style: { fontSize: 11.5, fontWeight: 700, letterSpacing: 0.5, textTransform: "uppercase", color: T.label, borderBottom: "none", padding: 0, fontFamily: "'Cinzel',Georgia,serif" } })),
+        nCol > 1 ? h("button", { onClick: function () { delCol(c); }, "aria-label": "Delete column", title: "Delete column", className: "ss-press", style: { background: "none", border: "none", color: T.textMuted, cursor: "pointer", fontSize: 13, lineHeight: 1, padding: "0 1px", flexShrink: 0 } }, "×") : null
+      )));
+    })(hcx);
   }
-  headCells.push(h("th", { key: "hx", style: Object.assign({}, baseCell, { minWidth: 32, width: 32, borderRight: "none", borderBottom: "2px solid " + T.accent }) }, ""));
+  headCells.push(h("th", { key: "hx", style: Object.assign({}, baseCell, { minWidth: 30, width: 30, borderRight: "none", borderBottom: "2px solid " + T.accent }) }, ""));
   var bodyRows = [];
-  for (var br = 0; br < rows.length; br++) {
+  for (var brx = 0; brx < rows.length; brx++) {
     (function (r) {
       var rowArr = Array.isArray(rows[r]) ? rows[r] : [];
       var cells = [];
-      for (var bc = 0; bc < nCol; bc++) {
+      for (var bcx = 0; bcx < nCol; bcx++) {
         (function (c) {
           var first = c === 0;
           var st = Object.assign({}, baseCell, first ? stick : {});
           cells.push(h("td", { key: "c" + r + "_" + c, style: st }, h(EditableValue, { value: rowArr[c] == null ? "" : rowArr[c], onChange: function (v) { setCell(r, c, v); }, T: T, placeholder: "—", noTranslate: true, style: { fontSize: 14, color: T.text, borderBottom: "none", padding: 0, fontFamily: "'Cormorant Garamond',Georgia,serif", fontWeight: first ? 700 : 500 } })));
-        })(bc);
+        })(bcx);
       }
-      cells.push(h("td", { key: "cx" + r, style: Object.assign({}, baseCell, { minWidth: 32, width: 32, borderRight: "none", textAlign: "center" }) }, h("button", { onClick: function () { delRow(r); }, "aria-label": "Delete row", className: "ss-press", style: { background: "none", border: "none", color: T.textMuted, cursor: "pointer", fontSize: 17, lineHeight: 1, padding: 4 } }, "×")));
+      cells.push(h("td", { key: "cx" + r, style: Object.assign({}, baseCell, { minWidth: 30, width: 30, borderRight: "none", textAlign: "center" }) }, h("button", { onClick: function () { delRow(r); }, "aria-label": "Delete row", title: "Delete row", className: "ss-press", style: { background: "none", border: "none", color: T.textMuted, cursor: "pointer", fontSize: 17, lineHeight: 1, padding: 4 } }, "×")));
       bodyRows.push(h("tr", { key: "r" + r }, cells));
-    })(br);
+    })(brx);
   }
+  var fadeBase = { position: "absolute", top: 1, bottom: 1, width: 30, pointerEvents: "none", zIndex: 4 };
+  var ctrlBtn = { background: "none", border: "1px dashed " + T.borderLight, borderRadius: 8, color: T.textMuted, cursor: "pointer", fontSize: 12, fontWeight: 700, letterSpacing: 0.5, textTransform: "uppercase", padding: "7px 12px", fontFamily: "'Cinzel',Georgia,serif" };
   return h("div", { id: props.elId, className: props.hl ? "ss-jump" : undefined, style: { padding: "14px 2px 16px", borderBottom: "1px solid " + T.borderLight } },
     h("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 8 } },
       h("div", { style: { flex: 1, minWidth: 0 } }, h(EditableValue, { value: f.title == null ? "" : f.title, onChange: function (v) { updateField(si, fi, "title", v); }, T: T, placeholder: "Table", noTranslate: true, style: { fontSize: 13, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", color: T.accent, borderBottom: "none", fontFamily: "'Cinzel',Georgia,serif" } })),
-      h(FieldMenu, { T: T, k: "t" + si + "_" + fi, menuKey: props.menuKey, setMenuKey: props.setMenuKey, onEdit: null, onMoveUp: function () { moveField(si, fi, -1); }, onMoveDown: function () { moveField(si, fi, 1); }, onDelete: function () { delField(si, fi); }, deleteLabel: "Delete table", canUp: props.canUp, canDown: props.canDown })
+      h(FieldMenu, { T: T, k: "t" + si + "_" + fi, menuKey: props.menuKey, setMenuKey: props.setMenuKey, onEdit: null, onMoveUp: function () { moveField(si, fi, -1); }, onMoveDown: function () { moveField(si, fi, 1); }, onMoveToSection: (sectionsLen > 1 && setMoveItem) ? (function () { setMoveItem({ si: si, fi: fi }); }) : null, moveToLabel: "Move to section…", onDelete: function () { delField(si, fi); }, deleteLabel: "Delete table", canUp: props.canUp, canDown: props.canDown })
     ),
-    h("div", { "data-ss-table-scroll": "1", style: { overflowX: "auto", WebkitOverflowScrolling: "touch", border: "1px solid " + T.borderLight, borderRadius: 8, background: T.surface } },
-      h("table", { style: { borderCollapse: "collapse", width: "max-content", maxWidth: "none", tableLayout: "auto" } }, h("thead", null, h("tr", null, headCells)), h("tbody", null, bodyRows))
+    h("div", { style: { position: "relative" } },
+      h("div", { ref: scRef, onScroll: recompute, "data-ss-table-scroll": "1", style: { overflowX: "auto", WebkitOverflowScrolling: "touch", border: "1px solid " + T.borderLight, borderRadius: 8, background: T.surface } },
+        h("table", { style: { borderCollapse: "collapse", width: "max-content", maxWidth: "none", tableLayout: "auto" } }, h("thead", null, h("tr", null, headCells)), h("tbody", null, bodyRows))
+      ),
+      fade.r ? h("div", { "aria-hidden": "true", style: Object.assign({}, fadeBase, { right: 1, borderRadius: "0 8px 8px 0", background: "linear-gradient(to right, rgba(0,0,0,0), " + T.surface + ")" }) }) : null,
+      fade.l ? h("div", { "aria-hidden": "true", style: Object.assign({}, fadeBase, { left: 1, borderRadius: "8px 0 0 8px", background: "linear-gradient(to left, rgba(0,0,0,0), " + T.surface + ")" }) }) : null
     ),
     rows.length === 0 ? h("div", { style: { padding: "8px 2px", fontSize: 12, color: T.textMuted, fontStyle: "italic" } }, "Empty table") : null,
-    h("button", { onClick: addRow, className: "ss-press", style: { marginTop: 8, background: "none", border: "1px dashed " + T.borderLight, borderRadius: 8, color: T.textMuted, cursor: "pointer", fontSize: 12, fontWeight: 700, letterSpacing: 0.5, textTransform: "uppercase", padding: "7px 12px", fontFamily: "'Cinzel',Georgia,serif" } }, "+ Add row")
+    h("div", { style: { display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" } },
+      h("button", { onClick: addRow, className: "ss-press", style: ctrlBtn }, "+ Add row"),
+      h("button", { onClick: addCol, className: "ss-press", style: ctrlBtn }, "+ Add column")
+    )
   );
 }
+
 function HeaderAwareBody({ T, sec, si, hlField, menuKey, setMenuKey, updateField, moveField, delField, delHeader, setEditField, setMoveItem, editKey, setEditKey, sectionsLen }) {
   return /*#__PURE__*/React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 0 } }, sec.fields.map((f, fi) => {
-    if (ssIsTable(f)) return React.createElement(TableField, { key: f.id, elId: "fld-" + f.id, hl: hlField === f.id, T: T, f: f, si: si, fi: fi, updateField: updateField, moveField: moveField, delField: delField, setMenuKey: setMenuKey, menuKey: menuKey, canUp: fi > 0, canDown: fi < sec.fields.length - 1 });
+    if (ssIsTable(f)) return React.createElement(TableField, { key: f.id, elId: "fld-" + f.id, hl: hlField === f.id, T: T, f: f, si: si, fi: fi, updateField: updateField, moveField: moveField, delField: delField, setMenuKey: setMenuKey, menuKey: menuKey, canUp: fi > 0, canDown: fi < sec.fields.length - 1, setMoveItem: setMoveItem, sectionsLen: sectionsLen });
     if (ssIsHeader(f)) {
       return /*#__PURE__*/React.createElement("div", { key: f.id, id: "fld-" + f.id, className: hlField === f.id ? "ss-jump" : undefined, style: { display: "flex", alignItems: "center", gap: 8, padding: "16px 2px 6px", borderBottom: "1px solid " + T.borderLight } }, /*#__PURE__*/React.createElement("span", { style: { flex: 1, minWidth: 0, fontSize: 16, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", color: T.accent, fontFamily: "'Cinzel',Georgia,serif" } }, f.label), /*#__PURE__*/React.createElement(FieldMenu, { T: T, k: "f" + si + "_" + fi, menuKey: menuKey, setMenuKey: setMenuKey, onEdit: () => setEditField({ si: si, fi: fi, header: true }), onMoveUp: () => moveField(si, fi, -1), onMoveDown: () => moveField(si, fi, 1), onDelete: () => delHeader(si, fi), deleteLabel: "Delete header", canUp: fi > 0, canDown: fi < sec.fields.length - 1 }));
     }
