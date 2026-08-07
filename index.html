@@ -258,6 +258,72 @@ var SS_PAL={"parchment":{"n":"Parchment & Leather","ground":[0.9796,0.9516,0.900
   var TITLE_SZ = 10.5, LBL_SZ = 8.8, VAL_SZ = 9.4, HDR_SZ = 9.2;
   var PAD = 9, ROW_GAP = 3.2, SEC_GAP = 11;
 
+  /* ---------- table rendering (v70) ---------- */
+  var TBL_HEAD_SZ = 8.4, TBL_CELL_SZ = 8.6, TBL_CPAD = 3;
+  function layoutTable(f, innerW) {
+    var cols = Array.isArray(f.columns) ? f.columns.map(function (c) { return c == null ? "" : String(c); }) : [];
+    var body = Array.isArray(f.rows) ? f.rows.map(function (r) { return Array.isArray(r) ? r.map(function (c) { return c == null ? "" : String(c); }) : []; }) : [];
+    var n = cols.length;
+    for (var bi = 0; bi < body.length; bi++) if (body[bi].length > n) n = body[bi].length;
+    if (n < 1) n = 1;
+    var cw = innerW / n;
+    var cellW = cw - TBL_CPAD * 2;
+    var lhH = TBL_HEAD_SZ + 2.2, lhC = TBL_CELL_SZ + 2.2;
+    var titleLines = (f.title != null && String(f.title).length) ? wrap(String(f.title), "Times-Bold", LBL_SZ, innerW) : [];
+    var titleH = titleLines.length ? titleLines.length * (LBL_SZ + 2.2) + 3 : 0;
+    var colLines = [], headH = 0;
+    for (var c = 0; c < n; c++) { var w = wrap(cols[c] || "", "Times-Bold", TBL_HEAD_SZ, cellW); colLines.push(w); if (w.length * lhH > headH) headH = w.length * lhH; }
+    headH += 6;
+    var rowsL = [], rowH = [];
+    for (var r = 0; r < body.length; r++) {
+      var cells = [], hh = 0;
+      for (var cc = 0; cc < n; cc++) { var cellTxt = body[r][cc] != null ? String(body[r][cc]) : ""; var wl = wrap(cellTxt, "Times-Roman", TBL_CELL_SZ, cellW); cells.push(wl); if (wl.length * lhC > hh) hh = wl.length * lhC; }
+      hh += 5; rowsL.push(cells); rowH.push(hh);
+    }
+    var gridH = headH; for (var g = 0; g < rowH.length; g++) gridH += rowH[g];
+    return { n: n, cw: cw, pad: TBL_CPAD, HEAD: TBL_HEAD_SZ, CELL: TBL_CELL_SZ, lhH: lhH, lhC: lhC, cols: colLines, headH: headH, rowsL: rowsL, rowH: rowH, titleLines: titleLines, titleH: titleH, h: titleH + gridH + 2 };
+  }
+  function splitTable(tbl, maxH) {
+    var chunks = [], i = 0;
+    while (i < tbl.rowsL.length) {
+      var first = chunks.length === 0;
+      var h = (first ? tbl.titleH : 0) + tbl.headH, start = i;
+      while (i < tbl.rowsL.length && (h + tbl.rowH[i] <= maxH || i === start)) { h += tbl.rowH[i]; i++; }
+      chunks.push({ n: tbl.n, cw: tbl.cw, pad: tbl.pad, HEAD: tbl.HEAD, CELL: tbl.CELL, lhH: tbl.lhH, lhC: tbl.lhC, cols: tbl.cols, headH: tbl.headH, rowsL: tbl.rowsL.slice(start, i), rowH: tbl.rowH.slice(start, i), titleLines: first ? tbl.titleLines : [], titleH: first ? tbl.titleH : 0, h: h + 2 });
+    }
+    if (!chunks.length) chunks.push(tbl);
+    return chunks;
+  }
+  function drawTable(pg, x, yTop, innerW, tbl) {
+    var y = yTop, a, c, r;
+    for (a = 0; a < tbl.titleLines.length; a++) { pg.text(x, y - LBL_SZ, tbl.titleLines[a], F.bold, LBL_SZ, C.brown); y -= (LBL_SZ + 2.2); }
+    if (tbl.titleLines.length) y -= 3;
+    var gridTop = y;
+    var cx = x;
+    for (c = 0; c < tbl.n; c++) {
+      var hy = y - 3 - tbl.HEAD;
+      for (a = 0; a < tbl.cols[c].length; a++) { pg.text(cx + tbl.pad, hy, tbl.cols[c][a], F.bold, tbl.HEAD, C.leather); hy -= tbl.lhH; }
+      cx += tbl.cw;
+    }
+    var ry = y - tbl.headH;
+    pg.line(x, ry, x + innerW, ry, C.brown, 0.7);
+    for (r = 0; r < tbl.rowsL.length; r++) {
+      var cx2 = x;
+      for (c = 0; c < tbl.n; c++) {
+        var cy = ry - 3 - tbl.CELL;
+        var cell = tbl.rowsL[r][c] || [];
+        for (a = 0; a < cell.length; a++) { pg.text(cx2 + tbl.pad, cy, cell[a], F.body, tbl.CELL, C.ink); cy -= tbl.lhC; }
+        cx2 += tbl.cw;
+      }
+      ry -= tbl.rowH[r];
+      if (r < tbl.rowsL.length - 1) pg.line(x, ry, x + innerW, ry, C.rule, 0.4);
+    }
+    var botY = ry;
+    pg.line(x, gridTop, x + innerW, gridTop, C.rule, 0.5);
+    pg.line(x, botY, x + innerW, botY, C.rule, 0.5);
+    var vx = x;
+    for (c = 0; c <= tbl.n; c++) { pg.line(vx, gridTop, vx, botY, C.rule, 0.4); vx += tbl.cw; }
+  }
   function measureRows(fields, innerW) {
     var lblW = Math.min(innerW * 0.46, innerW - 60);
     var rows = [];
@@ -266,6 +332,11 @@ var SS_PAL={"parchment":{"n":"Parchment & Leather","ground":[0.9796,0.9516,0.900
       if (f.type === "header") {
         var Ht = wrap(f.label || "", "Times-Bold", HDR_SZ, innerW);
         rows.push({ hdr: true, H: Ht, h: Ht.length * (HDR_SZ + 2.4) + 7 });
+        continue;
+      }
+      if (f.type === "table") {
+        var tb = layoutTable(f, innerW);
+        rows.push({ table: true, tbl: tb, h: tb.h });
         continue;
       }
       var raw = (f.value == null || f.value === "") ? "—" : String(f.value);
@@ -300,6 +371,7 @@ var SS_PAL={"parchment":{"n":"Parchment & Leather","ground":[0.9796,0.9516,0.900
     var out = [];
     for (var i = 0; i < rows.length; i++) {
       var r = rows[i];
+      if (r.table) { if (r.h <= maxH) { out.push(r); } else { var tc = splitTable(r.tbl, maxH); for (var tci = 0; tci < tc.length; tci++) out.push({ table: true, tbl: tc[tci], h: tc[tci].h }); } continue; }
       if (r.h <= maxH) { out.push(r); continue; }
       var lines = [], a;
       var Ls = r.stacked ? r.L : wrap(r.L.join(" "), "Times-Bold", LBL_SZ, innerW);
@@ -438,6 +510,8 @@ var SS_PAL={"parchment":{"n":"Parchment & Leather","ground":[0.9796,0.9516,0.900
           var hy = y - 2;
           for (a = 0; a < r.H.length; a++) { pg.text(x + PAD, hy - HDR_SZ, r.H[a], F.bold, HDR_SZ, C.leather); hy -= HDR_SZ + 2.4; }
           pg.line(x + PAD, hy - 0.5, x + COLW - PAD, hy - 0.5, C.gold, 0.5);
+        } else if (r.table) {
+          drawTable(pg, x + PAD, y, COLW - PAD * 2, r.tbl);
         } else if (r.flow) {
           var fy2 = y;
           for (a = 0; a < r.flow.length; a++) {
@@ -1856,6 +1930,7 @@ function hb(T, t) {
   }, t);
 }
 function ssIsHeader(f) { return !!(f && f.type === "header"); }
+function ssIsTable(f) { return !!(f && f.type === "table"); }
 function kbScheme(T) {
   try {
     var b = ((T && T.bg) || "#000").replace("#", "");
@@ -2731,7 +2806,7 @@ function HomeScreen({
       marginTop: 4,
       letterSpacing: 1
     }
-  }, "Sheetmancer · build v69"))), /*#__PURE__*/React.createElement("button", {
+  }, "Sheetmancer · build v70"))), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowHelp(false),
     className: "ss-press",
     style: {
@@ -3569,8 +3644,9 @@ function ProcessingScreen({
         parsed.sections = (parsed.sections || []).filter(s => s && s.title).map((s, si) => ({
           id: s.id || `sec_${si}`,
           title: String(s.title),
-          fields: (s.fields || []).filter(f => f && f.label).map((f, fi) => {
+          fields: (s.fields || []).filter(f => f && (f.label || f.type === "table")).map((f, fi) => {
             if (f.type === "header") return { id: f.id || `h_${si}_${fi}`, type: "header", label: String(f.label), value: "", confidence: "high" };
+            if (f.type === "table") return { id: f.id || `t_${si}_${fi}`, type: "table", title: String(f.title != null ? f.title : (f.label != null ? f.label : "")), columns: Array.isArray(f.columns) ? f.columns.map(c => String(c == null ? "" : c)) : [], rows: Array.isArray(f.rows) ? f.rows.map(r => Array.isArray(r) ? r.map(c => String(c == null ? "" : c)) : []) : [], value: "", confidence: "high" };
             const unread = isUnreadable(f.value);
             const out = {
               id: f.id || `f_${si}_${fi}`,
@@ -4104,7 +4180,7 @@ function buildGroups(sections, catOrder, groups) {
     var m = map[k];
     m.members.push(i);
     var sec = sections[i];
-    m.fields += sec.fields.filter(function (f) { return f.type !== "header"; }).length;
+    m.fields += sec.fields.filter(function (f) { return f.type !== "header" && f.type !== "table"; }).length;
     if (sec.fields.some(function (f) {
       return f.confidence === "low";
     })) m.low = true;
@@ -5344,8 +5420,62 @@ function RenameModal({
   }, "Save"))));
 }
 
+function TableField(props) {
+  var T = props.T, f = props.f, si = props.si, fi = props.fi;
+  var updateField = props.updateField, moveField = props.moveField, delField = props.delField;
+  var h = React.createElement;
+  var cols = Array.isArray(f.columns) ? f.columns : [];
+  var rows = Array.isArray(f.rows) ? f.rows : [];
+  var nCol = cols.length;
+  for (var ri = 0; ri < rows.length; ri++) { var rl = Array.isArray(rows[ri]) ? rows[ri].length : 0; if (rl > nCol) nCol = rl; }
+  if (nCol < 1) nCol = 1;
+  var cloneRows = function () { return rows.map(function (row) { return Array.isArray(row) ? row.slice() : []; }); };
+  var setCell = function (r, c, v) { var nr = cloneRows(); while (nr[r].length < nCol) nr[r].push(""); nr[r][c] = v; updateField(si, fi, "rows", nr); };
+  var setCol = function (c, v) { var nc = cols.slice(); while (nc.length < nCol) nc.push(""); nc[c] = v; updateField(si, fi, "columns", nc); };
+  var addRow = function () { var nr = cloneRows(); var blank = []; for (var c = 0; c < nCol; c++) blank.push(""); nr.push(blank); updateField(si, fi, "rows", nr); };
+  var delRow = function (r) { updateField(si, fi, "rows", rows.filter(function (_, i) { return i !== r; })); };
+  var baseCell = { padding: "7px 9px", borderRight: "1px solid " + T.borderLight, borderBottom: "1px solid " + T.borderLight, verticalAlign: "top", minWidth: 60, maxWidth: 240 };
+  var stick = { position: "sticky", left: 0, zIndex: 1, background: T.surface };
+  var headCells = [];
+  for (var hc = 0; hc < nCol; hc++) {
+    (function (c) {
+      var first = c === 0;
+      var st = Object.assign({}, baseCell, { borderBottom: "2px solid " + T.accent }, first ? stick : {});
+      headCells.push(h("th", { key: "h" + c, style: st }, h(EditableValue, { value: cols[c] == null ? "" : cols[c], onChange: function (v) { setCol(c, v); }, T: T, placeholder: "—", noTranslate: true, style: { fontSize: 11.5, fontWeight: 700, letterSpacing: 0.5, textTransform: "uppercase", color: T.label, borderBottom: "none", padding: 0, fontFamily: "'Cinzel',Georgia,serif" } })));
+    })(hc);
+  }
+  headCells.push(h("th", { key: "hx", style: Object.assign({}, baseCell, { minWidth: 32, width: 32, borderRight: "none", borderBottom: "2px solid " + T.accent }) }, ""));
+  var bodyRows = [];
+  for (var br = 0; br < rows.length; br++) {
+    (function (r) {
+      var rowArr = Array.isArray(rows[r]) ? rows[r] : [];
+      var cells = [];
+      for (var bc = 0; bc < nCol; bc++) {
+        (function (c) {
+          var first = c === 0;
+          var st = Object.assign({}, baseCell, first ? stick : {});
+          cells.push(h("td", { key: "c" + r + "_" + c, style: st }, h(EditableValue, { value: rowArr[c] == null ? "" : rowArr[c], onChange: function (v) { setCell(r, c, v); }, T: T, placeholder: "—", noTranslate: true, style: { fontSize: 14, color: T.text, borderBottom: "none", padding: 0, fontFamily: "'Cormorant Garamond',Georgia,serif", fontWeight: first ? 700 : 500 } })));
+        })(bc);
+      }
+      cells.push(h("td", { key: "cx" + r, style: Object.assign({}, baseCell, { minWidth: 32, width: 32, borderRight: "none", textAlign: "center" }) }, h("button", { onClick: function () { delRow(r); }, "aria-label": "Delete row", className: "ss-press", style: { background: "none", border: "none", color: T.textMuted, cursor: "pointer", fontSize: 17, lineHeight: 1, padding: 4 } }, "×")));
+      bodyRows.push(h("tr", { key: "r" + r }, cells));
+    })(br);
+  }
+  return h("div", { id: props.elId, className: props.hl ? "ss-jump" : undefined, style: { padding: "14px 2px 16px", borderBottom: "1px solid " + T.borderLight } },
+    h("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 8 } },
+      h("div", { style: { flex: 1, minWidth: 0 } }, h(EditableValue, { value: f.title == null ? "" : f.title, onChange: function (v) { updateField(si, fi, "title", v); }, T: T, placeholder: "Table", noTranslate: true, style: { fontSize: 13, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", color: T.accent, borderBottom: "none", fontFamily: "'Cinzel',Georgia,serif" } })),
+      h(FieldMenu, { T: T, k: "t" + si + "_" + fi, menuKey: props.menuKey, setMenuKey: props.setMenuKey, onEdit: null, onMoveUp: function () { moveField(si, fi, -1); }, onMoveDown: function () { moveField(si, fi, 1); }, onDelete: function () { delField(si, fi); }, deleteLabel: "Delete table", canUp: props.canUp, canDown: props.canDown })
+    ),
+    h("div", { "data-ss-table-scroll": "1", style: { overflowX: "auto", WebkitOverflowScrolling: "touch", border: "1px solid " + T.borderLight, borderRadius: 8, background: T.surface } },
+      h("table", { style: { borderCollapse: "collapse", width: "max-content", maxWidth: "none", tableLayout: "auto" } }, h("thead", null, h("tr", null, headCells)), h("tbody", null, bodyRows))
+    ),
+    rows.length === 0 ? h("div", { style: { padding: "8px 2px", fontSize: 12, color: T.textMuted, fontStyle: "italic" } }, "Empty table") : null,
+    h("button", { onClick: addRow, className: "ss-press", style: { marginTop: 8, background: "none", border: "1px dashed " + T.borderLight, borderRadius: 8, color: T.textMuted, cursor: "pointer", fontSize: 12, fontWeight: 700, letterSpacing: 0.5, textTransform: "uppercase", padding: "7px 12px", fontFamily: "'Cinzel',Georgia,serif" } }, "+ Add row")
+  );
+}
 function HeaderAwareBody({ T, sec, si, hlField, menuKey, setMenuKey, updateField, moveField, delField, delHeader, setEditField, setMoveItem, editKey, setEditKey, sectionsLen }) {
   return /*#__PURE__*/React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 0 } }, sec.fields.map((f, fi) => {
+    if (ssIsTable(f)) return React.createElement(TableField, { key: f.id, elId: "fld-" + f.id, hl: hlField === f.id, T: T, f: f, si: si, fi: fi, updateField: updateField, moveField: moveField, delField: delField, setMenuKey: setMenuKey, menuKey: menuKey, canUp: fi > 0, canDown: fi < sec.fields.length - 1 });
     if (ssIsHeader(f)) {
       return /*#__PURE__*/React.createElement("div", { key: f.id, id: "fld-" + f.id, className: hlField === f.id ? "ss-jump" : undefined, style: { display: "flex", alignItems: "center", gap: 8, padding: "16px 2px 6px", borderBottom: "1px solid " + T.borderLight } }, /*#__PURE__*/React.createElement("span", { style: { flex: 1, minWidth: 0, fontSize: 16, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", color: T.accent, fontFamily: "'Cinzel',Georgia,serif" } }, f.label), /*#__PURE__*/React.createElement(FieldMenu, { T: T, k: "f" + si + "_" + fi, menuKey: menuKey, setMenuKey: setMenuKey, onEdit: () => setEditField({ si: si, fi: fi, header: true }), onMoveUp: () => moveField(si, fi, -1), onMoveDown: () => moveField(si, fi, 1), onDelete: () => delHeader(si, fi), deleteLabel: "Delete header", canUp: fi > 0, canDown: fi < sec.fields.length - 1 }));
     }
@@ -5713,6 +5843,7 @@ function CharacterScreen({
       data.sections.forEach(function (sec, si) {
         var st = _strip(sec.title);
         (sec.fields || []).forEach(function (f) {
+          if (ssIsTable(f)) return;
           if (matcher(_strip(f.label) + " " + _strip(f.value) + " " + st)) {
             out.push({ kind: "field", sectionTitle: sec.title, catKey: group.catOf[si], fid: f.id, label: f.label, value: f.value, score: score(f.label, f.value, sec.title) });
           }
@@ -5831,6 +5962,7 @@ function CharacterScreen({
       if (dt > 800 || Math.abs(dx) < 45) return;
       const tag = e.target.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+      if (e.target.closest && e.target.closest("[data-ss-table-scroll]")) return;
       handleSwipeRef.current(dx < 0 ? 1 : -1);
     };
     el.addEventListener("touchstart", onStart, {
@@ -6103,7 +6235,7 @@ function CharacterScreen({
   const toastTimer = useRef(null);
   const showToast = (m, undoable) => { setToast(m ? { m: m, undoable: !!undoable } : null); if (toastTimer.current) clearTimeout(toastTimer.current); toastTimer.current = setTimeout(() => setToast(null), 4500); };
   const clearToast = () => { if (toastTimer.current) clearTimeout(toastTimer.current); setToast(null); };
-  const delField = (si, fi) => { const sec = data.sections[si]; const lbl = sec && sec.fields[fi] ? sec.fields[fi].label : "Field"; setMenuKey(null); askConfirm("Delete field?", "Are you sure? “" + lbl + "” will be deleted.", () => { removeField(si, fi); showToast('"' + lbl + '" deleted', true); }); };
+  const delField = (si, fi) => { const sec = data.sections[si]; const lbl = sec && sec.fields[fi] ? (sec.fields[fi].label || sec.fields[fi].title || "Field") : "Field"; setMenuKey(null); askConfirm("Delete field?", "Are you sure? “" + lbl + "” will be deleted.", () => { removeField(si, fi); showToast('"' + lbl + '" deleted', true); }); };
   const delHeader = (si, fi) => { const sec = data.sections[si]; const lbl = sec && sec.fields[fi] ? sec.fields[fi].label : "Header"; setMenuKey(null); askConfirm("Delete header?", "Remove the “" + lbl + "” header? The fields under it stay — only the divider is removed.", () => { removeField(si, fi); showToast('"' + lbl + '" removed', true); }); };
   const delSection = si => { const sec = data.sections[si]; const lbl = sec ? sec.title : "Section"; const n = sec ? sec.fields.length : 0; setMenuKey(null); askConfirm("Remove section?", "Are you sure? All content in “" + lbl + "” (" + n + " item" + (n === 1 ? "" : "s") + ") will be deleted.", () => { removeSection(si); showToast('"' + lbl + '" deleted', true); }); };
   const delNote = nid => askConfirm("Delete note?", "Are you sure? This session note will be deleted.", () => removeNote(nid));
@@ -6161,7 +6293,7 @@ function CharacterScreen({
     const label = (CAT_META[cat.key] || {}).label || cat.label || "Category";
     const members = cat.members || [];
     const nSec = members.length;
-    const nFld = members.reduce((a, i) => a + ((data.sections[i] && data.sections[i].fields.filter(f => f.type !== "header").length) || 0), 0);
+    const nFld = members.reduce((a, i) => a + ((data.sections[i] && data.sections[i].fields.filter(f => f.type !== "header" && f.type !== "table").length) || 0), 0);
     setMenuKey(null);
     askConfirm("Delete category?", "Are you sure? The “" + label + "” category — " + nSec + " section" + (nSec === 1 ? "" : "s") + " and " + nFld + " field" + (nFld === 1 ? "" : "s") + " — will be permanently deleted.", () => { removeSections(members); showToast('"' + label + '" deleted', true); });
   };
@@ -6269,13 +6401,13 @@ function CharacterScreen({
     setMenuKey(null);
   };
   const getSectionStyle = sec => {
-    const rf = sec.fields.filter(f => !ssIsHeader(f));
+    const rf = sec.fields.filter(f => !ssIsHeader(f) && !ssIsTable(f));
     if (rf.length <= 10 && rf.every(f => !f.value.includes("%") && f.value.length < 8 && f.label.length < 14)) return "grid";
     if (rf.some(f => f.value.includes("%"))) return "skills";
     if (sec.id === "spells" || sec.title.toLowerCase().includes("spell") || sec.title.toLowerCase().includes("cantrip") || sec.title.toLowerCase().includes("magic")) return "spells";
     return "default";
   };
-  const totalFields = data.sections.reduce((a, s) => a + s.fields.filter(f => f.type !== "header").length, 0);
+  const totalFields = data.sections.reduce((a, s) => a + s.fields.filter(f => f.type !== "header" && f.type !== "table").length, 0);
   const lowConfCount = data.sections.reduce((a, s) => a + s.fields.filter(f => f.confidence === "low").length, 0) + (data.name_confidence === "low" ? 1 : 0) + (data.system_confidence === "low" ? 1 : 0);
   const secCount = data.sections.length + 1; /* sections + journal */
 
@@ -6818,8 +6950,8 @@ function CharacterScreen({
       }
     }, "No fields to verify in this section.");
     const hasHdr = sec.fields.some(ssIsHeader);
-    const nReal = sec.fields.filter(f => !ssIsHeader(f)).length;
-    const sty = hasHdr ? "__hdr" : getSectionStyle(sec);
+    const nReal = sec.fields.filter(f => !ssIsHeader(f) && !ssIsTable(f)).length;
+    const sty = (hasHdr || sec.fields.some(ssIsTable)) ? "__hdr" : getSectionStyle(sec);
     return /*#__PURE__*/React.createElement("div", {
       key: sec.id,
       style: {
