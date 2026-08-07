@@ -2806,7 +2806,7 @@ function HomeScreen({
       marginTop: 4,
       letterSpacing: 1
     }
-  }, "Sheetmancer · build v71"))), /*#__PURE__*/React.createElement("button", {
+  }, "Sheetmancer · build v72"))), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowHelp(false),
     className: "ss-press",
     style: {
@@ -5420,6 +5420,76 @@ function RenameModal({
   }, "Save"))));
 }
 
+function TableEditModal(props) {
+  var T = props.T, h = React.createElement;
+  var mk = function () {
+    return { title: props.title == null ? "" : String(props.title),
+      cols: (Array.isArray(props.columns) ? props.columns : []).map(function (c) { return c == null ? "" : String(c); }),
+      rows: (Array.isArray(props.rows) ? props.rows : []).map(function (r) { return Array.isArray(r) ? r.map(function (c) { return c == null ? "" : String(c); }) : []; }) };
+  };
+  var stt = useState(mk);
+  var d = stt[0], setD = stt[1];
+  var nCol = d.cols.length;
+  for (var i = 0; i < d.rows.length; i++) if (d.rows[i].length > nCol) nCol = d.rows[i].length;
+  if (nCol < 1) nCol = 1;
+  var pad = function (arr, n) { var a = arr.slice(); while (a.length < n) a.push(""); return a; };
+  var setTitle = function (v) { setD(function (p) { return { title: v, cols: p.cols, rows: p.rows }; }); };
+  var setColName = function (c, v) { setD(function (p) { var nc = pad(p.cols, nCol); nc[c] = v; return { title: p.title, cols: nc, rows: p.rows }; }); };
+  var setCellV = function (r, c, v) { setD(function (p) { var nr = p.rows.map(function (row) { return row.slice(); }); nr[r] = pad(nr[r], nCol); nr[r][c] = v; return { title: p.title, cols: p.cols, rows: nr }; }); };
+  var addColD = function () { setD(function (p) { var nc = pad(p.cols, nCol); nc.push(""); return { title: p.title, cols: nc, rows: p.rows }; }); };
+  var delColD = function (c) { setD(function (p) { var nc = pad(p.cols, nCol); nc.splice(c, 1); var nr = p.rows.map(function (row) { var rr = pad(row, nCol); rr.splice(c, 1); return rr; }); return { title: p.title, cols: nc, rows: nr }; }); };
+  var addRowD = function () { setD(function (p) { var nr = p.rows.map(function (row) { return row.slice(); }); var blank = []; for (var c = 0; c < nCol; c++) blank.push(""); nr.push(blank); return { title: p.title, cols: p.cols, rows: nr }; }); };
+  var delRowD = function (r) { setD(function (p) { return { title: p.title, cols: p.cols, rows: p.rows.filter(function (_, i) { return i !== r; }) }; }); };
+  var inp = function (value, onChange, ph, extra) { return h("input", { value: value, onChange: function (e) { onChange(e.target.value); }, placeholder: ph, translate: "no", style: Object.assign({ width: "100%", boxSizing: "border-box", fontSize: 15, color: T.text, background: T.accentFaint, border: "1px solid " + T.borderLight, borderRadius: 6, padding: "7px 8px", outline: "none", fontFamily: "'EB Garamond',Georgia,serif", colorScheme: (typeof kbScheme === "function" ? kbScheme(T) : undefined) }, extra || {}) }); };
+  var xBtn = function (onClick, label, sz) { return h("button", { onClick: onClick, "aria-label": label, className: "ss-press", style: { background: "none", border: "none", color: T.textMuted, cursor: "pointer", fontSize: sz || 16, lineHeight: 1, padding: 2, flexShrink: 0 } }, "×"); };
+  var addBtn = { background: "none", border: "1px dashed " + T.borderLight, borderRadius: 8, color: T.textMuted, cursor: "pointer", fontSize: 12, fontWeight: 700, letterSpacing: 0.5, textTransform: "uppercase", padding: "8px 12px", fontFamily: "'Cinzel',Georgia,serif" };
+  var headCells = [];
+  for (var hc = 0; hc < nCol; hc++) {
+    (function (c) {
+      headCells.push(h("th", { key: "h" + c, style: { padding: 5, minWidth: 128, verticalAlign: "top" } }, h("div", { style: { display: "flex", gap: 4, alignItems: "center" } },
+        inp(d.cols[c] == null ? "" : d.cols[c], function (v) { setColName(c, v); }, "Column", { fontWeight: 700, fontSize: 13 }),
+        nCol > 1 ? xBtn(function () { delColD(c); }, "Delete column", 16) : null)));
+    })(hc);
+  }
+  headCells.push(h("th", { key: "hx", style: { width: 28 } }, ""));
+  var bodyRows = [];
+  for (var br = 0; br < d.rows.length; br++) {
+    (function (r) {
+      var cells = [];
+      for (var bc = 0; bc < nCol; bc++) {
+        (function (c) {
+          cells.push(h("td", { key: "c" + r + "_" + c, style: { padding: 5, minWidth: 128 } }, inp((d.rows[r] && d.rows[r][c] != null) ? d.rows[r][c] : "", function (v) { setCellV(r, c, v); }, "")));
+        })(bc);
+      }
+      cells.push(h("td", { key: "cx" + r, style: { width: 28, textAlign: "center", verticalAlign: "middle" } }, xBtn(function () { delRowD(r); }, "Delete row", 18)));
+      bodyRows.push(h("tr", { key: "r" + r }, cells));
+    })(br);
+  }
+  var save = function () {
+    props.onSave(d.title, d.cols.slice(0, nCol), d.rows.map(function (row) { return pad(row, nCol).slice(0, nCol); }));
+    props.onClose();
+  };
+  return ReactDOM.createPortal(h("div", { style: { position: "fixed", top: 0, left: 0, right: 0, bottom: "var(--ss-kb, 0px)", zIndex: 100460, background: T.bg, display: "flex", flexDirection: "column", paddingTop: "calc(env(safe-area-inset-top, 0px) + 10px)", paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 10px)" } },
+    h("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "4px 14px 10px", borderBottom: "1px solid " + T.borderLight, flex: "none" } },
+      h("button", { onClick: props.onClose, className: "ss-press", style: { minHeight: 44, padding: "8px 15px", background: "none", border: "1px solid " + T.borderLight, borderRadius: 10, cursor: "pointer", fontSize: 14, color: T.textSoft, fontFamily: "'Cinzel',Georgia,serif", flexShrink: 0 } }, "Cancel"),
+      h("span", { style: { fontSize: 14, fontWeight: 700, color: T.accent, fontFamily: "'Cinzel',Georgia,serif", letterSpacing: 1 } }, "Edit Table"),
+      h("button", { onClick: save, className: "ss-press", style: { minHeight: 44, padding: "8px 20px", background: T.metalGrad, border: "none", borderRadius: 10, cursor: "pointer", fontSize: 14, fontWeight: 700, color: T.bg, fontFamily: "'Cinzel',Georgia,serif", flexShrink: 0 } }, "✓ Save")
+    ),
+    h("div", { style: { flex: 1, overflowY: "auto", overscrollBehavior: "contain", padding: "14px 16px", minHeight: 0 } },
+      h("div", { style: { fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", color: T.label, fontFamily: "'Cinzel',Georgia,serif", margin: "0 0 6px 2px" } }, "Title"),
+      inp(d.title, setTitle, "Table title", { fontSize: 16, marginBottom: 16 }),
+      h("div", { style: { fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", color: T.label, fontFamily: "'Cinzel',Georgia,serif", margin: "0 0 6px 2px" } }, "Columns & cells"),
+      h("div", { style: { overflowX: "auto", WebkitOverflowScrolling: "touch", border: "1px solid " + T.borderLight, borderRadius: 8, padding: 4 } },
+        h("table", { style: { borderCollapse: "collapse", width: "max-content" } }, h("thead", null, h("tr", null, headCells)), h("tbody", null, bodyRows))
+      ),
+      d.rows.length === 0 ? h("div", { style: { padding: "8px 2px", fontSize: 12, color: T.textMuted, fontStyle: "italic" } }, "No rows yet — add one below.") : null,
+      h("div", { style: { display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" } },
+        h("button", { onClick: addRowD, className: "ss-press", style: addBtn }, "+ Add row"),
+        h("button", { onClick: addColD, className: "ss-press", style: addBtn }, "+ Add column"))
+    )
+  ), document.body);
+}
+
 function TableField(props) {
   var T = props.T, f = props.f, si = props.si, fi = props.fi;
   var updateField = props.updateField, moveField = props.moveField, delField = props.delField;
@@ -5447,6 +5517,8 @@ function TableField(props) {
   var nudged = useRef(false);
   var fadeState = useState({ l: false, r: false });
   var fade = fadeState[0], setFade = fadeState[1];
+  var editState = useState(false);
+  var editing = editState[0], setEditing = editState[1];
   var recompute = function () {
     var el = scRef.current; if (!el) return;
     var l = el.scrollLeft > 2;
@@ -5499,7 +5571,7 @@ function TableField(props) {
   return h("div", { id: props.elId, className: props.hl ? "ss-jump" : undefined, style: { padding: "14px 2px 16px", borderBottom: "1px solid " + T.borderLight } },
     h("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 8 } },
       h("div", { style: { flex: 1, minWidth: 0 } }, h(EditableValue, { value: f.title == null ? "" : f.title, onChange: function (v) { updateField(si, fi, "title", v); }, T: T, placeholder: "Table", noTranslate: true, style: { fontSize: 13, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", color: T.accent, borderBottom: "none", fontFamily: "'Cinzel',Georgia,serif" } })),
-      h(FieldMenu, { T: T, k: "t" + si + "_" + fi, menuKey: props.menuKey, setMenuKey: props.setMenuKey, onEdit: null, onMoveUp: function () { moveField(si, fi, -1); }, onMoveDown: function () { moveField(si, fi, 1); }, onMoveToSection: (sectionsLen > 1 && setMoveItem) ? (function () { setMoveItem({ si: si, fi: fi }); }) : null, moveToLabel: "Move to section…", onDelete: function () { delField(si, fi); }, deleteLabel: "Delete table", canUp: props.canUp, canDown: props.canDown })
+      h(FieldMenu, { T: T, k: "t" + si + "_" + fi, menuKey: props.menuKey, setMenuKey: props.setMenuKey, onEdit: function () { setEditing(true); }, onMoveUp: function () { moveField(si, fi, -1); }, onMoveDown: function () { moveField(si, fi, 1); }, onMoveToSection: (sectionsLen > 1 && setMoveItem) ? (function () { setMoveItem({ si: si, fi: fi }); }) : null, moveToLabel: "Move to section…", onDelete: function () { delField(si, fi); }, deleteLabel: "Delete table", canUp: props.canUp, canDown: props.canDown })
     ),
     h("div", { style: { position: "relative" } },
       h("div", { ref: scRef, onScroll: recompute, "data-ss-table-scroll": "1", style: { overflowX: "auto", WebkitOverflowScrolling: "touch", border: "1px solid " + T.borderLight, borderRadius: 8, background: T.surface } },
@@ -5512,7 +5584,8 @@ function TableField(props) {
     h("div", { style: { display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" } },
       h("button", { onClick: addRow, className: "ss-press", style: ctrlBtn }, "+ Add row"),
       h("button", { onClick: addCol, className: "ss-press", style: ctrlBtn }, "+ Add column")
-    )
+    ),
+    editing ? h(TableEditModal, { T: T, title: f.title, columns: cols, rows: rows, onSave: function (t, c, r) { updateField(si, fi, "title", t); updateField(si, fi, "columns", c); updateField(si, fi, "rows", r); }, onClose: function () { setEditing(false); } }) : null
   );
 }
 
