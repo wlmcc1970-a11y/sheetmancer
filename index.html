@@ -2678,6 +2678,8 @@ function HomeScreen({
   const importRef = useRef(null);
   const [importNote, setImportNote] = useState(null);
   const [showSlots, setShowSlots] = useState(false);
+  const [buying, setBuying] = useState(false);
+  const [buyMsg, setBuyMsg] = useState(null);
   const slotsUsed = store.get("ss-scanCount") || 0;
   const slotsBought = store.get("ss-purchasedSlots") || 0;
   const slotsLeft = Math.max(0, INCLUDED_SLOTS + slotsBought - slotsUsed);
@@ -2685,6 +2687,13 @@ function HomeScreen({
   const [signInSheet, setSignInSheet] = useState(false);
   const ptrRef = useRef(null);
   const ptr = usePullToRefresh(ptrRef);
+  useEffect(() => { try { if (window.__ssOutOfScans) { window.__ssOutOfScans = false; if (window.ssPurchaseAvailable) setShowSlots(true); } } catch (_) {} }, []);
+  useEffect(() => {
+    if (ssauth.signedIn && window.ssPurchaseAvailable && !window.__ssBaseGrantTried) {
+      window.__ssBaseGrantTried = true;
+      try { if (window.ssGrantBase) window.ssGrantBase().catch(function () {}); } catch (_) {}
+    }
+  }, [ssauth.signedIn]);
   const handleImport = e => {
     const f = e.target.files[0];
     if (!f) return;
@@ -2705,6 +2714,24 @@ function HomeScreen({
     r.readAsText(f);
     e.target.value = "";
   };
+  const doBuy = async (pid) => {
+    if (buying) return;
+    setBuying(true); setBuyMsg(null);
+    try {
+      const r = await (window.ssBuyScans ? window.ssBuyScans(pid) : Promise.resolve({ ok: false }));
+      if (r && r.ok) {
+        const add = (window.ssProducts && window.ssProducts[pid] && window.ssProducts[pid].scans) || 0;
+        try { store.set("ss-purchasedSlots", (store.get("ss-purchasedSlots") || 0) + add); } catch (_) {}
+        setBuyMsg({ ok: true, text: add + (add === 1 ? " scan added — thank you!" : " scans added — thank you!") });
+      } else if (r && r.error === "cancelled") {
+        setBuyMsg(null);
+      } else {
+        setBuyMsg({ ok: false, text: "That didn't go through — you weren't charged. Please try again." });
+      }
+    } catch (_) {
+      setBuyMsg({ ok: false, text: "That didn't go through — you weren't charged. Please try again." });
+    } finally { setBuying(false); }
+  };
   return /*#__PURE__*/React.createElement("div", {
     style: {
       minHeight: "100vh",
@@ -2716,7 +2743,7 @@ function HomeScreen({
   }, /*#__PURE__*/React.createElement(AtmoBg, {
     T: T
   }), signInSheet && /*#__PURE__*/React.createElement(SignInSheet, { T: T, onClose: () => setSignInSheet(false) }), showSlots && /*#__PURE__*/React.createElement("div", {
-    onClick: () => setShowSlots(false),
+    onClick: () => { setBuyMsg(null); setShowSlots(false); },
     style: { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.7)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }
   }, /*#__PURE__*/React.createElement("div", {
     onClick: e => e.stopPropagation(),
@@ -2725,12 +2752,20 @@ function HomeScreen({
     style: { fontSize: 18, fontWeight: 700, color: T.accent, fontFamily: "'Cinzel',Georgia,serif", marginBottom: 4 }
   }, "Character Slots"), /*#__PURE__*/React.createElement("div", {
     style: { fontSize: 30, fontWeight: 700, color: T.nameColor || T.text, fontFamily: "'Cinzel',Georgia,serif", margin: "2px 0 10px" }
-  }, slotsLeft, /*#__PURE__*/React.createElement("span", { style: { fontSize: 15, color: T.textMuted, fontWeight: 400, fontFamily: "Georgia,serif" } }, slotsLeft === 1 ? " slot left" : " slots left")), /*#__PURE__*/React.createElement("p", {
+  }, slotsLeft, /*#__PURE__*/React.createElement("span", { style: { fontSize: 15, color: T.textMuted, fontWeight: 400, fontFamily: "Georgia,serif" } }, slotsLeft === 1 ? " slot left" : " slots left")), window.ssPurchaseAvailable ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("p", {
+    style: { fontSize: 14, lineHeight: 1.6, color: T.textSoft, margin: "0 0 16px" }
+  }, "Each character you scan uses one Character Scan, and your purchase includes ", INCLUDED_SLOTS, ". Deleting a character doesn't give a scan back — you can buy more below anytime."), ["com.digirunestudios.sheetmancer.scan1", "com.digirunestudios.sheetmancer.scan5"].map(function (pid) {
+    var pr = (window.ssProducts || {})[pid] || {};
+    return /*#__PURE__*/React.createElement("button", { key: pid, disabled: buying, onClick: () => doBuy(pid), className: "ss-press", style: { display: "block", width: "100%", padding: "12px 18px", marginBottom: 10, background: T.accent, border: "none", borderRadius: 12, cursor: buying ? "default" : "pointer", opacity: buying ? 0.6 : 1, fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, color: T.bg, fontSize: 15, letterSpacing: 0.4 } }, "Buy " + (pr.scans || "") + (pr.scans === 1 ? " scan" : " scans") + " · " + (pr.price || ""));
+  }), buyMsg && /*#__PURE__*/React.createElement("div", { style: { fontSize: 13.5, lineHeight: 1.5, color: buyMsg.ok ? (T.success || "#3a7d44") : "#a3402a", margin: "4px 0 12px" } }, buyMsg.text), /*#__PURE__*/React.createElement("button", {
+    onClick: () => { setBuyMsg(null); setShowSlots(false); }, className: "ss-press",
+    style: { padding: "9px 22px", background: "transparent", border: `1.5px solid ${T.borderLight}`, borderRadius: 22, cursor: "pointer", fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, color: T.textMuted, fontSize: 13, letterSpacing: 0.5 }
+  }, buying ? "Working…" : "Close")) : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("p", {
     style: { fontSize: 14, lineHeight: 1.6, color: T.textSoft, margin: "0 0 18px" }
   }, "Each character you scan uses one slot, and your purchase includes ", INCLUDED_SLOTS, ". Deleting a character doesn't give the slot back. More slots will be available to buy when ", /*#__PURE__*/React.createElement("span", { translate: "no" }, "Sheetmancer"), " launches."), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowSlots(false), className: "ss-press",
     style: { padding: "11px 24px", background: T.accent, border: "none", borderRadius: 22, cursor: "pointer", fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, color: T.bg, fontSize: 14, letterSpacing: 0.5 }
-  }, "Got it"))), showHelp && /*#__PURE__*/React.createElement("div", {
+  }, "Got it")))), showHelp && /*#__PURE__*/React.createElement("div", {
     onClick: () => setShowHelp(false),
     style: {
       position: "fixed",
@@ -2806,7 +2841,7 @@ function HomeScreen({
       marginTop: 4,
       letterSpacing: 1
     }
-  }, "Sheetmancer · build v72"))), /*#__PURE__*/React.createElement("button", {
+  }, "Sheetmancer · build v73"))), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowHelp(false),
     className: "ss-press",
     style: {
@@ -3604,6 +3639,7 @@ function ProcessingScreen({
             continue;
           }
           clearTimeout(stepTimer);
+          if (r.status === 402) { try { window.__ssOutOfScans = true; } catch (_) {} }
           throw new Error((d0 && d0.error && d0.error.message) || ("API " + r.status));
         }
         clearTimeout(stepTimer);
@@ -6738,40 +6774,42 @@ function CharacterScreen({
     title: "Export / Share PDF",
     className: "ss-press",
     style: {
-      width: 26,
-      height: 26,
+      width: 28,
+      height: 28,
       borderRadius: "50%",
       border: "none",
       background: T.metalGrad,
       cursor: "pointer",
-      fontSize: 14,
+      fontSize: 17,
       fontWeight: 900,
       color: T.headerText || T.bg,
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
       flexShrink: 0,
-      fontFamily: "'Cinzel',Georgia,serif",
+      fontFamily: "-apple-system,'Segoe UI',system-ui,sans-serif",
+      textShadow: "0 0 1px currentColor",
       boxShadow: `0 1px 4px rgba(0,0,0,0.3)`,
       marginRight: 2
     }
   }, "⤓"), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowHelp(true),
     style: {
-      width: 26,
-      height: 26,
+      width: 28,
+      height: 28,
       borderRadius: "50%",
       border: "none",
       background: T.metalGrad,
       cursor: "pointer",
-      fontSize: 13,
+      fontSize: 17,
       fontWeight: 900,
       color: T.headerText || T.bg,
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
       flexShrink: 0,
-      fontFamily: "'Cinzel',Georgia,serif",
+      fontFamily: "-apple-system,'Segoe UI',system-ui,sans-serif",
+      textShadow: "0 0 1px currentColor",
       boxShadow: `0 1px 4px rgba(0,0,0,0.3)`,
       marginRight: 2
     }
@@ -7811,6 +7849,99 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
       if(!SS_WRAPPED)navigator.serviceWorker.addEventListener('controllerchange',ssReload);
     });
   }
+})();
+</script>
+<script>
+/* Route-B client purchase bridge (v73) — INERT until a store wrapper exposes a purchase path.
+   Mirrors the sign-in bridge: chassis JS publishing window.ss* for React. Web/pre-re-wrap builds
+   see ssPurchaseAvailable=false, so nothing renders or runs -> zero regression. */
+(function(){
+  var API = "https://sheetsnap-api.will-6d6.workers.dev";
+  var SHELL = /PWAShell/.test(navigator.userAgent || '');
+  function iosH(name){ return !!(SHELL && window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers[name]); }
+  var iosBuy = iosH('startPurchase');
+  var iosAppTxn = iosH('getAppTransaction');
+  var androidBuy = !!(window.ssWrapped && typeof navigator.getDigitalGoodsService === 'function' && window.__ssBillingEnabled === true);  /* wrapper sets __ssBillingEnabled ONLY on a billing-capable re-wrap -> no premature Buy buttons */
+  window.ssPurchaseAvailable = iosBuy || androidBuy;         /* React shows Buy buttons only when true */
+  window.ssPurchasePlatform  = iosBuy ? 'apple' : (androidBuy ? 'android' : null);
+  window.ssProducts = {
+    'com.digirunestudios.sheetmancer.scan1': { scans: 1, price: '$1.99', label: '1 Character Scan'  },
+    'com.digirunestudios.sheetmancer.scan5': { scans: 5, price: '$7.99', label: '5 Character Scans' }
+  };
+
+  async function postJson(path, body){
+    var tok = await (window.ssGetIdToken ? window.ssGetIdToken() : Promise.reject(new Error('auth')));
+    var r = await fetch(API + path, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + tok }, body: JSON.stringify(body) });
+    var d = null; try { d = await r.json(); } catch (_) { d = {}; }
+    return { status: r.status, data: d || {} };
+  }
+
+  /* iOS: postMessage -> shell runs StoreKit 2 -> __onNativePurchase({productId,transactionId,ok,error}) */
+  var pendingBuy = null;
+  window.__onNativePurchase = function(res){ var p = pendingBuy; pendingBuy = null; if (p) p(res || {}); };
+  function iosStartPurchase(productId){
+    return new Promise(function(resolve){
+      if (pendingBuy) { resolve({ ok:false, error:'busy' }); return; }
+      pendingBuy = resolve;
+      try { window.webkit.messageHandlers.startPurchase.postMessage({ productId: productId }); }
+      catch (e) { pendingBuy = null; resolve({ ok:false, error:'bridge' }); return; }
+      setTimeout(function(){ if (pendingBuy === resolve) { pendingBuy = null; resolve({ ok:false, error:'timeout' }); } }, 120000);
+    });
+  }
+  /* Android TWA: Digital Goods API + PaymentRequest('.../billing') */
+  async function androidStartPurchase(productId){
+    try {
+      var svc = await navigator.getDigitalGoodsService('https://play.google.com/billing');
+      var pr = new PaymentRequest(
+        [{ supportedMethods: 'https://play.google.com/billing', data: { sku: productId } }],
+        { total: { label: 'Character Scans', amount: { currency: 'USD', value: '0' } } });
+      var resp = await pr.show();
+      var token = resp.details && resp.details.purchaseToken;
+      await resp.complete('success');
+      if (!token) return { ok:false, error:'no-token' };
+      return { ok:true, token: token, svc: svc };
+    } catch (e) { return { ok:false, error: (e && e.name === 'AbortError') ? 'cancelled' : 'purchase-failed' }; }
+  }
+
+  /* Buy one product end to end: native purchase -> server verify+grant -> { ok, budget }. */
+  window.ssBuyScans = async function(productId){
+    if (!window.ssProducts[productId]) return { ok:false, error:'unknown-product' };
+    if (iosBuy) {
+      var ir = await iosStartPurchase(productId);
+      if (!ir.ok) return { ok:false, error: ir.error || 'ios-failed' };
+      var a = await postJson('/purchase', { platform:'apple', productId: productId, token: ir.transactionId });
+      if (a.status === 200) return { ok:true, budget: a.data.budget };
+      return { ok:false, error: (a.data.error && a.data.error.message) || ('purchase ' + a.status) };
+    }
+    if (androidBuy) {
+      var ar = await androidStartPurchase(productId);
+      if (!ar.ok) return { ok:false, error: ar.error || 'android-failed' };
+      var b = await postJson('/purchase', { platform:'android', productId: productId, token: ar.token });
+      if (b.status === 200) { try { if (ar.svc && ar.svc.consume) await ar.svc.consume(ar.token); } catch (_) {} return { ok:true, budget: b.data.budget }; }
+      return { ok:false, error: (b.data.error && b.data.error.message) || ('purchase ' + b.status) };
+    }
+    return { ok:false, error:'unavailable' };
+  };
+
+  /* Base-app included scans: claim once per signed-in owner (store builds). iOS gets the
+     AppTransaction id from the shell; Android's integrity-token source is a re-wrap decision. */
+  var pendingAppTxn = null;
+  window.__onNativeAppTransaction = function(res){ var p = pendingAppTxn; pendingAppTxn = null; if (p) p(res || {}); };
+  window.ssGrantBase = async function(){
+    if (iosAppTxn) {
+      var at = await new Promise(function(resolve){
+        if (pendingAppTxn) { resolve({}); return; }
+        pendingAppTxn = resolve;
+        try { window.webkit.messageHandlers.getAppTransaction.postMessage({}); }
+        catch (e) { pendingAppTxn = null; resolve({}); return; }
+        setTimeout(function(){ if (pendingAppTxn === resolve) { pendingAppTxn = null; resolve({}); } }, 30000);
+      });
+      if (!at.appTransactionId) return { ok:false, error:'no-apptxn' };
+      var g = await postJson('/grant-base', { platform:'apple', appTransactionId: at.appTransactionId });
+      return { ok: g.status === 200, budget: g.data.budget };
+    }
+    return { ok:false, error:'android-base-not-wired' };   /* Play Integrity token source = re-wrap TODO */
+  };
 })();
 </script>
 <script>/*Sheetmancer cloud sync — Firebase project sheetsnap-fb659 (legacy id, data continuity). Bridges to React: publishes window.ssAuth + fires 'ss-auth'; React drives sign-in via window.ssSignIn / window.ssSignOut.*/
