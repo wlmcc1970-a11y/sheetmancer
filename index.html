@@ -2693,6 +2693,7 @@ function HomeScreen({
       window.__ssBaseGrantTried = true;
       try { if (window.ssGrantBase) window.ssGrantBase().catch(function () {}); } catch (_) {}
     }
+    try { if (ssauth.signedIn && window.ssPurchaseAvailable && window.__ssDrainRecover) window.__ssDrainRecover(); } catch (_) {}
   }, [ssauth.signedIn]);
   const handleImport = e => {
     const f = e.target.files[0];
@@ -2841,7 +2842,7 @@ function HomeScreen({
       marginTop: 4,
       letterSpacing: 1
     }
-  }, "Sheetmancer · build v73"))), /*#__PURE__*/React.createElement("button", {
+  }, "Sheetmancer · build v74"))), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowHelp(false),
     className: "ss-press",
     style: {
@@ -7856,6 +7857,26 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
    Mirrors the sign-in bridge: chassis JS publishing window.ss* for React. Web/pre-re-wrap builds
    see ssPurchaseAvailable=false, so nothing renders or runs -> zero regression. */
 (function(){
+  /* Android billing wrapper launch signal (v74): the native TWA appends ?sm_n=<nonce> at launch
+     and reports a background Play Integrity token to the Worker keyed by that nonce (see
+     /report-integrity). Capture the nonce, scrub ONLY sm_n from the visible URL (keep path, hash,
+     and any other query params), and mark billing enabled so the Buy UI + base-grant come alive on
+     the Android wrapper. Absent on web / iOS / non-billing Android -> none of this runs and every
+     billing gate stays exactly as v73. */
+  var LAUNCH_NONCE = null;
+  try {
+    var _nq = new URLSearchParams(window.location.search || '');
+    var _nv = _nq.get('sm_n');
+    if (_nv) {
+      LAUNCH_NONCE = _nv;
+      window.__ssLaunchNonce = _nv;
+      window.__ssBillingEnabled = true;            /* presence of ?sm_n IS the Android-billing signal */
+      _nq.delete('sm_n');
+      var _nqs = _nq.toString();
+      var _nclean = window.location.pathname + (_nqs ? '?' + _nqs : '') + (window.location.hash || '');
+      try { history.replaceState(history.state, '', _nclean); } catch (_) {}
+    }
+  } catch (_) {}
   var API = "https://sheetsnap-api.will-6d6.workers.dev";
   var SHELL = /PWAShell/.test(navigator.userAgent || '');
   function iosH(name){ return !!(SHELL && window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers[name]); }
@@ -7910,7 +7931,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
       var ir = await iosStartPurchase(productId);
       if (!ir.ok) return { ok:false, error: ir.error || 'ios-failed' };
       var a = await postJson('/purchase', { platform:'apple', productId: productId, token: ir.transactionId });
-      if (a.status === 200) return { ok:true, budget: a.data.budget };
+      if (a.status === 200) { try { window.webkit.messageHandlers.finishTransaction.postMessage({ transactionId: ir.transactionId }); } catch (_) {} return { ok:true, budget: a.data.budget }; }
       return { ok:false, error: (a.data.error && a.data.error.message) || ('purchase ' + a.status) };
     }
     if (androidBuy) {
@@ -7940,7 +7961,60 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
       var g = await postJson('/grant-base', { platform:'apple', appTransactionId: at.appTransactionId });
       return { ok: g.status === 200, budget: g.data.budget };
     }
-    return { ok:false, error:'android-base-not-wired' };   /* Play Integrity token source = re-wrap TODO */
+    /* Android billing wrapper: send the launch nonce captured at startup so the Worker credits the
+       included base scans (it matched a background Play Integrity report to this nonce). That report
+       can land a beat after launch, so a 400 "try again in a moment" is retryable -- bounded retries
+       only. No launch nonce -> not the billing wrapper -> no-op, exactly like the old stub (never
+       throws). Mirrors the Apple /grant-base call above (same postJson, same Bearer auth, same shape). */
+    if (LAUNCH_NONCE) {
+      for (var gi = 0; gi < 3; gi++) {
+        var gr = await postJson('/grant-base', { platform:'android', nonce: LAUNCH_NONCE });
+        if (gr.status === 200) return { ok:true, budget: gr.data.budget };
+        var gem = (gr.data && gr.data.error && (gr.data.error.message || gr.data.error)) || '';
+        var gretry = gr.status === 400 && /try again in a moment/i.test(String(gem));
+        if (!gretry || gi === 2) return { ok:false, error: gem || ('grant-base ' + gr.status) };
+        await new Promise(function(res){ setTimeout(res, 2500); });
+      }
+    }
+    return { ok:false, error:'android-base-not-wired' };   /* no launch nonce -> not the billing wrapper */
+  };
+
+  /* Out-of-band Apple purchase recovery. The shell's Transaction.updates/unfinished listener
+     delivers any purchase a direct purchase() call did not return (Ask-to-Buy approvals,
+     interrupted or other-device buys) via __ssRecoverPush; we grant each server-side (idempotent)
+     and tell the shell to finish it. Runs ONLY under a real (non-anon) sign-in so a recovered
+     purchase is never credited to an anonymous uid (ssGetIdToken falls back to anon otherwise). */
+  window.__ssRecoverQueue = window.__ssRecoverQueue || [];
+  window.__ssRecoverPush = function(r){
+    if (!r || !r.productId || !r.transactionId) return;
+    for (var j = 0; j < window.__ssRecoverQueue.length; j++) {
+      if (window.__ssRecoverQueue[j].transactionId === r.transactionId) return;   /* de-dupe */
+    }
+    window.__ssRecoverQueue.push({ productId: r.productId, transactionId: r.transactionId });
+    if (window.__ssDrainRecover) window.__ssDrainRecover();
+  };
+  window.__ssDrainRecover = async function(){
+    if (!iosBuy) return;                                            /* apple wrapper only */
+    if (!(window.ssAuth && window.ssAuth.signedIn)) return;         /* real user only; else wait for sign-in */
+    if (window.__ssDraining) return;
+    window.__ssDraining = true;
+    try {
+      var q = window.__ssRecoverQueue || [];
+      for (var i = 0; i < q.length; i++) {
+        var it = q[i];
+        if (it.__done) continue;
+        if (!(window.ssAuth && window.ssAuth.signedIn)) break;   /* signed out mid-drain -> stop; never POST under an anon fallback */
+        if (!(window.ssProducts && window.ssProducts[it.productId])) { it.__done = true; }
+        else {
+          var a = await postJson('/purchase', { platform:'apple', productId: it.productId, token: it.transactionId });
+          var granted = a.status === 200;
+          var permanent = a.status === 400 || a.status === 404 || a.status === 409 || a.status === 422;
+          if (granted || permanent) it.__done = true;   /* transient (401/403/5xx/network) stays queued for retry */
+        }
+        if (it.__done) { try { window.webkit.messageHandlers.finishTransaction.postMessage({ transactionId: it.transactionId }); } catch (_) {} }
+      }
+      window.__ssRecoverQueue = q.filter(function(x){ return !x.__done; });
+    } finally { window.__ssDraining = false; }
   };
 })();
 </script>
