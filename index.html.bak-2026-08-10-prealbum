@@ -2747,10 +2747,10 @@ function HomeScreen({
       } else if (r && r.error === "cancelled") {
         setBuyMsg(null);
       } else {
-        setBuyMsg({ ok: false, text: "That didn't go through. If you were charged, your scans will appear shortly — we'll sort it out automatically." });
+        setBuyMsg({ ok: false, text: "That didn't go through — you weren't charged. Please try again." });
       }
     } catch (_) {
-      setBuyMsg({ ok: false, text: "That didn't go through. If you were charged, your scans will appear shortly — we'll sort it out automatically." });
+      setBuyMsg({ ok: false, text: "That didn't go through — you weren't charged. Please try again." });
     } finally { setBuying(false); }
   };
   return /*#__PURE__*/React.createElement("div", {
@@ -2862,7 +2862,7 @@ function HomeScreen({
       marginTop: 4,
       letterSpacing: 1
     }
-  }, "Sheetmancer · build v74h"))), /*#__PURE__*/React.createElement("button", {
+  }, "Sheetmancer · build v74g"))), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowHelp(false),
     className: "ss-press",
     style: {
@@ -4332,8 +4332,7 @@ function HubNav({
       fields: 0,
       low: false
     };
-    const albumCard = { key: "__album", label: "Photo Album", members: [], fields: 0, low: false };
-    const cards = cats.concat([journalCard, albumCard]).concat(onAddScan ? [{ key: "__addscan", label: "Scan more pages", members: [], fields: 0, low: false }] : []).concat([{ key: "__add", label: "Add Section", members: [], fields: 0, low: false }, { key: "__addgroup", label: "Add Group", members: [], fields: 0, low: false }]);
+    const cards = cats.concat([journalCard]).concat(onAddScan ? [{ key: "__addscan", label: "Scan more pages", members: [], fields: 0, low: false }] : []).concat([{ key: "__add", label: "Add Section", members: [], fields: 0, low: false }, { key: "__addgroup", label: "Add Group", members: [], fields: 0, low: false }]);
     return /*#__PURE__*/React.createElement("div", {
       style: {
         padding: "2px 16px 132px"
@@ -4354,7 +4353,6 @@ function HubNav({
         gap: 9
       }
     }, cards.map(cat => {
-      if (cat.key === "__album") return /*#__PURE__*/React.createElement("button", { key: "__album", onClick: () => setActiveCat("__album"), className: "ss-press", style: { display: "flex", alignItems: "center", gap: 12, textAlign: "left", width: "100%", background: T.cardGrad, border: `1px solid ${T.borderLight}`, borderLeft: `3px solid ${T.accent}`, borderRadius: "0 12px 12px 0", padding: "12px", cursor: "pointer", boxShadow: T.cardShadow } }, /*#__PURE__*/React.createElement("span", { style: { width: 42, height: 42, flex: "none", borderRadius: "50%", border: `1px solid ${T.borderLight}`, background: T.accentFaint, display: "flex", alignItems: "center", justifyContent: "center" } }, /*#__PURE__*/React.createElement(CatIcon, { name: "camera", size: 22, color: T.accent })), /*#__PURE__*/React.createElement("span", { style: { flex: 1, minWidth: 0 } }, /*#__PURE__*/React.createElement("span", { style: { display: "block", fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, fontSize: 15, letterSpacing: 0.5, color: T.text } }, "Photo Album"), /*#__PURE__*/React.createElement("span", { style: { display: "block", fontSize: 12, color: T.textMuted, marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } }, "Battle maps, minis, character art")));
       if (cat.key === "__addscan") return /*#__PURE__*/React.createElement("button", { key: "__addscan", onClick: onAddScan, className: "ss-press", style: { display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", background: T.accentFaint, border: "1.5px solid " + T.accent, borderRadius: 12, padding: "13px 12px", cursor: "pointer", color: T.accent, fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, fontSize: 13, letterSpacing: 0.5, marginTop: 2 } }, "+ Scan more pages");
       if (cat.key === "__add") return /*#__PURE__*/React.createElement("button", { key: "__add", onClick: onAddSection, className: "ss-press", style: { display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", background: "none", border: "1.5px dashed " + T.borderLight, borderRadius: 12, padding: "13px 12px", cursor: "pointer", color: T.accent, fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, fontSize: 13, letterSpacing: 0.5, marginTop: 2 } }, "+ Add Section");
       if (cat.key === "__addgroup") return /*#__PURE__*/React.createElement("button", { key: "__addgroup", onClick: onAddGroup, className: "ss-press", style: { display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", background: "none", border: "1.5px dashed " + T.borderLight, borderRadius: 12, padding: "13px 12px", cursor: "pointer", color: T.textSoft, fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, fontSize: 13, letterSpacing: 0.5 } }, "+ Add Group");
@@ -5963,130 +5961,6 @@ function ArrangeIntroModal({ T, onClose, onHelp }) {
     style: { display: "inline-flex", alignItems: "center", justifyContent: "center", width: 17, height: 17, borderRadius: "50%", background: T.metalGrad, color: T.bg, fontFamily: "'Cinzel',Georgia,serif", fontWeight: 900, fontSize: 10, flexShrink: 0 }
   }, "?"), /*#__PURE__*/React.createElement("span", null, "Need more help? Tap the ", /*#__PURE__*/React.createElement("b", { style: { color: T.accent } }, "?"), " at the top of any character for the full guide."))));
 }
-/* ━━━━ PHOTO ALBUM — a per-character visual scrapbook. Photos live in Firestore as
-   per-photo docs (users/<uid>/album/<photoId>) via window.ssAlbum* — NOT in the synced
-   ss-chars blob. Self-contained: own load/add/delete state; delete uses a deferred-commit
-   Undo (no re-create race); needs a real signed-in account (cloud feature). ━━━━ */
-function AlbumPage({ T, charId, signedIn }) {
-  const CAP_CHAR = 12, CAP_USER = 100, MAXDIM = 1280, QUALITY = 0.72;
-  const [photos, setPhotos] = useState(null);            // null = loading
-  const [loadErr, setLoadErr] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [busyMsg, setBusyMsg] = useState("");
-  const [lightIdx, setLightIdx] = useState(null);
-  const [undoRec, setUndoRec] = useState(null);
-  const [showSignIn, setShowSignIn] = useState(false);
-  const [showAdd, setShowAdd] = useState(false);
-  const camRef = useRef(null), upRef = useRef(null);
-  const mounted = useRef(true), undoTimer = useRef(null), delRef = useRef(null);
-  useEffect(function () {
-    mounted.current = true;
-    return function () {
-      mounted.current = false;
-      if (undoTimer.current) clearTimeout(undoTimer.current);
-      /* a delete still inside its Undo window is committed on the way out, so a removed photo never returns */
-      if (delRef.current && window.ssAlbumDelete) { try { window.ssAlbumDelete(delRef.current.id); } catch (_) {} delRef.current = null; }
-    };
-  }, []);
-  const load = function () {
-    if (!signedIn || !charId || !window.ssAlbumList) { setPhotos([]); setLoadErr(false); return; }
-    setLoadErr(false);
-    window.ssAlbumList(charId).then(function (res) {
-      if (!mounted.current) return;
-      if (res && res.ok) setPhotos(res.photos || []);
-      else if (res && res.reason === "signin") setPhotos([]);
-      else { setPhotos([]); setLoadErr(true); }
-    }, function () { if (mounted.current) { setPhotos([]); setLoadErr(true); } });
-  };
-  useEffect(function () { setPhotos(null); load(); }, [charId, signedIn]);
-  const imgDims = function (url) {
-    return new Promise(function (res) {
-      try { var im = new Image(); im.onload = function () { res({ w: im.naturalWidth || 0, h: im.naturalHeight || 0 }); }; im.onerror = function () { res({ w: 0, h: 0 }); }; im.src = url; }
-      catch (_) { res({ w: 0, h: 0 }); }
-    });
-  };
-  const addFiles = async function (fileList) {
-    var files = Array.prototype.slice.call(fileList || []).filter(function (f) { return f && ((f.type && f.type.indexOf("image/") === 0) || isHeicFile(f)); });
-    if (!files.length) return;
-    if (!signedIn) { setShowSignIn(true); return; }
-    var have = (photos || []).length, room = CAP_CHAR - have;
-    if (room <= 0) { ssShowToast("This album's full — remove a photo to add another."); return; }
-    try {
-      if (window.ssAlbumCount) {
-        var cRes = await window.ssAlbumCount();
-        if (cRes && cRes.ok && typeof cRes.count === "number" && cRes.count >= CAP_USER) { ssShowToast("You've reached the " + CAP_USER + "-photo limit across your albums. Remove a few to add more."); return; }
-      }
-    } catch (_) {}
-    var toAdd = files.slice(0, room), overflow = files.length > room, added = [];
-    setBusy(true);
-    for (var i = 0; i < toAdd.length; i++) {
-      setBusyMsg(toAdd.length > 1 ? ("Photo " + (i + 1) + " of " + toAdd.length) : "");
-      var jpeg;
-      try { jpeg = await fileToScanJpeg(toAdd[i], MAXDIM, QUALITY); }
-      catch (err) { ssShowToast("Couldn't prepare that photo. If it's an iPhone HEIC image, save it as JPEG (or pick a screenshot) and try again."); continue; }
-      var d = await imgDims(jpeg), res2;
-      try { res2 = await window.ssAlbumAdd(charId, { img: jpeg, w: d.w, h: d.h }); }
-      catch (e) { res2 = { ok: false }; }
-      if (res2 && res2.ok && res2.photo) added.push(res2.photo);
-      else if (res2 && res2.reason === "signin") { ssShowToast("Please sign in to save photos."); break; }
-      else ssShowToast("That photo didn't save — please try again.");
-    }
-    if (mounted.current) {
-      if (added.length) { setPhotos(function (p) { var n = (p || []).concat(added); n.sort(function (a, b) { return (a.ts || 0) - (b.ts || 0); }); return n; }); buzz(20); }
-      setBusy(false); setBusyMsg("");
-    }
-    if (overflow) ssShowToast("Added what fit — this album holds up to " + CAP_CHAR + " photos.");
-  };
-  const askRemove = function (rec) {
-    if (!rec) return;
-    setLightIdx(null);
-    setPhotos(function (p) { return (p || []).filter(function (x) { return x.id !== rec.id; }); });
-    if (undoTimer.current) clearTimeout(undoTimer.current);
-    delRef.current = rec; setUndoRec(rec);
-    undoTimer.current = setTimeout(function () { commitRemove(rec); }, 6000);
-    buzz(25);
-  };
-  const commitRemove = function (rec) {
-    if (delRef.current && delRef.current.id === rec.id) delRef.current = null;
-    if (mounted.current) setUndoRec(function (c) { return c && c.id === rec.id ? null : c; });
-    Promise.resolve().then(function () { return window.ssAlbumDelete ? window.ssAlbumDelete(rec.id) : Promise.resolve({ ok: false }); }).then(function (res) {
-      if (!(res && res.ok) && mounted.current) {
-        setPhotos(function (p) { if ((p || []).some(function (x) { return x.id === rec.id; })) return p; var n = (p || []).concat([rec]); n.sort(function (a, b) { return (a.ts || 0) - (b.ts || 0); }); return n; });
-        ssShowToast("Couldn't remove that photo — please try again.");
-      }
-    });
-  };
-  const undoRemove = function () {
-    var rec = undoRec; if (!rec) return;
-    if (undoTimer.current) clearTimeout(undoTimer.current);
-    delRef.current = null; setUndoRec(null);
-    setPhotos(function (p) { if ((p || []).some(function (x) { return x.id === rec.id; })) return p; var n = (p || []).concat([rec]); n.sort(function (a, b) { return (a.ts || 0) - (b.ts || 0); }); return n; });
-    buzz(15);
-  };
-  const atCap = (photos || []).length >= CAP_CHAR;
-  const sheetBtn = { display: "flex", alignItems: "center", gap: 12, width: "100%", padding: "14px 16px", marginBottom: 10, borderRadius: 12, border: "1px solid " + T.borderLight, background: T.accentFaint, color: T.text, fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, fontSize: 15, cursor: "pointer" };
-  const header = /*#__PURE__*/React.createElement("div", { style: { textAlign: "center" } }, /*#__PURE__*/React.createElement("h2", { style: { fontSize: 20, fontWeight: 700, color: T.accent, fontFamily: "'Cinzel',Georgia,serif", letterSpacing: 2.5, textShadow: T.titleShadow } }, "Photo Album"), /*#__PURE__*/React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, width: "40%", margin: "10px auto 0" } }, /*#__PURE__*/React.createElement("div", { style: { flex: 1, height: 1, background: T.sectionRule } }), /*#__PURE__*/React.createElement("span", { style: { color: T.accent, fontSize: 10, opacity: 0.4 } }, T.ornChar), /*#__PURE__*/React.createElement("div", { style: { flex: 1, height: 1, background: T.sectionRule } })));
-  const blurb = /*#__PURE__*/React.createElement("p", { style: { fontSize: 14.5, color: T.textSoft, lineHeight: 1.6, textAlign: "center", margin: "2px auto", maxWidth: 440 } }, "Keep a visual record of your character's world — maps, minis, tokens, character art, anything you'd like at hand. Add photos below; they sync across your devices.");
-  const addBtn = /*#__PURE__*/React.createElement("button", { onClick: function () { if (atCap) { ssShowToast("This album's full — remove a photo to add another."); return; } setShowAdd(true); }, className: "ss-press", style: { display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", maxWidth: 320, margin: "2px auto 0", background: T.accentFaint, border: "1.5px solid " + T.accent, borderRadius: 12, padding: "13px 12px", cursor: "pointer", color: T.accent, fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, fontSize: 14, letterSpacing: 0.5, opacity: atCap ? 0.55 : 1 } }, "+ Add Photo");
-  const inputs = /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("input", { ref: camRef, type: "file", accept: "image/*,.heic,.heif", capture: "environment", style: { display: "none" }, onChange: function (e) { var fs = Array.prototype.slice.call(e.target.files || []); e.target.value = ""; addFiles(fs); } }), /*#__PURE__*/React.createElement("input", { ref: upRef, type: "file", accept: "image/*,.heic,.heif", multiple: true, style: { display: "none" }, onChange: function (e) { var fs = Array.prototype.slice.call(e.target.files || []); e.target.value = ""; addFiles(fs); } }));
-  const grid = /*#__PURE__*/React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 } }, (photos || []).map(function (ph, i) { return /*#__PURE__*/React.createElement("button", { key: ph.id, onClick: function () { setLightIdx(i); }, className: "ss-press", "aria-label": "View photo", style: { position: "relative", padding: 0, border: "1px solid " + T.borderLight, borderRadius: 10, overflow: "hidden", cursor: "pointer", aspectRatio: "1 / 1", background: T.accentFaint, backgroundImage: "url(" + ph.img + ")", backgroundSize: "cover", backgroundPosition: "center", boxShadow: T.cardShadow } }); }));
-  const countLine = /*#__PURE__*/React.createElement("div", { style: { textAlign: "center", fontSize: 11, color: T.textMuted, letterSpacing: 0.5 } }, (photos || []).length + " / " + CAP_CHAR + " photos");
-  const loadingBody = /*#__PURE__*/React.createElement("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", gap: 12, padding: "30px 0" } }, /*#__PURE__*/React.createElement("div", { "aria-hidden": true, style: { width: 34, height: 34, borderRadius: "50%", border: "3px solid " + T.borderLight, borderTopColor: T.accent, animation: "ssSpin 0.9s linear infinite" } }), /*#__PURE__*/React.createElement("div", { style: { fontSize: 13, color: T.textMuted } }, "Loading your album…"));
-  const errBody = /*#__PURE__*/React.createElement("div", { style: { textAlign: "center", padding: "24px 0", color: T.textMuted } }, /*#__PURE__*/React.createElement("p", { style: { fontSize: 14, lineHeight: 1.5, margin: "0 0 12px" } }, "Couldn't load your album just now."), /*#__PURE__*/React.createElement("button", { onClick: function () { setPhotos(null); load(); }, className: "ss-press", style: { padding: "10px 18px", borderRadius: 10, border: "1px solid " + T.accent, background: T.accentFaint, color: T.accent, fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, cursor: "pointer" } }, "Try again"));
-  const signedOutBody = /*#__PURE__*/React.createElement("div", { style: { textAlign: "center", padding: "8px 0" } }, blurb, /*#__PURE__*/React.createElement("p", { style: { fontSize: 13.5, color: T.textMuted, lineHeight: 1.55, margin: "8px auto 16px", maxWidth: 420 } }, "Your album lives in your free account so it can sync across your devices. Sign in to start it."), /*#__PURE__*/React.createElement("button", { onClick: function () { setShowSignIn(true); }, className: "ss-press", style: { padding: "12px 22px", borderRadius: 11, border: "1.5px solid " + T.accent, background: T.accentFaint, color: T.accent, fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, fontSize: 14, cursor: "pointer" } }, "Sign in"));
-  const lightbox = (lightIdx != null && (photos || [])[lightIdx]) ? ReactDOM.createPortal(/*#__PURE__*/React.createElement("div", { onClick: function () { setLightIdx(null); }, style: { position: "fixed", inset: 0, background: "rgba(0,0,0,0.92)", zIndex: 100700, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 } }, /*#__PURE__*/React.createElement("button", { onClick: function (e) { e.stopPropagation(); setLightIdx(null); }, "aria-label": "Close", style: { position: "absolute", top: "calc(env(safe-area-inset-top,0px) + 12px)", right: 14, width: 40, height: 40, borderRadius: "50%", border: "none", background: "rgba(255,255,255,0.14)", color: "#fff", fontSize: 20, cursor: "pointer" } }, "✕"), /*#__PURE__*/React.createElement("img", { src: (photos[lightIdx]).img, alt: "Album photo", onClick: function (e) { e.stopPropagation(); }, style: { maxWidth: "94vw", maxHeight: "72vh", objectFit: "contain", borderRadius: 8, boxShadow: "0 8px 30px rgba(0,0,0,0.6)" } }), (photos.length > 1) ? /*#__PURE__*/React.createElement("button", { onClick: function (e) { e.stopPropagation(); setLightIdx(function (x) { return (x + photos.length - 1) % photos.length; }); }, "aria-label": "Previous photo", style: { position: "absolute", left: 8, top: "50%", transform: "translateY(-50%)", width: 44, height: 44, borderRadius: "50%", border: "none", background: "rgba(255,255,255,0.14)", color: "#fff", fontSize: 22, cursor: "pointer" } }, "‹") : null, (photos.length > 1) ? /*#__PURE__*/React.createElement("button", { onClick: function (e) { e.stopPropagation(); setLightIdx(function (x) { return (x + 1) % photos.length; }); }, "aria-label": "Next photo", style: { position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", width: 44, height: 44, borderRadius: "50%", border: "none", background: "rgba(255,255,255,0.14)", color: "#fff", fontSize: 22, cursor: "pointer" } }, "›") : null, /*#__PURE__*/React.createElement("button", { onClick: function (e) { e.stopPropagation(); askRemove(photos[lightIdx]); }, className: "ss-press", style: { position: "absolute", bottom: "calc(env(safe-area-inset-bottom,0px) + 18px)", display: "inline-flex", alignItems: "center", gap: 7, padding: "10px 18px", borderRadius: 11, border: "1px solid rgba(255,120,110,0.7)", background: "rgba(208,96,92,0.20)", color: "#ffb4ad", fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, fontSize: 13.5, cursor: "pointer" } }, /*#__PURE__*/React.createElement(CatIcon, { name: "trash", size: 17, color: "#ffb4ad" }), "Remove photo")), document.body) : null;
-  const busyOverlay = busy ? ReactDOM.createPortal(/*#__PURE__*/React.createElement("div", { style: { position: "fixed", inset: 0, zIndex: 100750, background: "rgba(0,0,0,0.55)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 } }, /*#__PURE__*/React.createElement("div", { style: { background: T.surface, border: T.frame || ("2px solid " + T.borderLight), borderRadius: 16, padding: "24px 22px", maxWidth: 300, width: "100%", textAlign: "center", boxShadow: T.surfaceShadow } }, /*#__PURE__*/React.createElement("div", { "aria-hidden": true, style: { width: 44, height: 44, borderRadius: "50%", border: "3px solid " + T.borderLight, borderTopColor: T.accent, animation: "ssSpin 0.9s linear infinite", margin: "0 auto 14px" } }), /*#__PURE__*/React.createElement("div", { role: "status", "aria-live": "polite", style: { fontFamily: "'Cinzel',Georgia,serif", fontSize: 15, fontWeight: 700, color: T.accent } }, "Preparing your photo…"), /*#__PURE__*/React.createElement("div", { style: { fontSize: 12.5, color: T.textSoft, lineHeight: 1.5, marginTop: 6 } }, busyMsg ? (busyMsg + " · ") : "", "Phone photos can take a few seconds each — please keep this screen open."))), document.body) : null;
-  const addSheet = showAdd ? ReactDOM.createPortal(/*#__PURE__*/React.createElement("div", { onClick: function () { setShowAdd(false); }, style: { position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 100700, display: "flex", alignItems: "flex-end", justifyContent: "center" } }, /*#__PURE__*/React.createElement("div", { onClick: function (e) { e.stopPropagation(); }, style: { background: T.surface, borderTop: "1px solid " + T.borderLight, borderTopLeftRadius: 18, borderTopRightRadius: 18, padding: "18px 18px calc(env(safe-area-inset-bottom,0px) + 18px)", width: "100%", maxWidth: 480, boxShadow: "0 -6px 24px rgba(0,0,0,0.35)" } }, /*#__PURE__*/React.createElement("div", { style: { textAlign: "center", fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, fontSize: 15, color: T.text, marginBottom: 14 } }, "Add a photo"), /*#__PURE__*/React.createElement("button", { onClick: function () { setShowAdd(false); setTimeout(function () { if (camRef.current) camRef.current.click(); }, 60); }, className: "ss-press", style: sheetBtn }, /*#__PURE__*/React.createElement(CameraIcon, { T: T }), /*#__PURE__*/React.createElement("span", null, "Take a Photo")), /*#__PURE__*/React.createElement("button", { onClick: function () { setShowAdd(false); setTimeout(function () { if (upRef.current) upRef.current.click(); }, 60); }, className: "ss-press", style: sheetBtn }, /*#__PURE__*/React.createElement(UploadIcon, { T: T }), /*#__PURE__*/React.createElement("span", null, "Upload from device")), /*#__PURE__*/React.createElement("button", { onClick: function () { setShowAdd(false); }, style: { width: "100%", padding: "12px", marginTop: 4, borderRadius: 11, border: "1px solid " + T.borderLight, background: "none", color: T.textMuted, fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, fontSize: 13.5, cursor: "pointer" } }, "Cancel"))), document.body) : null;
-  const undoBar = /*#__PURE__*/React.createElement(Toast, { T: T, msg: undoRec ? "Photo removed" : null, onUndo: undoRec ? undoRemove : null });
-  const signInModal = showSignIn ? /*#__PURE__*/React.createElement(SignInSheet, { T: T, onClose: function () { setShowSignIn(false); } }) : null;
-  const main = !signedIn ? signedOutBody
-    : photos === null ? loadingBody
-    : loadErr ? errBody
-    : ((photos || []).length === 0
-        ? /*#__PURE__*/React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 12 } }, blurb, addBtn)
-        : /*#__PURE__*/React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 12 } }, grid, countLine, addBtn, atCap ? /*#__PURE__*/React.createElement("div", { style: { textAlign: "center", fontSize: 12, color: T.textMuted, fontStyle: "italic" } }, "Album full — remove a photo to add another.") : null));
-  return /*#__PURE__*/React.createElement("div", { style: { padding: "22px 18px 120px", display: "flex", flexDirection: "column", gap: 14, animation: "pageFadeIn 0.3s ease" } }, header, inputs, main, lightbox, busyOverlay, addSheet, undoBar, signInModal);
-}
 function CharacterScreen({
   T,
   showArrangeIntro,
@@ -6101,14 +5975,6 @@ function CharacterScreen({
   catBackRef
 }) {
   const [data, setData] = useState(JSON.parse(JSON.stringify(character)));
-  /* Stable per-character id for the Photo Album (characters are otherwise keyed only by array
-     index). Minted lazily, persisted into the character (syncs via ss-chars), reused thereafter. */
-  const cidRef = useRef(null);
-  if (cidRef.current == null) cidRef.current = (character && character.cid) || (function () { try { return crypto.randomUUID(); } catch (_) { return "cid_" + Date.now() + "_" + Math.random().toString(36).slice(2); } })();
-  const charId = (data && data.cid) || cidRef.current;
-  useEffect(function () { if (!data.cid) setData(function (p) { return p.cid ? p : Object.assign({}, p, { cid: cidRef.current }); }); }, []);
-  const _ssAlbumAuth = useSsAuth();
-  const signedIn = !!(_ssAlbumAuth && _ssAlbumAuth.signedIn);
   const [noteInput, setNoteInput] = useState("");
   const noteRef = useRef(null);
   const [editing, setEditing] = useState(false);
@@ -6199,7 +6065,7 @@ function CharacterScreen({
     if (last < s.length) nodes.push(s.slice(last));
     return nodes;
   };
-  const navKeys = [...group.cats.map(c => c.key), "journal", "__album"];
+  const navKeys = [...group.cats.map(c => c.key), "journal"];
   const catPushedRef = useRef(false);
   useEffect(() => {
     if (catBackRef && catBackRef.current) {
@@ -6799,7 +6665,7 @@ function CharacterScreen({
     style: {
       color: T.yellow
     }
-  }, "amber"), " ring marks a field to double-check — tap it to confirm. Fields that were read clearly carry no dot."), /*#__PURE__*/React.createElement("div", null, hb(T, "Search"), " — Use the ", hb(T, "Search this character…"), " box on the hub to find any field, value, section, or note. Tap a result to jump straight to it."), /*#__PURE__*/React.createElement("div", null, hb(T, "Editing anything"), " — Tap the ", hb(T, "⋮"), " next to a ", hb(T, "field"), ", ", hb(T, "header"), ", ", hb(T, "section title"), ", or ", hb(T, "category"), " — then ", hb(T, "Edit"), ". A field opens a full-screen writing view with ", hb(T, "✓ Save"), " and an Undo; headers, sections and categories just rename. The ⋮ everywhere also has ", hb(T, "Move up / down"), ", ", hb(T, "Move to section…"), ", and ", hb(T, "Delete"), " (with ", hb(T, "Undo"), "). You can now rename a category from inside its own page too — not just the hub."), /*#__PURE__*/React.createElement("div", null, hb(T, "Adding"), " — At the bottom of any section use ", hb(T, "+ Add Field"), " or ", hb(T, "+ Add Header"), "; the ", hb(T, "+ Add Section"), " card on the hub adds a whole section. Or tap the ", hb(T, "+ Scan more pages"), " card to scan more pages straight into this character \u2014 it costs one Character Scan, and the new pages arrive as sections you can arrange, rename, or edit."), /*#__PURE__*/React.createElement("div", null, hb(T, "Headers"), " — A header is a titled divider that groups the fields beneath it. Tap ", hb(T, "+ Add Header"), " in a section, rename it via its ", hb(T, "⋮ → Edit"), ", and use ", hb(T, "Move up / down"), " to slide it above the fields it should group. Headers also print as sub-headings in your exported PDF."), /*#__PURE__*/React.createElement("div", null, hb(T, "Groups"), " — The hub sorts your sections into groups (Combat, Skills, and so on). Tap ", hb(T, "+ Add Group"), " to make your own — name it and pick an icon — then open any section's ", hb(T, "⋮ → Move to group…"), " to file it there. A category's ", hb(T, "⋮ → Merge into…"), " folds it into another. Deleting a group you made keeps its sections — they simply return to their default groups."), /*#__PURE__*/React.createElement("div", null, hb(T, "Portrait"), " — Tap ", hb(T, "Adjust/Replace Photo"), " to move, zoom, or replace it; tap ", hb(T, "✓ Done"), " to lock it."), /*#__PURE__*/React.createElement("div", null, hb(T, "Themes"), " — The colored circles in the top bar restyle the whole character."), /*#__PURE__*/React.createElement("div", null, hb(T, "Journal"), " — Open the ", hb(T, "Journal"), " card to jot session notes, or to retire the character when you're done."), /*#__PURE__*/React.createElement("div", null, hb(T, "Photo Album"), " — Below Journal on any character, open ", hb(T, "Photo Album"), " to keep a visual record. Tap ", hb(T, "+ Add Photo"), " to ", hb(T, "Take a Photo"), " or ", hb(T, "Upload"), " — battle maps, minis, tokens, character art, anything you'd like at hand. Your album syncs to your other devices automatically, and you can remove any photo anytime."), /*#__PURE__*/React.createElement("div", null, hb(T, "Export & Share"), " — ", hb(T, "⤓ Export / Share"), " (also reachable from a button in the top bar) makes a polished PDF you can share or save; ", hb(T, "⬇ Backup file (.json)"), " saves a re-importable backup."), /*#__PURE__*/React.createElement("div", null, hb(T, "Auto-saved"), " — Your changes save automatically. While editing a field, tap Undo to step back a change; after a delete, an ", hb(T, "Undo"), " lets you bring it back."))), /*#__PURE__*/React.createElement("button", {
+  }, "amber"), " ring marks a field to double-check — tap it to confirm. Fields that were read clearly carry no dot."), /*#__PURE__*/React.createElement("div", null, hb(T, "Search"), " — Use the ", hb(T, "Search this character…"), " box on the hub to find any field, value, section, or note. Tap a result to jump straight to it."), /*#__PURE__*/React.createElement("div", null, hb(T, "Editing anything"), " — Tap the ", hb(T, "⋮"), " next to a ", hb(T, "field"), ", ", hb(T, "header"), ", ", hb(T, "section title"), ", or ", hb(T, "category"), " — then ", hb(T, "Edit"), ". A field opens a full-screen writing view with ", hb(T, "✓ Save"), " and an Undo; headers, sections and categories just rename. The ⋮ everywhere also has ", hb(T, "Move up / down"), ", ", hb(T, "Move to section…"), ", and ", hb(T, "Delete"), " (with ", hb(T, "Undo"), "). You can now rename a category from inside its own page too — not just the hub."), /*#__PURE__*/React.createElement("div", null, hb(T, "Adding"), " — At the bottom of any section use ", hb(T, "+ Add Field"), " or ", hb(T, "+ Add Header"), "; the ", hb(T, "+ Add Section"), " card on the hub adds a whole section. Or tap the ", hb(T, "+ Scan more pages"), " card to scan more pages straight into this character \u2014 it costs one Character Scan, and the new pages arrive as sections you can arrange, rename, or edit."), /*#__PURE__*/React.createElement("div", null, hb(T, "Headers"), " — A header is a titled divider that groups the fields beneath it. Tap ", hb(T, "+ Add Header"), " in a section, rename it via its ", hb(T, "⋮ → Edit"), ", and use ", hb(T, "Move up / down"), " to slide it above the fields it should group. Headers also print as sub-headings in your exported PDF."), /*#__PURE__*/React.createElement("div", null, hb(T, "Groups"), " — The hub sorts your sections into groups (Combat, Skills, and so on). Tap ", hb(T, "+ Add Group"), " to make your own — name it and pick an icon — then open any section's ", hb(T, "⋮ → Move to group…"), " to file it there. A category's ", hb(T, "⋮ → Merge into…"), " folds it into another. Deleting a group you made keeps its sections — they simply return to their default groups."), /*#__PURE__*/React.createElement("div", null, hb(T, "Portrait"), " — Tap ", hb(T, "Adjust/Replace Photo"), " to move, zoom, or replace it; tap ", hb(T, "✓ Done"), " to lock it."), /*#__PURE__*/React.createElement("div", null, hb(T, "Themes"), " — The colored circles in the top bar restyle the whole character."), /*#__PURE__*/React.createElement("div", null, hb(T, "Journal"), " — Open the ", hb(T, "Journal"), " card to jot session notes, or to retire the character when you're done."), /*#__PURE__*/React.createElement("div", null, hb(T, "Export & Share"), " — ", hb(T, "⤓ Export / Share"), " (also reachable from a button in the top bar) makes a polished PDF you can share or save; ", hb(T, "⬇ Backup file (.json)"), " saves a re-importable backup."), /*#__PURE__*/React.createElement("div", null, hb(T, "Auto-saved"), " — Your changes save automatically. While editing a field, tap Undo to step back a change; after a delete, an ", hb(T, "Undo"), " lets you bring it back."))), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowHelp(false),
     className: "ss-press",
     style: {
@@ -7514,7 +7380,7 @@ function CharacterScreen({
         color: T.accentDim
       }
     }, "+ Add Field")), /*#__PURE__*/React.createElement("button", { onClick: () => addHeader(si), style: { display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px", background: "none", border: "1px dashed " + T.borderLight, borderRadius: 8, cursor: "pointer", width: "100%", marginTop: 8 } }, /*#__PURE__*/React.createElement("span", { style: { fontSize: 14, color: T.accentDim } }, "+ Add Header")));
-  }), activeCat === "__album" && /*#__PURE__*/React.createElement(AlbumPage, { T: T, charId: charId, signedIn: signedIn }), activeCat === "journal" && /*#__PURE__*/React.createElement("div", {
+  }), activeCat === "journal" && /*#__PURE__*/React.createElement("div", {
     style: {
       padding: "24px 18px 40px",
       display: "flex",
@@ -8676,53 +8542,6 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
    });
   };
   function ref(uid){return fsM.doc(db,"users",uid);}
-  /* ---- Photo Album — free Firestore per-photo subcollection users/<uid>/album/<photoId> ----
-     Kept OUT of sheetsnap_blob (one ~1-MB doc) on purpose: base64 images would break ALL sync.
-     Each photo is its own <1MB doc. Needs a real (non-anon) signed-in user — the album is a cloud
-     feature by nature. Query is equality-only (NO orderBy) so NO composite index is required; we
-     sort by ts client-side (only the open character's photos, <=12, are ever loaded). Firestore
-     free Spark tier easily covers this (~1 GiB, 50k reads/day). */
-  function albumUid(){ if(user&&user.uid)return user.uid; var c=auth.currentUser; return (c&&!c.isAnonymous)?c.uid:null; }
-  function albumCol(uid){ return fsM.collection(db,"users",uid,"album"); }
-  function albumDoc(uid,pid){ return fsM.doc(db,"users",uid,"album",pid); }
-  function newPhotoId(){ try{return crypto.randomUUID();}catch(_){return "ph_"+Date.now()+"_"+Math.random().toString(36).slice(2);} }
-  window.ssAlbumList=function(charId){
-   var uid=albumUid(); if(!uid)return Promise.resolve({ok:false,reason:"signin"});
-   try{
-    return fsM.getDocs(fsM.query(albumCol(uid),fsM.where("charId","==",String(charId)))).then(function(snap){
-     var out=[]; snap.forEach(function(d){var v=d.data()||{}; out.push({id:d.id,charId:v.charId,img:v.img,w:v.w,h:v.h,ts:v.ts||0});});
-     out.sort(function(a,b){return (a.ts||0)-(b.ts||0);});
-     return {ok:true,photos:out};
-    },function(e){return {ok:false,reason:"error",err:String((e&&(e.code||e.message))||e)};});
-   }catch(e){return Promise.resolve({ok:false,reason:"error",err:String(e)});}
-  };
-  window.ssAlbumCount=function(){
-   var uid=albumUid(); if(!uid)return Promise.resolve({ok:false,reason:"signin"});
-   try{
-    if(!fsM.getCountFromServer)return Promise.resolve({ok:true,count:null});
-    return fsM.getCountFromServer(albumCol(uid)).then(function(agg){var n=agg&&agg.data&&agg.data(); return {ok:true,count:(n&&typeof n.count==="number")?(n.count|0):null};},function(){return {ok:true,count:null};});
-   }catch(e){return Promise.resolve({ok:true,count:null});}
-  };
-  window.ssAlbumAdd=function(charId,rec){
-   var uid=albumUid(); if(!uid)return Promise.resolve({ok:false,reason:"signin"});
-   if(!rec||!rec.img)return Promise.resolve({ok:false,reason:"error"});
-   var id=newPhotoId(); var docv={charId:String(charId),img:String(rec.img),w:rec.w|0,h:rec.h|0,ts:Date.now()};
-   try{return fsM.setDoc(albumDoc(uid,id),docv).then(function(){return {ok:true,photo:Object.assign({id:id},docv)};},function(e){return {ok:false,reason:"error",err:String((e&&(e.code||e.message))||e)};});}
-   catch(e){return Promise.resolve({ok:false,reason:"error",err:String(e)});}
-  };
-  window.ssAlbumDelete=function(photoId){
-   var uid=albumUid(); if(!uid)return Promise.resolve({ok:false,reason:"signin"});
-   if(!photoId)return Promise.resolve({ok:false,reason:"error"});
-   try{return fsM.deleteDoc(albumDoc(uid,String(photoId))).then(function(){return {ok:true};},function(e){return {ok:false,reason:"error",err:String((e&&(e.code||e.message))||e)};});}
-   catch(e){return Promise.resolve({ok:false,reason:"error",err:String(e)});}
-  };
-  window.ssAlbumRestore=function(rec){
-   var uid=albumUid(); if(!uid)return Promise.resolve({ok:false,reason:"signin"});
-   if(!rec||!rec.id||!rec.img)return Promise.resolve({ok:false,reason:"error"});
-   var docv={charId:String(rec.charId),img:String(rec.img),w:rec.w|0,h:rec.h|0,ts:rec.ts||Date.now()};
-   try{return fsM.setDoc(albumDoc(uid,String(rec.id)),docv).then(function(){return {ok:true,photo:Object.assign({id:rec.id},docv)};},function(e){return {ok:false,reason:"error",err:String((e&&(e.code||e.message))||e)};});}
-   catch(e){return Promise.resolve({ok:false,reason:"error",err:String(e)});}
-  };
   function push(){if(!user)return;
    /* Blocked, not synced - a delete in flight or a tombstone standing. Say so. */
    if(deleting||deletedUids[user.uid]){if(!errState){errState=true;broadcast();}return;}
