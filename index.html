@@ -7882,7 +7882,13 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
   function iosH(name){ return !!(SHELL && window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers[name]); }
   var iosBuy = iosH('startPurchase');
   var iosAppTxn = iosH('getAppTransaction');
-  var androidBuy = !!(window.ssWrapped && typeof navigator.getDigitalGoodsService === 'function' && window.__ssBillingEnabled === true);  /* wrapper sets __ssBillingEnabled ONLY on a billing-capable re-wrap -> no premature Buy buttons */
+  /* The Digital Goods API is exposed on `navigator` per the v2.x spec, but the official
+     Play-Billing-for-TWA guide (and some Chrome builds) expose it on `window`. Accept EITHER,
+     bound to its owner object, so a location difference can't silently disable billing. */
+  var _ssGDS = (typeof navigator.getDigitalGoodsService === 'function') ? navigator.getDigitalGoodsService.bind(navigator)
+             : ((typeof window.getDigitalGoodsService === 'function') ? window.getDigitalGoodsService.bind(window) : null);
+  window.__ssGDS = _ssGDS;
+  var androidBuy = !!(window.ssWrapped && _ssGDS && window.__ssBillingEnabled === true);  /* wrapper sets __ssBillingEnabled ONLY on a billing-capable re-wrap -> no premature Buy buttons */
   window.ssPurchaseAvailable = iosBuy || androidBuy;         /* React shows Buy buttons only when true */
   window.ssPurchasePlatform  = iosBuy ? 'apple' : (androidBuy ? 'android' : null);
   window.ssProducts = {
@@ -7912,7 +7918,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
   /* Android TWA: Digital Goods API + PaymentRequest('.../billing') */
   async function androidStartPurchase(productId){
     try {
-      var svc = await navigator.getDigitalGoodsService('https://play.google.com/billing');
+      var _g = window.__ssGDS; if (!_g) return { ok:false, error:'no-dgs' };
+      var svc = await _g('https://play.google.com/billing');
       var pr = new PaymentRequest(
         [{ supportedMethods: 'https://play.google.com/billing', data: { sku: productId } }],
         { total: { label: 'Character Scans', amount: { currency: 'USD', value: '0' } } });
@@ -8028,7 +8035,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
   try {
     var snap = {
       wrapped: !!window.ssWrapped,
-      dgs: (typeof navigator.getDigitalGoodsService === 'function'),
+      navDgs: (typeof navigator.getDigitalGoodsService === 'function'),
+      winDgs: (typeof window.getDigitalGoodsService === 'function'),
       billingOn: (window.__ssBillingEnabled === true),
       nonce: !!window.__ssLaunchNonce,
       purchAvail: !!window.ssPurchaseAvailable,
@@ -8039,18 +8047,22 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
     window.__ssDiagSnap = snap;
     function yn(b){ return b ? 'YES' : 'no'; }
     function buildText(){
-      var dgsNow = (typeof navigator.getDigitalGoodsService === 'function');
+      var navNow = (typeof navigator.getDigitalGoodsService === 'function');
+      var winNow = (typeof window.getDigitalGoodsService === 'function');
       var billNow = (window.__ssBillingEnabled === true);
       return [
-        'SHEETMANCER DIAG v74d',
+        'SHEETMANCER DIAG v74e',
         '== at load ==',
         'wrapped(TWA):   ' + yn(snap.wrapped),
-        'digitalGoods:   ' + yn(snap.dgs),
+        'DGS navigator:  ' + yn(snap.navDgs),
+        'DGS window:     ' + yn(snap.winDgs),
+        'resolved GDS:   ' + yn(!!window.__ssGDS),
         'billingOn(smn): ' + yn(snap.billingOn),
         'nonce present:  ' + yn(snap.nonce),
         'purchaseAvail:  ' + yn(snap.purchAvail) + '  (' + (snap.platform || 'null') + ')',
         '== live now ==',
-        'digitalGoods:   ' + yn(dgsNow),
+        'DGS navigator:  ' + yn(navNow),
+        'DGS window:     ' + yn(winNow),
         'billingOn:      ' + yn(billNow),
         '== context ==',
         'standalone:     ' + yn(snap.standalone),
