@@ -2334,6 +2334,16 @@ function useSsAuth() {
   }, []);
   return a;
 }
+function useSsBalance() {
+  const [b, setB] = useState(() => (typeof window !== "undefined" && window.ssBalance) || null);
+  useEffect(() => {
+    const h = () => setB(window.ssBalance || null);
+    window.addEventListener("ss-balance", h);
+    h();
+    return () => window.removeEventListener("ss-balance", h);
+  }, []);
+  return b;
+}
 function SignInSheet({ T, onClose }) {
   const [note, setNote] = useState(false);
   return ReactDOM.createPortal(/*#__PURE__*/React.createElement("div", {
@@ -2682,7 +2692,11 @@ function HomeScreen({
   const [buyMsg, setBuyMsg] = useState(null);
   const slotsUsed = store.get("ss-scanCount") || 0;
   const slotsBought = store.get("ss-purchasedSlots") || 0;
-  const slotsLeft = Math.max(0, INCLUDED_SLOTS + slotsBought - slotsUsed);
+  const ssBal = useSsBalance();
+  /* Server balance (budget − used) is authoritative when available; the local estimate is a
+     pre-sign-in / offline fallback only. This is what makes a purchase show up and keeps the
+     count correct after a reinstall or on a second device. */
+  const slotsLeft = (ssBal && typeof ssBal.remaining === "number") ? ssBal.remaining : Math.max(0, INCLUDED_SLOTS + slotsBought - slotsUsed);
   const ssauth = useSsAuth();
   const [signInSheet, setSignInSheet] = useState(false);
   const ptrRef = useRef(null);
@@ -2691,8 +2705,11 @@ function HomeScreen({
   useEffect(() => {
     if (ssauth.signedIn && window.ssPurchaseAvailable && !window.__ssBaseGrantTried) {
       window.__ssBaseGrantTried = true;
-      try { if (window.ssGrantBase) window.ssGrantBase().catch(function () {}); } catch (_) {}
+      try { if (window.ssGrantBase) window.ssGrantBase().then(function () { try { if (window.ssGetBalance) window.ssGetBalance(); } catch (_) {} }).catch(function () { try { if (window.ssGetBalance) window.ssGetBalance(); } catch (_) {} }); } catch (_) {}
     }
+    /* Pull the authoritative scan balance whenever signed in (any platform) so the displayed
+       "scans left" reflects server truth, not a per-device local estimate. */
+    try { if (ssauth.signedIn && window.ssGetBalance) window.ssGetBalance(); } catch (_) {}
     try { if (ssauth.signedIn && window.ssPurchaseAvailable && window.__ssDrainRecover) window.__ssDrainRecover(); } catch (_) {}
   }, [ssauth.signedIn]);
   const handleImport = e => {
@@ -2723,6 +2740,8 @@ function HomeScreen({
       if (r && r.ok) {
         const add = (window.ssProducts && window.ssProducts[pid] && window.ssProducts[pid].scans) || 0;
         try { store.set("ss-purchasedSlots", (store.get("ss-purchasedSlots") || 0) + add); } catch (_) {}
+        /* Server just credited the scans — pull the authoritative balance so the count updates now. */
+        try { if (window.ssGetBalance) window.ssGetBalance(); } catch (_) {}
         setBuyMsg({ ok: true, text: add + (add === 1 ? " scan added — thank you!" : " scans added — thank you!") });
       } else if (r && r.error === "cancelled") {
         setBuyMsg(null);
@@ -2842,7 +2861,7 @@ function HomeScreen({
       marginTop: 4,
       letterSpacing: 1
     }
-  }, "Sheetmancer · build v74"))), /*#__PURE__*/React.createElement("button", {
+  }, "Sheetmancer · build v74f"))), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowHelp(false),
     className: "ss-press",
     style: {
@@ -3490,7 +3509,7 @@ function CaptureScreen({
     style: { minHeight: "100vh", display: "flex", flexDirection: "column", background: T.bg, padding: 8 }
   }, /*#__PURE__*/React.createElement(AtmoBg, {
     T: T
-  }), confirmScan && (addMode ? /*#__PURE__*/React.createElement(ConfirmAdd, { T: T, count: images.length, targetName: targetName, slotsLeft: Math.max(0, INCLUDED_SLOTS + (store.get("ss-purchasedSlots") || 0) - (store.get("ss-scanCount") || 0)), onConfirm: () => { setConfirmScan(false); onScan(images); }, onClose: () => setConfirmScan(false) }) : /*#__PURE__*/React.createElement(ConfirmCreate, { T: T, count: images.length, onConfirm: () => { setConfirmScan(false); onScan(images); }, onClose: () => setConfirmScan(false) })), /*#__PURE__*/React.createElement("div", {
+  }), confirmScan && (addMode ? /*#__PURE__*/React.createElement(ConfirmAdd, { T: T, count: images.length, targetName: targetName, slotsLeft: (window.ssBalance && typeof window.ssBalance.remaining === "number") ? window.ssBalance.remaining : Math.max(0, INCLUDED_SLOTS + (store.get("ss-purchasedSlots") || 0) - (store.get("ss-scanCount") || 0)), onConfirm: () => { setConfirmScan(false); onScan(images); }, onClose: () => setConfirmScan(false) }) : /*#__PURE__*/React.createElement(ConfirmCreate, { T: T, count: images.length, onConfirm: () => { setConfirmScan(false); onScan(images); }, onClose: () => setConfirmScan(false) })), /*#__PURE__*/React.createElement("div", {
     style: { flex: 1, border: T.frame || `2px solid ${T.borderLight}`, outline: T.frameInset, outlineOffset: "-6px", borderRadius: 14, background: T.surface, boxShadow: T.surfaceShadow, overflow: "hidden", display: "flex", flexDirection: "column", position: "relative", zIndex: 1 }
   }, /*#__PURE__*/React.createElement("div", {
     style: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderBottom: `1px solid ${T.border}`, background: T.headerBg || T.surface }
@@ -5582,11 +5601,11 @@ function TableField(props) {
       var st = Object.assign({}, baseCell, { borderBottom: "2px solid " + T.accent }, first ? Object.assign({}, stick, { zIndex: 2 }) : {});
       headCells.push(h("th", { key: "h" + c, style: st }, h("div", { style: { display: "flex", alignItems: "center", gap: 4 } },
         h("div", { style: { flex: 1, minWidth: 0 } }, h(EditableValue, { value: cols[c] == null ? "" : cols[c], onChange: function (v) { setCol(c, v); }, T: T, placeholder: "—", noTranslate: true, style: { fontSize: 11.5, fontWeight: 700, letterSpacing: 0.5, textTransform: "uppercase", color: T.label, borderBottom: "none", padding: 0, fontFamily: "'Cinzel',Georgia,serif" } })),
-        nCol > 1 ? h("button", { onClick: function () { delCol(c); }, "aria-label": "Delete column", title: "Delete column", className: "ss-press", style: { background: "none", border: "none", color: T.textMuted, cursor: "pointer", fontSize: 13, lineHeight: 1, padding: "0 1px", flexShrink: 0 } }, "×") : null
+        null /* inline delete-column × removed (accidental taps, no confirm/undo) — delete columns via ⋮ → Edit */
       )));
     })(hcx);
   }
-  headCells.push(h("th", { key: "hx", style: Object.assign({}, baseCell, { minWidth: 30, width: 30, borderRight: "none", borderBottom: "2px solid " + T.accent }) }, ""));
+  /* trailing delete-row × column removed — rows are deleted via ⋮ → Edit (cancelable, with Undo) */
   var bodyRows = [];
   for (var brx = 0; brx < rows.length; brx++) {
     (function (r) {
@@ -5599,7 +5618,7 @@ function TableField(props) {
           cells.push(h("td", { key: "c" + r + "_" + c, style: st }, h(EditableValue, { value: rowArr[c] == null ? "" : rowArr[c], onChange: function (v) { setCell(r, c, v); }, T: T, placeholder: "—", noTranslate: true, style: { fontSize: 14, color: T.text, borderBottom: "none", padding: 0, fontFamily: "'Cormorant Garamond',Georgia,serif", fontWeight: first ? 700 : 500 } })));
         })(bcx);
       }
-      cells.push(h("td", { key: "cx" + r, style: Object.assign({}, baseCell, { minWidth: 30, width: 30, borderRight: "none", textAlign: "center" }) }, h("button", { onClick: function () { delRow(r); }, "aria-label": "Delete row", title: "Delete row", className: "ss-press", style: { background: "none", border: "none", color: T.textMuted, cursor: "pointer", fontSize: 17, lineHeight: 1, padding: 4 } }, "×")));
+      /* trailing delete-row × cell removed — rows are deleted via ⋮ → Edit (cancelable, with Undo) */
       bodyRows.push(h("tr", { key: "r" + r }, cells));
     })(brx);
   }
@@ -7672,6 +7691,8 @@ function Sheetmancer() {
   };
   const handleExtracted = charData => {
     try { store.set("ss-scanCount", (store.get("ss-scanCount") || 0) + 1); } catch (_) {}
+    /* A scan just consumed one server-side — refresh the authoritative balance. */
+    try { if (window.ssGetBalance) window.ssGetBalance(); } catch (_) {}
     if (scanAddIdx != null) {
       /* Add-to-existing: append the scanned sections onto the targeted character as NEW
          sections (never merged, existing content untouched), reopen it, and toast the result.
@@ -7955,6 +7976,22 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
      AppTransaction id from the shell; Android's integrity-token source is a re-wrap decision. */
   var pendingAppTxn = null;
   window.__onNativeAppTransaction = function(res){ var p = pendingAppTxn; pendingAppTxn = null; if (p) p(res || {}); };
+  /* Authoritative scan balance = server budget − used. The app displays this as "scans left",
+     so the number always matches server truth (survives reinstall / a new device, and reflects
+     a purchase the instant it is granted). null until first fetched; publishes window.ssBalance
+     and fires 'ss-balance' (mirrors the ssAuth / 'ss-auth' bridge). */
+  window.ssBalance = window.ssBalance || null;
+  window.ssGetBalance = async function(){
+    try {
+      var r = await postJson('/balance', {});
+      if (r.status === 200 && r.data && typeof r.data.remaining === 'number') {
+        window.ssBalance = { budget: r.data.budget, used: r.data.used, remaining: r.data.remaining };
+        try { window.dispatchEvent(new Event('ss-balance')); } catch (_) {}
+        return window.ssBalance;
+      }
+    } catch (_) {}
+    return null;
+  };
   window.ssGrantBase = async function(){
     if (iosAppTxn) {
       var at = await new Promise(function(resolve){
@@ -8023,83 +8060,6 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
       window.__ssRecoverQueue = q.filter(function(x){ return !x.__done; });
     } finally { window.__ssDraining = false; }
   };
-})();
-</script>
-<script>
-/* ===== TEMP DIAGNOSTIC (v74d — 2026-08-10) — Android billing-activation probe =====
-   Gated behind a deliberate 5-tap gesture in the TOP-LEFT screen corner; invisible to
-   normal users. READ-ONLY: passive listeners, changes NO billing behavior. Reports the
-   three gate values (wrapped / digitalGoods / billingOn) so we fix the exact failing one.
-   REMOVE this whole diagnostic block after the on-device reading is captured. */
-(function(){
-  try {
-    var snap = {
-      wrapped: !!window.ssWrapped,
-      navDgs: (typeof navigator.getDigitalGoodsService === 'function'),
-      winDgs: (typeof window.getDigitalGoodsService === 'function'),
-      billingOn: (window.__ssBillingEnabled === true),
-      nonce: !!window.__ssLaunchNonce,
-      purchAvail: !!window.ssPurchaseAvailable,
-      platform: window.ssPurchasePlatform || null,
-      referrer: (document.referrer || '(empty)'),
-      standalone: (function(){try{return !!(window.matchMedia&&(window.matchMedia('(display-mode: standalone)').matches||window.matchMedia('(display-mode: fullscreen)').matches))||window.navigator.standalone===true;}catch(_){return false;}})()
-    };
-    window.__ssDiagSnap = snap;
-    function yn(b){ return b ? 'YES' : 'no'; }
-    function buildText(){
-      var navNow = (typeof navigator.getDigitalGoodsService === 'function');
-      var winNow = (typeof window.getDigitalGoodsService === 'function');
-      var billNow = (window.__ssBillingEnabled === true);
-      return [
-        'SHEETMANCER DIAG v74e',
-        '== at load ==',
-        'wrapped(TWA):   ' + yn(snap.wrapped),
-        'DGS navigator:  ' + yn(snap.navDgs),
-        'DGS window:     ' + yn(snap.winDgs),
-        'resolved GDS:   ' + yn(!!window.__ssGDS),
-        'billingOn(smn): ' + yn(snap.billingOn),
-        'nonce present:  ' + yn(snap.nonce),
-        'purchaseAvail:  ' + yn(snap.purchAvail) + '  (' + (snap.platform || 'null') + ')',
-        '== live now ==',
-        'DGS navigator:  ' + yn(navNow),
-        'DGS window:     ' + yn(winNow),
-        'billingOn:      ' + yn(billNow),
-        '== context ==',
-        'standalone:     ' + yn(snap.standalone),
-        'referrer:       ' + snap.referrer,
-        'UA:             ' + (navigator.userAgent || '')
-      ].join('\n');
-    }
-    var shown = false;
-    function showOverlay(){
-      if (shown) return; shown = true;
-      var ov = document.createElement('div');
-      ov.setAttribute('style','position:fixed;top:0;left:0;right:0;bottom:0;z-index:2147483647;background:rgba(10,12,18,0.97);color:#e8eefc;font:13px/1.55 monospace;padding:20px;overflow:auto;-webkit-user-select:text;user-select:text;');
-      var pre = document.createElement('pre');
-      pre.setAttribute('style','white-space:pre-wrap;word-break:break-word;margin:0 0 16px;');
-      pre.textContent = buildText();
-      var copy = document.createElement('button');
-      copy.textContent = 'Copy';
-      copy.setAttribute('style','font:14px monospace;padding:11px 20px;margin-right:10px;background:#2b6cff;color:#fff;border:0;border-radius:8px;');
-      copy.onclick = function(e){ e.stopPropagation(); try{ navigator.clipboard.writeText(buildText()); copy.textContent='Copied'; }catch(_){ copy.textContent='select text + copy'; } };
-      var close = document.createElement('button');
-      close.textContent = 'Close';
-      close.setAttribute('style','font:14px monospace;padding:11px 20px;background:#444;color:#fff;border:0;border-radius:8px;');
-      close.onclick = function(e){ e.stopPropagation(); try{document.body.removeChild(ov);}catch(_){}; shown=false; };
-      ov.appendChild(pre); ov.appendChild(copy); ov.appendChild(close);
-      document.body.appendChild(ov);
-    }
-    var taps = [];
-    function onTap(x,y){
-      if (x > 90 || y > 90) { taps = []; return; }
-      var now = Date.now();
-      taps.push(now);
-      taps = taps.filter(function(t){ return now - t < 3000; });
-      if (taps.length >= 5) { taps = []; showOverlay(); }
-    }
-    document.addEventListener('touchstart', function(e){ try{ var t = e.touches && e.touches[0]; if (t) onTap(t.clientX, t.clientY); }catch(_){} }, true);
-    document.addEventListener('click', function(e){ try{ onTap(e.clientX, e.clientY); }catch(_){} }, true);
-  } catch(_) {}
 })();
 </script>
 <script>/*Sheetmancer cloud sync — Firebase project sheetsnap-fb659 (legacy id, data continuity). Bridges to React: publishes window.ssAuth + fires 'ss-auth'; React drives sign-in via window.ssSignIn / window.ssSignOut.*/
