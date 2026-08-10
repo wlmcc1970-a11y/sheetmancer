@@ -2711,6 +2711,7 @@ function HomeScreen({
        "scans left" reflects server truth, not a per-device local estimate. */
     try { if (ssauth.signedIn && window.ssGetBalance) window.ssGetBalance(); } catch (_) {}
     try { if (ssauth.signedIn && window.ssPurchaseAvailable && window.__ssDrainRecover) window.__ssDrainRecover(); } catch (_) {}
+    try { if (ssauth.signedIn && window.ssPurchaseAvailable && window.__ssAndroidRecover) window.__ssAndroidRecover(); } catch (_) {}
   }, [ssauth.signedIn]);
   const handleImport = e => {
     const f = e.target.files[0];
@@ -2861,7 +2862,7 @@ function HomeScreen({
       marginTop: 4,
       letterSpacing: 1
     }
-  }, "Sheetmancer · build v74f"))), /*#__PURE__*/React.createElement("button", {
+  }, "Sheetmancer · build v74g"))), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowHelp(false),
     className: "ss-press",
     style: {
@@ -8059,6 +8060,44 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
       }
       window.__ssRecoverQueue = q.filter(function(x){ return !x.__done; });
     } finally { window.__ssDraining = false; }
+  };
+
+  /* Out-of-band ANDROID purchase recovery (mirrors the iOS __ssDrainRecover above). A TWA has no
+     Transaction.updates listener, so on load we ask Play directly (Digital Goods listPurchases) for
+     any owned-but-unconsumed purchase — a buy whose grant or consume was interrupted (app killed /
+     dropped connection) — and settle each: grant server-side (idempotent) then consume(), so Play
+     never auto-refunds (after 3 days) a scan the user already received, the buyer is never left
+     charged with no scan, and re-purchase of the same pack is never blocked. Runs ONLY under a real
+     (non-anon) sign-in and ONLY in the Android billing wrapper; a transient failure leaves the
+     purchase owned for the next load to retry. */
+  window.__ssAndroidRecover = async function(){
+    try {
+      if (!androidBuy) return;                                     /* android billing wrapper only */
+      if (!(window.ssAuth && window.ssAuth.signedIn)) return;      /* real user only; never POST under anon */
+      if (window.__ssAndroidRecovering) return;
+      window.__ssAndroidRecovering = true;
+      try {
+        var svc = window.__ssGDS ? await window.__ssGDS('https://play.google.com/billing') : null;
+        if (!svc || !svc.listPurchases) return;
+        var owned = await svc.listPurchases();
+        var recovered = false;
+        for (var i = 0; i < (owned || []).length; i++) {
+          var p = owned[i];
+          if (!p || !p.itemId || !p.purchaseToken) continue;
+          if (!(window.ssProducts && window.ssProducts[p.itemId])) continue;   /* ignore unknown SKUs */
+          if (!(window.ssAuth && window.ssAuth.signedIn)) break;               /* signed out mid-drain -> stop */
+          var r = await postJson('/purchase', { platform:'android', productId: p.itemId, token: p.purchaseToken });
+          var granted = r.status === 200;
+          var permanent = r.status === 400 || r.status === 404 || r.status === 409 || r.status === 422;
+          if (granted || permanent) {                              /* settle: consume so Play won't refund a delivered scan */
+            try { if (svc.consume) await svc.consume(p.purchaseToken); } catch (_) {}
+            if (granted) recovered = true;
+          }
+          /* transient (401/403/5xx/network) -> leave owned; retry on next load */
+        }
+        if (recovered && window.ssGetBalance) { try { await window.ssGetBalance(); } catch (_) {} }
+      } finally { window.__ssAndroidRecovering = false; }
+    } catch (_) {}
   };
 })();
 </script>
