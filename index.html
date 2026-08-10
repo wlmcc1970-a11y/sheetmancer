@@ -8018,6 +8018,78 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
   };
 })();
 </script>
+<script>
+/* ===== TEMP DIAGNOSTIC (v74d — 2026-08-10) — Android billing-activation probe =====
+   Gated behind a deliberate 5-tap gesture in the TOP-LEFT screen corner; invisible to
+   normal users. READ-ONLY: passive listeners, changes NO billing behavior. Reports the
+   three gate values (wrapped / digitalGoods / billingOn) so we fix the exact failing one.
+   REMOVE this whole diagnostic block after the on-device reading is captured. */
+(function(){
+  try {
+    var snap = {
+      wrapped: !!window.ssWrapped,
+      dgs: (typeof navigator.getDigitalGoodsService === 'function'),
+      billingOn: (window.__ssBillingEnabled === true),
+      nonce: !!window.__ssLaunchNonce,
+      purchAvail: !!window.ssPurchaseAvailable,
+      platform: window.ssPurchasePlatform || null,
+      referrer: (document.referrer || '(empty)'),
+      standalone: (function(){try{return !!(window.matchMedia&&(window.matchMedia('(display-mode: standalone)').matches||window.matchMedia('(display-mode: fullscreen)').matches))||window.navigator.standalone===true;}catch(_){return false;}})()
+    };
+    window.__ssDiagSnap = snap;
+    function yn(b){ return b ? 'YES' : 'no'; }
+    function buildText(){
+      var dgsNow = (typeof navigator.getDigitalGoodsService === 'function');
+      var billNow = (window.__ssBillingEnabled === true);
+      return [
+        'SHEETMANCER DIAG v74d',
+        '== at load ==',
+        'wrapped(TWA):   ' + yn(snap.wrapped),
+        'digitalGoods:   ' + yn(snap.dgs),
+        'billingOn(smn): ' + yn(snap.billingOn),
+        'nonce present:  ' + yn(snap.nonce),
+        'purchaseAvail:  ' + yn(snap.purchAvail) + '  (' + (snap.platform || 'null') + ')',
+        '== live now ==',
+        'digitalGoods:   ' + yn(dgsNow),
+        'billingOn:      ' + yn(billNow),
+        '== context ==',
+        'standalone:     ' + yn(snap.standalone),
+        'referrer:       ' + snap.referrer,
+        'UA:             ' + (navigator.userAgent || '')
+      ].join('\n');
+    }
+    var shown = false;
+    function showOverlay(){
+      if (shown) return; shown = true;
+      var ov = document.createElement('div');
+      ov.setAttribute('style','position:fixed;top:0;left:0;right:0;bottom:0;z-index:2147483647;background:rgba(10,12,18,0.97);color:#e8eefc;font:13px/1.55 monospace;padding:20px;overflow:auto;-webkit-user-select:text;user-select:text;');
+      var pre = document.createElement('pre');
+      pre.setAttribute('style','white-space:pre-wrap;word-break:break-word;margin:0 0 16px;');
+      pre.textContent = buildText();
+      var copy = document.createElement('button');
+      copy.textContent = 'Copy';
+      copy.setAttribute('style','font:14px monospace;padding:11px 20px;margin-right:10px;background:#2b6cff;color:#fff;border:0;border-radius:8px;');
+      copy.onclick = function(e){ e.stopPropagation(); try{ navigator.clipboard.writeText(buildText()); copy.textContent='Copied'; }catch(_){ copy.textContent='select text + copy'; } };
+      var close = document.createElement('button');
+      close.textContent = 'Close';
+      close.setAttribute('style','font:14px monospace;padding:11px 20px;background:#444;color:#fff;border:0;border-radius:8px;');
+      close.onclick = function(e){ e.stopPropagation(); try{document.body.removeChild(ov);}catch(_){}; shown=false; };
+      ov.appendChild(pre); ov.appendChild(copy); ov.appendChild(close);
+      document.body.appendChild(ov);
+    }
+    var taps = [];
+    function onTap(x,y){
+      if (x > 90 || y > 90) { taps = []; return; }
+      var now = Date.now();
+      taps.push(now);
+      taps = taps.filter(function(t){ return now - t < 3000; });
+      if (taps.length >= 5) { taps = []; showOverlay(); }
+    }
+    document.addEventListener('touchstart', function(e){ try{ var t = e.touches && e.touches[0]; if (t) onTap(t.clientX, t.clientY); }catch(_){} }, true);
+    document.addEventListener('click', function(e){ try{ onTap(e.clientX, e.clientY); }catch(_){} }, true);
+  } catch(_) {}
+})();
+</script>
 <script>/*Sheetmancer cloud sync — Firebase project sheetsnap-fb659 (legacy id, data continuity). Bridges to React: publishes window.ssAuth + fires 'ss-auth'; React drives sign-in via window.ssSignIn / window.ssSignOut.*/
 (function(){
  var FB="https://www.gstatic.com/firebasejs/10.12.2/";
