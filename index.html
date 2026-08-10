@@ -2862,7 +2862,7 @@ function HomeScreen({
       marginTop: 4,
       letterSpacing: 1
     }
-  }, "Sheetmancer · build v74h"))), /*#__PURE__*/React.createElement("button", {
+  }, "Sheetmancer · build v74i"))), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowHelp(false),
     className: "ss-press",
     style: {
@@ -8641,13 +8641,46 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
      });
     }).then(function(){
      phase=3;
-     /* STEP 5 - server-side purge. Best effort: the account is already gone, and a
-        failure here must never look like a failed deletion to the user. The outcome
-        is recorded for diagnostics - if a wrapped build's origin is missing from the
-        Worker's ALLOWED_ORIGINS this is where it shows up. */
-     return raceOut(fetch(SS_API+"/account",{method:"DELETE",headers:{Authorization:"Bearer "+savedTok}}),15000,derr("purge-timeout","purge timed out"))
-      .then(function(r){window.ssLastPurge={ok:!!r.ok,status:r.status};if(!r.ok)try{console.warn("Sheetmancer: account purge returned "+r.status);}catch(_){}},
-            function(err){window.ssLastPurge={ok:false,status:0};try{console.warn("Sheetmancer: account purge failed",err);}catch(_){}});
+     /* STEP 4.5 (album cleanup) - purge the Photo Album subcollection. Firestore does
+        NOT cascade-delete users/<uid>/album/* when users/<uid> or the auth user is
+        removed, so without this those photo docs orphan (unreadable — owner-only +
+        tombstone — so it was never a security hole, but not tidy for data retention).
+        Runs HERE, AFTER deleteUser (past the point of no return), so a rollback can
+        never lose a surviving account's photos; it uses the ID token captured while
+        the account was alive (outlives it ~1h, and the album rules key on its uid,
+        exactly like the STEP 5 server purge below). Best-effort by design: every error
+        is swallowed so it can NEVER look like a failed deletion — the outcome is only
+        recorded in window.ssLastAlbumPurge. (>300 photos would page; the cap is ~100,
+        and any residue stays unreadable, so a single page is enough.) */
+     function albumPurge(){
+       var base="https://firestore.googleapis.com/v1/projects/"+encodeURIComponent(cfg.projectId)+"/databases/(default)/documents";
+       var hdr={Authorization:"Bearer "+savedTok};
+       return fetch(base+"/users/"+encodeURIComponent(uid)+"/album?pageSize=300",{headers:hdr})
+         .then(function(r){return r&&r.ok?r.json():null;})
+         .then(function(j){
+           var names=(((j||{}).documents)||[]).map(function(d){return d&&d.name;}).filter(Boolean);
+           window.ssLastAlbumPurge={found:names.length,deleted:0,ok:true};
+           var i=0;
+           function next(){
+             if(i>=names.length)return;
+             return fetch("https://firestore.googleapis.com/v1/"+names[i++],{method:"DELETE",headers:hdr})
+               .then(function(rr){if(rr&&rr.ok)window.ssLastAlbumPurge.deleted++;},function(){})
+               .then(next);
+           }
+           return next();
+         },function(err){window.ssLastAlbumPurge={found:-1,deleted:0,ok:false,err:String((err&&(err.code||err.message))||err)};});
+     }
+     return raceOut(albumPurge(),12000,derr("album-purge-timeout","album purge timed out"))
+      .then(function(){},function(){})   /* best-effort: cleanup must never look like a failed deletion */
+      .then(function(){
+       /* STEP 5 - server-side purge. Best effort: the account is already gone, and a
+          failure here must never look like a failed deletion to the user. The outcome
+          is recorded for diagnostics - if a wrapped build's origin is missing from the
+          Worker's ALLOWED_ORIGINS this is where it shows up. */
+       return raceOut(fetch(SS_API+"/account",{method:"DELETE",headers:{Authorization:"Bearer "+savedTok}}),15000,derr("purge-timeout","purge timed out"))
+        .then(function(r){window.ssLastPurge={ok:!!r.ok,status:r.status};if(!r.ok)try{console.warn("Sheetmancer: account purge returned "+r.status);}catch(_){}},
+              function(err){window.ssLastPurge={ok:false,status:0};try{console.warn("Sheetmancer: account purge failed",err);}catch(_){}});
+      });
     }).then(succeed).catch(function(e){
      if(!e||typeof e!=="object")e=new Error(String(e||"delete-failed"));
      var code=String(e.code||e.message||"");
