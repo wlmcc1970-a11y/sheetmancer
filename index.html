@@ -2862,7 +2862,7 @@ function HomeScreen({
       marginTop: 4,
       letterSpacing: 1
     }
-  }, "Sheetmancer · build v74i"))), /*#__PURE__*/React.createElement("button", {
+  }, "Sheetmancer · build v74j"))), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowHelp(false),
     className: "ss-press",
     style: {
@@ -8027,10 +8027,24 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
       LAUNCH_NONCE = _nv;
       window.__ssLaunchNonce = _nv;
       window.__ssBillingEnabled = true;            /* presence of ?sm_n IS the Android-billing signal */
+      /* Latch it. The sign-in cloud-sync fires a one-time location.reload(), and the reloaded URL no
+         longer carries ?sm_n (scrubbed just below) -> without this, androidBuy silently went false
+         after that reload and "Get more" fell back to the "when Sheetmancer launches" modal (the buy
+         sheet vanished for real testers). Session-scoped and set ONLY when a genuine ?sm_n launch
+         proved this is a billing build (mirrors the ss-wrapped latch above); a fresh cold start
+         re-proves it with a new ?sm_n, and web/iOS never set it. androidBuy also still requires
+         ssWrapped + the Digital Goods API, so this can never light up Buy UI on the web. Restores
+         ONLY the Buy-UI flag -- NOT the base-grant nonce, which stays single-use / first-load-only
+         (ssGrantBase no-ops without LAUNCH_NONCE, so there is no nonce-less base-grant retry). */
+      try { sessionStorage.setItem('ss-billing', '1'); } catch (_) {}
       _nq.delete('sm_n');
       var _nqs = _nq.toString();
       var _nclean = window.location.pathname + (_nqs ? '?' + _nqs : '') + (window.location.hash || '');
       try { history.replaceState(history.state, '', _nclean); } catch (_) {}
+    } else {
+      /* Re-arm the Buy UI after an in-session reload (e.g. the cloud-sync reload) that dropped ?sm_n.
+         Only the enablement flag -- never the nonce. */
+      try { if (sessionStorage.getItem('ss-billing') === '1') window.__ssBillingEnabled = true; } catch (_) {}
     }
   } catch (_) {}
   var API = "https://sheetsnap-api.will-6d6.workers.dev";
