@@ -2862,7 +2862,7 @@ function HomeScreen({
       marginTop: 4,
       letterSpacing: 1
     }
-  }, "Sheetmancer · build v75g"))), /*#__PURE__*/React.createElement("button", {
+  }, "Sheetmancer · build v75h"))), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowHelp(false),
     className: "ss-press",
     style: {
@@ -2951,7 +2951,10 @@ function HomeScreen({
     style: {
       flex: 1,
       padding: 8,
-      overflowY: "auto"
+      overflowY: "auto",
+      touchAction: "pan-y",
+      overscrollBehavior: "contain",
+      WebkitOverflowScrolling: "touch"
     }
   }, /*#__PURE__*/React.createElement(PullIndicator, {
     T: T,
@@ -7054,7 +7057,10 @@ function CharacterScreen({
     style: {
       flex: 1,
       overflowY: "auto",
-      overflowX: "hidden"
+      overflowX: "hidden",
+      touchAction: "pan-y",
+      overscrollBehavior: "contain",
+      WebkitOverflowScrolling: "touch"
     }
   }, /*#__PURE__*/React.createElement(PullIndicator, {
     T: T,
