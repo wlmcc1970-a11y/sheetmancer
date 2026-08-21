@@ -2862,7 +2862,7 @@ function HomeScreen({
       marginTop: 4,
       letterSpacing: 1
     }
-  }, "Sheetmancer · build v75c"))), /*#__PURE__*/React.createElement("button", {
+  }, "Sheetmancer · build v75d"))), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowHelp(false),
     className: "ss-press",
     style: {
@@ -2951,7 +2951,10 @@ function HomeScreen({
     style: {
       flex: 1,
       padding: 8,
-      overflowY: "auto"
+      overflowY: "auto",
+      touchAction: "pan-y",
+      overscrollBehavior: "contain",
+      WebkitOverflowScrolling: "touch"
     }
   }, /*#__PURE__*/React.createElement(PullIndicator, {
     T: T,
@@ -4992,6 +4995,7 @@ function FieldMenu({
   const [pos, setPos] = useState(null);
   const openedAt = useRef(0);
   const lastTouch = useRef(0);
+  const tapRef = useRef(null);
   useEffect(() => { if (open) openedAt.current = Date.now(); }, [open]);
   const W = 168;
   const toggle = e => {
@@ -5018,8 +5022,12 @@ function FieldMenu({
       if (Date.now() - lastTouch.current < 700) return;
       if (enabled) fn();
     },
+    onTouchStart: e => { var t = e.touches && e.touches[0]; tapRef.current = t ? { x: t.clientX, y: t.clientY } : null; },
     onTouchEnd: e => {
       e.stopPropagation();
+      var s = tapRef.current; tapRef.current = null;
+      var t = e.changedTouches && e.changedTouches[0];
+      if (s && t && (Math.abs(t.clientX - s.x) > 10 || Math.abs(t.clientY - s.y) > 10)) return;
       e.preventDefault();
       lastTouch.current = Date.now();
       if (enabled) fn();
@@ -5052,7 +5060,8 @@ function FieldMenu({
   }, /*#__PURE__*/React.createElement("button", {
     "aria-label": "Options",
     onClick: e => { if (Date.now() - lastTouch.current < 700) return; toggle(e); },
-    onTouchEnd: e => { lastTouch.current = Date.now(); e.preventDefault(); toggle(e); },
+    onTouchStart: e => { var t = e.touches && e.touches[0]; tapRef.current = t ? { x: t.clientX, y: t.clientY } : null; },
+    onTouchEnd: e => { var s = tapRef.current; tapRef.current = null; var t = e.changedTouches && e.changedTouches[0]; if (s && t && (Math.abs(t.clientX - s.x) > 10 || Math.abs(t.clientY - s.y) > 10)) return; lastTouch.current = Date.now(); e.preventDefault(); toggle(e); },
     style: {
       background: "none",
       border: "none",
@@ -6255,7 +6264,8 @@ function CharacterScreen({
       ty = 0,
       ts = 0,
       decided = false,
-      horiz = false;
+      horiz = false,
+      inTable = false;
     const onStart = e => {
       if (e.touches.length !== 1) return;
       tx = e.touches[0].clientX;
@@ -6263,15 +6273,19 @@ function CharacterScreen({
       ts = Date.now();
       decided = false;
       horiz = false;
+      inTable = !!(e.target && e.target.closest && e.target.closest('[data-ss-table-scroll]'));
     };
     const onMove = e => {
-      if (decided || e.touches.length !== 1) return;
-      const dx = e.touches[0].clientX - tx,
-        dy = e.touches[0].clientY - ty;
-      if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
-        decided = true;
-        horiz = Math.abs(dx) > Math.abs(dy) * 1.8;
+      if (e.touches.length !== 1) return;
+      if (!decided) {
+        const dx = e.touches[0].clientX - tx,
+          dy = e.touches[0].clientY - ty;
+        if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
+          decided = true;
+          horiz = Math.abs(dx) > Math.abs(dy) * 1.8;
+        }
       }
+      if (decided && horiz && !inTable && e.cancelable) e.preventDefault();
     };
     const onEnd = e => {
       if (!decided || !horiz) return;
@@ -6287,7 +6301,7 @@ function CharacterScreen({
       passive: true
     });
     el.addEventListener("touchmove", onMove, {
-      passive: true
+      passive: false
     });
     el.addEventListener("touchend", onEnd, {
       passive: true
@@ -7041,7 +7055,10 @@ function CharacterScreen({
     style: {
       flex: 1,
       overflowY: "auto",
-      overflowX: "hidden"
+      overflowX: "hidden",
+      touchAction: "pan-y",
+      overscrollBehavior: "contain",
+      WebkitOverflowScrolling: "touch"
     }
   }, /*#__PURE__*/React.createElement(PullIndicator, {
     T: T,
