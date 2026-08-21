@@ -2862,7 +2862,7 @@ function HomeScreen({
       marginTop: 4,
       letterSpacing: 1
     }
-  }, "Sheetmancer · build v75e"))), /*#__PURE__*/React.createElement("button", {
+  }, "Sheetmancer · build v75f"))), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowHelp(false),
     className: "ss-press",
     style: {
@@ -6013,7 +6013,14 @@ function AlbumPage({ T, charId, signedIn }) {
       else { setPhotos([]); setLoadErr(true); }
     }, function () { if (mounted.current) { setPhotos([]); setLoadErr(true); } });
   };
-  useEffect(function () { setPhotos(null); load(); }, [charId, signedIn]);
+  useEffect(function () {
+    var cached = (signedIn && window.ssAlbumCacheGet) ? window.ssAlbumCacheGet(charId) : null;
+    setPhotos(cached != null ? cached : null);
+    load();
+  }, [charId, signedIn]);
+  useEffect(function () {
+    if (photos != null && signedIn && window.ssAlbumCacheSet) { try { window.ssAlbumCacheSet(charId, photos); } catch (_) {} }
+  }, [photos, charId, signedIn]);
   const imgDims = function (url) {
     return new Promise(function (res) {
       try { var im = new Image(); im.onload = function () { res({ w: im.naturalWidth || 0, h: im.naturalHeight || 0 }); }; im.onerror = function () { res({ w: 0, h: 0 }); }; im.src = url; }
@@ -8685,6 +8692,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
         recorded in window.ssLastAlbumPurge. (>300 photos would page; the cap is ~100,
         and any residue stays unreadable, so a single page is enough.) */
      function albumPurge(){
+       try{ if(window.ssAlbumCacheClear) window.ssAlbumCacheClear(); }catch(_){}
        var base="https://firestore.googleapis.com/v1/projects/"+encodeURIComponent(cfg.projectId)+"/databases/(default)/documents";
        var hdr={Authorization:"Bearer "+savedTok};
        return fetch(base+"/users/"+encodeURIComponent(uid)+"/album?pageSize=300",{headers:hdr})
@@ -8748,6 +8756,10 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
      sort by ts client-side (only the open character's photos, <=12, are ever loaded). Firestore
      free Spark tier easily covers this (~1 GiB, 50k reads/day). */
   function albumUid(){ if(user&&user.uid)return user.uid; var c=auth.currentUser; return (c&&!c.isAnonymous)?c.uid:null; }
+  var _ssAlbumCache = Object.create(null);
+  window.ssAlbumCacheGet = function(charId){ var uid=albumUid(); if(!uid)return null; var v=_ssAlbumCache[uid+"|"+String(charId)]; return v?v.slice():null; };
+  window.ssAlbumCacheSet = function(charId,photos){ var uid=albumUid(); if(!uid)return; try{ _ssAlbumCache[uid+"|"+String(charId)]=(photos||[]).slice(); }catch(_){} };
+  window.ssAlbumCacheClear = function(){ _ssAlbumCache=Object.create(null); };
   function albumCol(uid){ return fsM.collection(db,"users",uid,"album"); }
   function albumDoc(uid,pid){ return fsM.doc(db,"users",uid,"album",pid); }
   function newPhotoId(){ try{return crypto.randomUUID();}catch(_){return "ph_"+Date.now()+"_"+Math.random().toString(36).slice(2);} }
