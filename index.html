@@ -2862,7 +2862,7 @@ function HomeScreen({
       marginTop: 4,
       letterSpacing: 1
     }
-  }, "Sheetmancer · build v75d"))), /*#__PURE__*/React.createElement("button", {
+  }, "Sheetmancer · build v75e"))), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowHelp(false),
     className: "ss-press",
     style: {
@@ -2951,10 +2951,7 @@ function HomeScreen({
     style: {
       flex: 1,
       padding: 8,
-      overflowY: "auto",
-      touchAction: "pan-y",
-      overscrollBehavior: "contain",
-      WebkitOverflowScrolling: "touch"
+      overflowY: "auto"
     }
   }, /*#__PURE__*/React.createElement(PullIndicator, {
     T: T,
@@ -6264,8 +6261,7 @@ function CharacterScreen({
       ty = 0,
       ts = 0,
       decided = false,
-      horiz = false,
-      inTable = false;
+      horiz = false;
     const onStart = e => {
       if (e.touches.length !== 1) return;
       tx = e.touches[0].clientX;
@@ -6273,19 +6269,15 @@ function CharacterScreen({
       ts = Date.now();
       decided = false;
       horiz = false;
-      inTable = !!(e.target && e.target.closest && e.target.closest('[data-ss-table-scroll]'));
     };
     const onMove = e => {
-      if (e.touches.length !== 1) return;
-      if (!decided) {
-        const dx = e.touches[0].clientX - tx,
-          dy = e.touches[0].clientY - ty;
-        if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
-          decided = true;
-          horiz = Math.abs(dx) > Math.abs(dy) * 1.8;
-        }
+      if (decided || e.touches.length !== 1) return;
+      const dx = e.touches[0].clientX - tx,
+        dy = e.touches[0].clientY - ty;
+      if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
+        decided = true;
+        horiz = Math.abs(dx) > Math.abs(dy) * 1.8;
       }
-      if (decided && horiz && !inTable && e.cancelable) e.preventDefault();
     };
     const onEnd = e => {
       if (!decided || !horiz) return;
@@ -6301,7 +6293,7 @@ function CharacterScreen({
       passive: true
     });
     el.addEventListener("touchmove", onMove, {
-      passive: false
+      passive: true
     });
     el.addEventListener("touchend", onEnd, {
       passive: true
@@ -7055,10 +7047,7 @@ function CharacterScreen({
     style: {
       flex: 1,
       overflowY: "auto",
-      overflowX: "hidden",
-      touchAction: "pan-y",
-      overscrollBehavior: "contain",
-      WebkitOverflowScrolling: "touch"
+      overflowX: "hidden"
     }
   }, /*#__PURE__*/React.createElement(PullIndicator, {
     T: T,
