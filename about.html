@@ -125,6 +125,12 @@
     .band{padding:48px 0}
     .sbtn{padding:10px 18px 10px 14px}
   }
+  .scrollcue{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:150;display:flex;flex-direction:column;align-items:center;gap:4px;padding:0;border:0;background:none;color:var(--gold);cursor:pointer;opacity:.82;transition:opacity .45s ease;font-family:var(--label);font-size:9px;letter-spacing:.24em;text-transform:uppercase}
+  .scrollcue.hide{opacity:0;pointer-events:none}
+  .scrollcue .chev{width:32px;height:32px;border:1px solid var(--line2);border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(11,8,6,.6);box-shadow:0 4px 16px rgba(0,0,0,.4);animation:cuebob 1.9s ease-in-out infinite}
+  .scrollcue:hover .chev{border-color:var(--gold);background:rgba(30,21,14,.85)}
+  @keyframes cuebob{0%,100%{transform:translateY(0)}50%{transform:translateY(6px)}}
+  @media(prefers-reduced-motion:reduce){.scrollcue .chev{animation:none}}
 </style>
 <noscript><style>.reveal{opacity:1;transform:none}</style></noscript>
 </head>
@@ -268,6 +274,11 @@
   </div>
 </footer>
 
+<button class="scrollcue" id="scrollcue" aria-label="Scroll down for more">
+  <span>More</span>
+  <span class="chev"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+</button>
+
 <script>
 (function(){
   var els = Array.prototype.slice.call(document.querySelectorAll('.reveal'));
@@ -292,6 +303,18 @@
   document.getElementById('lbnext').addEventListener('click',function(e){ e.stopPropagation(); go(1); });
   lb.addEventListener('click',function(e){ if(e.target===lb) close(); });
   document.addEventListener('keydown',function(e){ if(!lb.classList.contains('open'))return; if(e.key==='Escape')close(); else if(e.key==='ArrowLeft')go(-1); else if(e.key==='ArrowRight')go(1); });
+})();
+(function(){
+  var cue=document.getElementById('scrollcue');
+  if(!cue) return;
+  cue.addEventListener('click',function(){ window.scrollBy({top:Math.round(window.innerHeight*0.85),behavior:'smooth'}); });
+  function upd(){
+    var atBottom=(window.innerHeight+window.scrollY)>=(document.documentElement.scrollHeight-90);
+    cue.classList.toggle('hide', atBottom);
+  }
+  window.addEventListener('scroll',upd,{passive:true});
+  window.addEventListener('resize',upd);
+  upd();
 })();
 </script>
 </body>
