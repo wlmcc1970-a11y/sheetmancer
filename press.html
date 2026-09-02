@@ -19,7 +19,7 @@
   .kicker{font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);font-weight:bold;}
   h1{font-size:30px;margin:6px 0 4px;color:var(--ink);}
   .eff{color:var(--muted);font-style:italic;font-size:14px;}
-  h2{font-size:20px;color:var(--leather);margin:30px 0 8px;border-bottom:1px solid var(--rule);padding-bottom:4px;}
+  h2{font-size:20px;color:var(--leather);margin:38px 0 10px;border-bottom:1px solid var(--rule);padding-bottom:4px;}
   h3{font-size:16px;color:var(--gold);margin:18px 0 4px;}
   p,li{font-size:16px;}
   ul,ol{padding-left:22px;}
@@ -34,8 +34,8 @@
   footer{margin-top:40px;border-top:2px solid var(--leather);padding-top:14px;color:var(--muted);font-size:13px;text-align:center;}
   strong{color:var(--leather);}
   .mail{font-size:17px;font-weight:bold;}
-  .demo{background:#000;border:1px solid var(--rule);border-radius:8px;margin:16px 0;overflow:hidden;text-align:center;}
-  .demo video{display:inline-block;max-width:100%;max-height:72vh;width:auto;height:auto;vertical-align:middle;}
+  .demo{display:block;width:-moz-fit-content;width:fit-content;max-width:100%;margin:18px auto;background:#000;border:1px solid var(--rule);border-radius:16px;overflow:hidden;box-shadow:0 10px 34px rgba(26,17,8,.22);}
+  .demo video{display:block;max-width:100%;max-height:72vh;width:auto;height:auto;}
   .assets li{margin:7px 0;}
   .logoband{background:radial-gradient(ellipse at 50% 40%, #1b1622 0%, #0a0a0c 82%);border:1px solid var(--rule);border-radius:12px;padding:34px 20px 28px;margin-bottom:16px;text-align:center;}
   .wordmark{font-family:'Cormorant Garamond',Georgia,serif;font-weight:700;font-size:60px;line-height:1;margin:0;}
@@ -44,18 +44,31 @@
   .ornament{display:block;margin:10px auto 0;}
   .tagline{font-family:'EB Garamond',Georgia,serif;font-style:italic;font-size:19px;color:#D8CFA8;margin-top:12px;}
   .subtag{font-family:'Cinzel',Georgia,serif;font-size:12px;letter-spacing:.28em;color:#D4A843;margin-top:8px;}
-  .getit{display:flex;gap:12px;flex-wrap:wrap;margin:18px 0 6px;}
+  .getit{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin:18px 0 6px;}
   .sbtn{display:inline-flex;align-items:center;gap:11px;background:#000;color:#fff;text-decoration:none;border-radius:10px;padding:9px 18px 9px 15px;border:1px solid #000;font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;}
   .sbtn:hover{background:#1a1a1a;}
   .sbtn .txt{display:flex;flex-direction:column;line-height:1.15;text-align:left;}
   .sbtn .txt small{font-size:10.5px;letter-spacing:.02em;font-weight:400;}
   .sbtn .txt b{font-size:18px;font-weight:600;}
+  .brandicon{width:76px;height:76px;border-radius:17px;border:1px solid #3a2f1a;box-shadow:0 6px 18px rgba(0,0,0,.45);margin:0 auto 10px;display:block;}
+  .facts{display:flex;flex-wrap:wrap;gap:10px;margin:18px 0 4px;}
+  .facts>div{flex:1 1 140px;background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:10px 12px;text-align:center;}
+  .facts b{display:block;color:var(--leather);font-size:16px;}
+  .facts span{display:block;color:var(--muted);font-size:11px;margin-top:3px;letter-spacing:.04em;}
+  .shots{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin:16px 0 6px;}
+  .shots a{line-height:0;}
+  .shots img{width:162px;max-width:44%;height:auto;border-radius:14px;border:1px solid var(--rule);box-shadow:0 6px 18px rgba(26,17,8,.18);}
+  .features{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0;}
+  .feat{background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:12px 14px;font-size:15px;line-height:1.5;}
+  .feat b{color:var(--leather);}
+  @media(max-width:560px){.features{grid-template-columns:1fr;}.shots img{width:140px;}}
 </style>
 </head>
 <body>
 <div class="wrap">
 <header>
   <div class="logoband">
+    <img class="brandicon" src="./press/sheetmancer-icon-512.png" alt="Sheetmancer app icon" width="76" height="76">
     <h1 class="wordmark"><span class="s-sheet">Sheet</span><span class="s-mancer">mancer</span></h1>
     <svg class="ornament" viewBox="0 0 100 20" width="200" height="20" aria-hidden="true">
       <line x1="2" y1="10" x2="41" y2="10" stroke="#D4A843" stroke-width="1.4"/>
@@ -81,6 +94,13 @@ different asset &mdash; email me directly:
 <p class="oneline">Sheetmancer turns photos of your paper character &mdash; up to 10 pages per scan &mdash; into an
 editable digital character on all your devices, for any game system.</p>
 
+<div class="facts">
+  <div><b>$9.99</b><span>ONE-TIME · NO SUBSCRIPTION</span></div>
+  <div><b>iOS &amp; Android</b><span>APP STORE · GOOGLE PLAY</span></div>
+  <div><b>Any system</b><span>ANY RPG, ANY EDITION</span></div>
+  <div><b>Live now</b><span>ON BOTH STORES</span></div>
+</div>
+
 <h2>See it work &mdash; 45 seconds</h2>
 <div class="demo">
   <video controls playsinline preload="metadata" poster="./press-demo-poster.jpg">
@@ -91,6 +111,17 @@ editable digital character on all your devices, for any game system.</p>
 <p class="eff">The whole flow in one short cut &mdash; a paper character on the table, the scan, and the finished
 digital character &mdash; captioned, 45 seconds. There's a GIF version for chat and Discord here:
 <a href="./press-demo.gif">press-demo.gif</a>.</p>
+
+<h2>Screenshots</h2>
+<div class="shots">
+  <a href="./press/shots/01_core.jpg"><img src="./press/shots/01_core.jpg" width="162" alt="Scan up to 10 pages of a paper character" loading="lazy"></a>
+  <a href="./press/shots/02_make_yours.jpg"><img src="./press/shots/02_make_yours.jpg" width="162" alt="Every field editable — make the character yours" loading="lazy"></a>
+  <a href="./press/shots/03_pdf.jpg"><img src="./press/shots/03_pdf.jpg" width="162" alt="Export a print-ready PDF" loading="lazy"></a>
+  <a href="./press/shots/04_journal.jpg"><img src="./press/shots/04_journal.jpg" width="162" alt="Session Journal" loading="lazy"></a>
+  <a href="./press/shots/05_album.jpg"><img src="./press/shots/05_album.jpg" width="162" alt="Photo Album" loading="lazy"></a>
+  <a href="./press/shots/06_dice.jpg"><img src="./press/shots/06_dice.jpg" width="162" alt="Dice Library and Calculator" loading="lazy"></a>
+</div>
+<p class="eff">Click any shot for a larger view. The full-resolution set is in the <a href="./press/sheetmancer-screenshots.zip">screenshots ZIP</a>.</p>
 
 <h2>Get Sheetmancer</h2>
 <div class="getit">
@@ -108,29 +139,20 @@ digital character &mdash; captioned, 45 seconds. There's a GIF version for chat 
     <span class="txt"><small>GET IT ON</small><b>Google Play</b></span>
   </a>
 </div>
-<p class="eff">Live now on both stores &mdash; $9.99, one time.</p>
+<p class="eff" style="text-align:center">Live now on both stores &mdash; $9.99, one time.</p>
 
 <h2>What it does</h2>
-<ul>
-  <li><strong>Reads your paper into a digital character.</strong> Photograph or upload your pages &mdash;
-  <strong>typed, printed, PDF, or handwritten</strong> &mdash; and each Character Scan takes in
-  <strong>up to 10 pages of one character</strong> (the main sheet plus the spell lists, skills and notes that
-  go with it), not just the front page.</li>
-  <li><strong>Any game system &mdash; and it keeps your game's own terms.</strong> It reads the character in
-  front of it rather than assuming a ruleset, so nothing gets renamed to fit a template: Hull Integrity stays
-  Hull Integrity, Sanity stays Sanity.</li>
-  <li><strong>Make it yours.</strong> Every field is editable by hand; rename or reorder sections, add gear, log
-  XP and level up, search the whole character, pick from seven themes, and view and edit offline after the scan.</li>
-  <li><strong>Share a print-ready PDF</strong> of any character &mdash; for your table or your GM &mdash; or back
-  it up to a file you keep.</li>
-  <li><strong>Session Journal.</strong> Keep session notes and campaign history alongside the character they belong to.</li>
-  <li><strong>Photo Album.</strong> A per-character gallery for maps, minis, tokens and art, synced across devices.</li>
-  <li><strong>Dice Library &amp; Calculator.</strong> A built-in toolkit of 30+ randomizers for any system &mdash;
-  standard and unusual dice, oracles, cards and tables, a directional compass set, and an original story deck
-  &mdash; plus a normal calculator. It never touches your character data.</li>
-  <li><strong>Fallen Heroes.</strong> Archive a retired or fallen character and bring them back anytime.</li>
-  <li><strong>Syncs across your devices</strong> when you're signed in, so your characters follow you.</li>
-</ul>
+<div class="features">
+  <div class="feat"><b>Reads your paper into a digital character.</b> Photograph or upload your pages — typed, printed, PDF, or handwritten — and each Character Scan takes in up to 10 pages of one character (the main sheet plus the spell lists, skills and notes that go with it), not just the front page.</div>
+  <div class="feat"><b>Keeps your game's own terms.</b> Any system: it reads the character in front of it rather than assuming a ruleset, so nothing gets renamed to fit a template — Hull Integrity stays Hull Integrity, Sanity stays Sanity.</div>
+  <div class="feat"><b>Make it yours.</b> Every field is editable by hand; rename or reorder sections, add gear, log XP and level up, search the whole character, pick from seven themes, and view and edit offline after the scan.</div>
+  <div class="feat"><b>Print-ready PDF.</b> Export any character as a print-ready PDF — for your table or your GM — or back it up to a file you keep.</div>
+  <div class="feat"><b>Session Journal.</b> Keep session notes and campaign history alongside the character they belong to.</div>
+  <div class="feat"><b>Photo Album.</b> A per-character gallery for maps, minis, tokens and art, synced across devices.</div>
+  <div class="feat"><b>Dice Library &amp; Calculator.</b> A built-in toolkit of 30+ randomizers for any system — standard and unusual dice, oracles, cards and tables, a directional compass set, and an original story deck — plus a normal calculator. It never touches your character data.</div>
+  <div class="feat"><b>Fallen Heroes.</b> Archive a retired or fallen character and bring them back anytime.</div>
+  <div class="feat"><b>Syncs across your devices.</b> When you're signed in, your characters follow you.</div>
+</div>
 
 <h2>What it doesn't do &mdash; the honest limits</h2>
 <div class="box">
