@@ -53,6 +53,27 @@ input,button{font-family:inherit}
 @keyframes ssScan{0%{top:0}100%{top:calc(100% - 3px)}}
 @keyframes ssCatIn{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:translateX(0)}}
 #root input,#root textarea,#root select,#root [contenteditable="true"]{-webkit-user-select:text;-moz-user-select:text;user-select:text;-webkit-touch-callout:default}
+/* ── v76 hub redesign: layout classes only. Every colour comes from T (inline). ── */
+.v76-num{font-variant-numeric:lining-nums tabular-nums;font-feature-settings:"lnum" 1,"tnum" 1}
+.v76-body{width:100%;max-width:820px;margin:0 auto}
+.v76-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:0 0 16px}
+@media (max-width:379px){.v76-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.v76-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:8px;margin:0 0 18px}
+@media (max-width:429px){.v76-strip{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (min-width:482px){.v76-strip>.v76-bar{grid-column:span 2}}
+.v76-kv{display:block}
+.v76-tile,.v76-st{transition:transform .18s cubic-bezier(.2,.85,.25,1)}
+.v76-tile:active,.v76-st:active{transform:translateY(1px) scale(.99)}
+.v76-portrait>div{max-width:min(330px,28.5vh)!important}
+.v76-glance{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:8px;width:100%;max-width:360px;margin:12px auto 2px}
+@media (max-width:429px){.v76-glance{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.v76-navgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:9px;align-items:stretch;width:100%}
+.v76-navgrid>.v76-navfull{grid-column:1/-1}
+.v76-navgrid>div{display:flex;align-items:stretch}
+.v76-navcard{flex-direction:column!important;align-items:flex-start!important;gap:8px!important;min-height:98px;justify-content:space-between}
+.v76-navfull.v76-navcard,.v76-navfull>.v76-navcard{flex-direction:row!important;align-items:center!important;gap:12px!important;min-height:0;justify-content:flex-start}
+.v76-prose span{max-width:62ch}
+
 
 
 
@@ -2862,7 +2883,7 @@ function HomeScreen({
       marginTop: 4,
       letterSpacing: 1
     }
-  }, "Sheetmancer · build v75p"))), /*#__PURE__*/React.createElement("button", {
+  }, "Sheetmancer · build v76"))), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowHelp(false),
     className: "ss-press",
     style: {
@@ -4349,17 +4370,13 @@ function HubNav({
         margin: "0 0 12px"
       }
     }, "Navigate"), /*#__PURE__*/React.createElement("div", {
-      style: {
-        display: "flex",
-        flexDirection: "column",
-        gap: 9
-      }
+      className: "v76-navgrid"
     }, cards.map(cat => {
-      if (cat.key === "__album") return /*#__PURE__*/React.createElement("button", { key: "__album", onClick: () => setActiveCat("__album"), className: "ss-press", style: { display: "flex", alignItems: "center", gap: 12, textAlign: "left", width: "100%", background: T.cardGrad, border: `1px solid ${T.borderLight}`, borderLeft: `3px solid ${T.accent}`, borderRadius: "0 12px 12px 0", padding: "12px", cursor: "pointer", boxShadow: T.cardShadow } }, /*#__PURE__*/React.createElement("span", { style: { width: 42, height: 42, flex: "none", borderRadius: "50%", border: `1px solid ${T.borderLight}`, background: T.accentFaint, display: "flex", alignItems: "center", justifyContent: "center" } }, /*#__PURE__*/React.createElement(CatIcon, { name: "camera", size: 22, color: T.accent })), /*#__PURE__*/React.createElement("span", { style: { flex: 1, minWidth: 0 } }, /*#__PURE__*/React.createElement("span", { style: { display: "block", fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, fontSize: 15, letterSpacing: 0.5, color: T.text } }, "Photo Album"), /*#__PURE__*/React.createElement("span", { style: { display: "block", fontSize: 12, color: T.textMuted, marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } }, "Battle maps, minis, character art")));
-    if (cat.key === "__dice") return /*#__PURE__*/React.createElement("button", { key: "__dice", onClick: () => setActiveCat("__dice"), className: "ss-press", style: { display: "flex", alignItems: "center", gap: 12, textAlign: "left", width: "100%", background: T.cardGrad, border: `1px solid ${T.borderLight}`, borderLeft: `3px solid ${T.accent}`, borderRadius: "0 12px 12px 0", padding: "12px", cursor: "pointer", boxShadow: T.cardShadow } }, /*#__PURE__*/React.createElement("span", { style: { width: 42, height: 42, flex: "none", borderRadius: "50%", border: `1px solid ${T.borderLight}`, background: T.accentFaint, display: "flex", alignItems: "center", justifyContent: "center" }, dangerouslySetInnerHTML: { __html: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="' + T.accent + '" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8.5" cy="8.5" r="1.5" fill="' + T.accent + '" stroke="none"/><circle cx="15.5" cy="8.5" r="1.5" fill="' + T.accent + '" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="' + T.accent + '" stroke="none"/><circle cx="8.5" cy="15.5" r="1.5" fill="' + T.accent + '" stroke="none"/><circle cx="15.5" cy="15.5" r="1.5" fill="' + T.accent + '" stroke="none"/></svg>' } }), /*#__PURE__*/React.createElement("span", { style: { flex: 1, minWidth: 0 } }, /*#__PURE__*/React.createElement("span", { style: { display: "block", fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, fontSize: 15, letterSpacing: 0.5, color: T.text } }, "Dice Library & Calculator"), /*#__PURE__*/React.createElement("span", { style: { display: "block", fontSize: 12, color: T.textMuted, marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } }, "Rollers, dice, cards & a calculator")));
-      if (cat.key === "__addscan") return /*#__PURE__*/React.createElement("button", { key: "__addscan", onClick: onAddScan, className: "ss-press", style: { display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", background: T.accentFaint, border: "1.5px solid " + T.accent, borderRadius: 12, padding: "13px 12px", cursor: "pointer", color: T.accent, fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, fontSize: 13, letterSpacing: 0.5, marginTop: 2 } }, "+ Scan more pages");
-      if (cat.key === "__add") return /*#__PURE__*/React.createElement("button", { key: "__add", onClick: onAddSection, className: "ss-press", style: { display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", background: "none", border: "1.5px dashed " + T.borderLight, borderRadius: 12, padding: "13px 12px", cursor: "pointer", color: T.accent, fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, fontSize: 13, letterSpacing: 0.5, marginTop: 2 } }, "+ Add Section");
-      if (cat.key === "__addgroup") return /*#__PURE__*/React.createElement("button", { key: "__addgroup", onClick: onAddGroup, className: "ss-press", style: { display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", background: "none", border: "1.5px dashed " + T.borderLight, borderRadius: 12, padding: "13px 12px", cursor: "pointer", color: T.textSoft, fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, fontSize: 13, letterSpacing: 0.5 } }, "+ Add Group");
+      if (cat.key === "__album") return /*#__PURE__*/React.createElement("button", { key: "__album", onClick: () => setActiveCat("__album"), className: "ss-press v76-navfull v76-navcard", style: { display: "flex", alignItems: "center", gap: 12, textAlign: "left", width: "100%", background: T.cardGrad, border: `1px solid ${T.borderLight}`, borderLeft: `3px solid ${T.accent}`, borderRadius: "0 12px 12px 0", padding: "12px", cursor: "pointer", boxShadow: T.cardShadow } }, /*#__PURE__*/React.createElement("span", { style: { width: 42, height: 42, flex: "none", borderRadius: "50%", border: `1px solid ${T.borderLight}`, background: T.accentFaint, display: "flex", alignItems: "center", justifyContent: "center" } }, /*#__PURE__*/React.createElement(CatIcon, { name: "camera", size: 22, color: T.accent })), /*#__PURE__*/React.createElement("span", { style: { flex: 1, minWidth: 0 } }, /*#__PURE__*/React.createElement("span", { style: { display: "block", fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, fontSize: 15, letterSpacing: 0.5, color: T.text } }, "Photo Album"), /*#__PURE__*/React.createElement("span", { style: { display: "block", fontSize: 12, color: T.textMuted, marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } }, "Battle maps, minis, character art")));
+    if (cat.key === "__dice") return /*#__PURE__*/React.createElement("button", { key: "__dice", onClick: () => setActiveCat("__dice"), className: "ss-press v76-navfull v76-navcard", style: { display: "flex", alignItems: "center", gap: 12, textAlign: "left", width: "100%", background: T.cardGrad, border: `1px solid ${T.borderLight}`, borderLeft: `3px solid ${T.accent}`, borderRadius: "0 12px 12px 0", padding: "12px", cursor: "pointer", boxShadow: T.cardShadow } }, /*#__PURE__*/React.createElement("span", { style: { width: 42, height: 42, flex: "none", borderRadius: "50%", border: `1px solid ${T.borderLight}`, background: T.accentFaint, display: "flex", alignItems: "center", justifyContent: "center" }, dangerouslySetInnerHTML: { __html: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="' + T.accent + '" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8.5" cy="8.5" r="1.5" fill="' + T.accent + '" stroke="none"/><circle cx="15.5" cy="8.5" r="1.5" fill="' + T.accent + '" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="' + T.accent + '" stroke="none"/><circle cx="8.5" cy="15.5" r="1.5" fill="' + T.accent + '" stroke="none"/><circle cx="15.5" cy="15.5" r="1.5" fill="' + T.accent + '" stroke="none"/></svg>' } }), /*#__PURE__*/React.createElement("span", { style: { flex: 1, minWidth: 0 } }, /*#__PURE__*/React.createElement("span", { style: { display: "block", fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, fontSize: 15, letterSpacing: 0.5, color: T.text } }, "Dice Library & Calculator"), /*#__PURE__*/React.createElement("span", { style: { display: "block", fontSize: 12, color: T.textMuted, marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } }, "Rollers, dice, cards & a calculator")));
+      if (cat.key === "__addscan") return /*#__PURE__*/React.createElement("button", { key: "__addscan", onClick: onAddScan, className: "ss-press v76-navfull", style: { display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", background: T.accentFaint, border: "1.5px solid " + T.accent, borderRadius: 12, padding: "13px 12px", cursor: "pointer", color: T.accent, fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, fontSize: 13, letterSpacing: 0.5, marginTop: 2 } }, "+ Scan more pages");
+      if (cat.key === "__add") return /*#__PURE__*/React.createElement("button", { key: "__add", onClick: onAddSection, className: "ss-press v76-navfull", style: { display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", background: "none", border: "1.5px dashed " + T.borderLight, borderRadius: 12, padding: "13px 12px", cursor: "pointer", color: T.accent, fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, fontSize: 13, letterSpacing: 0.5, marginTop: 2 } }, "+ Add Section");
+      if (cat.key === "__addgroup") return /*#__PURE__*/React.createElement("button", { key: "__addgroup", onClick: onAddGroup, className: "ss-press v76-navfull", style: { display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", background: "none", border: "1.5px dashed " + T.borderLight, borderRadius: 12, padding: "13px 12px", cursor: "pointer", color: T.textSoft, fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, fontSize: 13, letterSpacing: 0.5 } }, "+ Add Group");
       const meta = CAT_META[cat.key] || {
         label: cat.label,
         icon: cat.icon || "other"
@@ -4368,9 +4385,10 @@ function HubNav({
       const shownLabel = data.catLabels && data.catLabels[cat.key] || meta.label;
       const sub = subRaw && subRaw.trim().toLowerCase() !== String(shownLabel).trim().toLowerCase() ? subRaw : "";
       const cnt = cat.key === "journal" ? "" : cat.members.length > 1 ? cat.members.length + " sections" : cat.fields + (cat.fields === 1 ? " field" : " fields");
-      return /*#__PURE__*/React.createElement("div", { key: cat.key, style: { position: "relative" } }, /*#__PURE__*/React.createElement("button", {
+      const _full = cat.key === "journal";
+      return /*#__PURE__*/React.createElement("div", { key: cat.key, className: _full ? "v76-navfull" : undefined, style: { position: "relative" } }, /*#__PURE__*/React.createElement("button", {
         onClick: () => setActiveCat(cat.key),
-        className: "ss-press",
+        className: _full ? "ss-press" : "ss-press v76-navcard",
         style: {
           display: "flex",
           alignItems: "center",
@@ -4435,10 +4453,13 @@ function HubNav({
           boxShadow: `0 0 6px ${T.yellow}`
         }
       }), cnt && /*#__PURE__*/React.createElement("span", {
+        className: "v76-num",
         style: {
-          fontSize: 9,
+          fontSize: 11.5,
           color: T.textMuted,
-          flex: "none"
+          flex: "none",
+          fontVariant: "small-caps",
+          letterSpacing: ".1em"
         }
       }, cnt)), cat.key !== "journal" && /*#__PURE__*/React.createElement(FieldMenu, {
         T: T, k: "cat_" + cat.key, menuKey: menuKey, setMenuKey: setMenuKey,
@@ -4467,6 +4488,10 @@ function HubNav({
     onDelete: () => onDeleteCategory(cur), deleteLabel: "Delete category",
     style: {}
   }) : null;
+  /* v76: one breadcrumb row (quiet small-caps + the same category ⋮) and, when the
+     category owns more than one section, one Cinzel title. The CatIcon ornament and the
+     "N fields" line are gone — counts live on the hub landing cards. Same handlers. */
+  void meta.icon; void cnt;
   return /*#__PURE__*/React.createElement("div", {
     style: {
       padding: "8px 16px 2px"
@@ -4477,7 +4502,7 @@ function HubNav({
       alignItems: "center",
       justifyContent: "space-between",
       gap: 8,
-      minHeight: 34
+      minHeight: 44
     }
   }, /*#__PURE__*/React.createElement("button", {
     onClick: () => window.history.back(),
@@ -4485,60 +4510,39 @@ function HubNav({
     style: {
       display: "inline-flex",
       alignItems: "center",
-      gap: 5,
-      background: T.accentFaint,
-      border: `1px solid ${T.borderLight}`,
-      borderRadius: 18,
-      padding: "6px 14px",
+      gap: 6,
+      minHeight: 44,
+      background: "none",
+      border: "none",
+      padding: "6px 2px",
       cursor: "pointer",
-      color: T.accent,
-      fontFamily: "'Cinzel',Georgia,serif",
-      fontWeight: 700,
-      fontSize: 12,
-      letterSpacing: 0.5
+      color: T.textMuted,
+      fontFamily: "'EB Garamond',Georgia,serif",
+      fontVariant: "small-caps",
+      fontWeight: 600,
+      fontSize: 14,
+      letterSpacing: ".12em"
     }
   }, /*#__PURE__*/React.createElement("span", {
     style: {
-      fontSize: 14
+      fontSize: 15
     }
-  }, "‹"), " All Sections"), !showTitle && catMenu), showTitle && /*#__PURE__*/React.createElement("div", {
+  }, "‹"), "All sections"), catMenu), showTitle && /*#__PURE__*/React.createElement("div", {
     style: {
-      textAlign: "center",
-      marginTop: 12
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      justifyContent: "center"
-    }
-  }, /*#__PURE__*/React.createElement(CatIcon, {
-    name: meta.icon,
-    size: 30,
-    color: T.accent
-  })), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: 2,
-      marginTop: 5
+      textAlign: "left",
+      marginTop: 6
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
       fontFamily: "'Cinzel',Georgia,serif",
       fontWeight: 700,
-      fontSize: 21,
-      letterSpacing: 2.5,
-      color: T.accent,
+      fontSize: 22,
+      letterSpacing: 0.7,
+      lineHeight: 1.2,
+      color: T.accentBright || T.accent,
       textShadow: T.titleShadow
     }
-  }, (data.catLabels && data.catLabels[activeCat]) || meta.label), catMenu), cnt && /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 12,
-      color: T.textMuted,
-      marginTop: 5
-    }
-  }, cnt)));
+  }, (data.catLabels && data.catLabels[activeCat]) || meta.label)));
 }
 
 /* ━━━━ CHARACTER SCREEN ━━━━ */
@@ -5626,7 +5630,7 @@ function TableField(props) {
         (function (c) {
           var first = c === 0;
           var st = Object.assign({}, baseCell, first ? stick : {});
-          cells.push(h("td", { key: "c" + r + "_" + c, style: st }, h(EditableValue, { value: rowArr[c] == null ? "" : rowArr[c], onChange: function (v) { setCell(r, c, v); }, T: T, placeholder: "—", noTranslate: true, style: { fontSize: 14, color: T.text, borderBottom: "none", padding: 0, fontFamily: "'Cormorant Garamond',Georgia,serif", fontWeight: first ? 700 : 500 } })));
+          cells.push(h("td", { key: "c" + r + "_" + c, style: st }, h(EditableValue, { value: rowArr[c] == null ? "" : rowArr[c], onChange: function (v) { setCell(r, c, v); }, T: T, placeholder: "—", noTranslate: true, style: { fontSize: 14, color: T.text, borderBottom: "none", padding: 0, fontFamily: "'EB Garamond',Georgia,serif", fontVariantNumeric: "lining-nums tabular-nums", fontWeight: first ? 700 : 600 } })));
         })(bcx);
       }
       /* trailing delete-row × cell removed — rows are deleted via ⋮ → Edit (cancelable, with Undo) */
@@ -5634,7 +5638,7 @@ function TableField(props) {
     })(brx);
   }
   var fadeBase = { position: "absolute", top: 1, bottom: 1, width: 30, pointerEvents: "none", zIndex: 4 };
-  var ctrlBtn = { background: "none", border: "1px dashed " + T.borderLight, borderRadius: 8, color: T.textMuted, cursor: "pointer", fontSize: 12, fontWeight: 700, letterSpacing: 0.5, textTransform: "uppercase", padding: "7px 12px", fontFamily: "'Cinzel',Georgia,serif" };
+  var ctrlBtn = { background: "none", border: "1px dashed " + T.borderLight, borderRadius: 8, color: T.textMuted, cursor: "pointer", fontSize: 12, fontWeight: 700, letterSpacing: 0.5, textTransform: "uppercase", padding: "7px 14px", minHeight: 44, fontFamily: "'Cinzel',Georgia,serif" };
   return h("div", { id: props.elId, className: props.hl ? "ss-jump" : undefined, style: { padding: "14px 2px 16px", borderBottom: "1px solid " + T.borderLight } },
     h("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 8 } },
       h("div", { style: { flex: 1, minWidth: 0 } }, h(EditableValue, { value: f.title == null ? "" : f.title, onChange: function (v) { updateField(si, fi, "title", v); }, T: T, placeholder: "Table", noTranslate: true, style: { fontSize: 13, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", color: T.accent, borderBottom: "none", fontFamily: "'Cinzel',Georgia,serif" } })),
@@ -5654,6 +5658,226 @@ function TableField(props) {
     ),
     editing ? h(TableEditModal, { T: T, title: f.title, columns: cols, rows: rows, onSave: function (t, c, r) { updateField(si, fi, "title", t); updateField(si, fi, "columns", c); updateField(si, fi, "rows", r); }, onClose: function () { setEditing(false); } }) : null
   );
+}
+
+/* ━━━━ v76 SHAPE PATTERNS ━━━━
+   Pure functions over a section's fields, evaluated at render time. No state, no
+   storage, no change to categorize()/buildGroups()/CAT_META. Detection keys on the
+   VALUE text and its neighbours only — never on a game dictionary. Fall-through is
+   the contract: anything unrecognised renders as the compact list. */
+var V76_SCOREMOD = /^\s*(\d{1,3})\s*[\(\[]?\s*([+−–-]\s*\d{1,2})\s*[\)\]]?\s*$/;
+var V76_CURMAX = /^\s*(\d+)\s*\/\s*(\d+)\s*$/;
+var V76_SHORT = /^[+−–-]?\d+(\.\d+)?\s*[a-zA-Z%.']{0,4}$/;
+var V76_DICE = /^\s*\d*d\d+\s*([+−–-]\s*\d+)?\s*$/i;
+function v76s(v) { return String(v == null ? "" : v); }
+function v76Kind(f) {
+  if (!f) return "other";
+  if (ssIsHeader(f)) return "header";
+  if (ssIsTable(f)) return "table";
+  var t = v76s(f.value).trim();
+  if (!t) return "other";
+  if (t.length >= 140) return "prose";
+  if (V76_SCOREMOD.test(t)) return "score";
+  if (V76_CURMAX.test(t)) return "bar";
+  if (V76_DICE.test(t)) return "short";
+  if (t.length <= 8 && V76_SHORT.test(t)) return "short";
+  return "other";
+}
+function v76Score(v) { var m = V76_SCOREMOD.exec(v76s(v).trim()); return m ? { n: m[1], mod: m[2].replace(/\s+/g, "") } : null; }
+function v76CurMax(v) { var m = V76_CURMAX.exec(v76s(v).trim()); return m ? { cur: parseFloat(m[1]), max: parseFloat(m[2]) } : null; }
+function v76Segments(fields) {
+  var kinds = fields.map(v76Kind), n = fields.length, segs = [], i = 0, j, run, prev, last;
+  while (i < n) {
+    if (kinds[i] === "score") {
+      j = i; while (j < n && kinds[j] === "score") j++;
+      if (j - i >= 3) { segs.push({ t: "grid", a: i, b: j }); i = j; continue; }
+    }
+    if (kinds[i] === "short" || kinds[i] === "bar") {
+      j = i; while (j < n && (kinds[j] === "short" || kinds[j] === "bar")) j++;
+      run = j - i; prev = segs.length ? segs[segs.length - 1].t : null;
+      if (run >= 2 && run <= 4 && (prev === null || prev === "grid")) { segs.push({ t: "strip", a: i, b: j }); i = j; continue; }
+    }
+    if (kinds[i] === "header" || kinds[i] === "table" || kinds[i] === "prose") { segs.push({ t: kinds[i], a: i, b: i + 1 }); i++; continue; }
+    last = segs.length ? segs[segs.length - 1] : null;
+    if (last && last.t === "compact" && last.b === i) last.b = i + 1; else segs.push({ t: "compact", a: i, b: i + 1 });
+    i++;
+  }
+  return segs;
+}
+/* One-line italic subtitle for a category page: the character's class/level line if a
+   field is labelled like one, else the section's first header, else nothing. */
+function v76Sub(data, sec) {
+  try {
+    var re = /(class|level|career|calling|archetype|occupation|profession|ancestry|lineage|species|\brace\b|system)/i;
+    var out = [];
+    (data.sections || []).forEach(function (sx) {
+      (sx.fields || []).forEach(function (f) {
+        if (!f || ssIsHeader(f) || ssIsTable(f)) return;
+        var vl = v76s(f.value).trim();
+        if (!vl || vl.length > 34) return;
+        if (re.test(v76s(f.label)) && out.length < 2 && out.indexOf(vl) < 0) out.push(vl);
+      });
+    });
+    if (out.length) return out.join(" · ");
+    var hd = (sec && sec.fields || []).filter(ssIsHeader)[0];
+    if (hd && v76s(hd.label).trim()) return v76s(hd.label).trim();
+  } catch (e) {}
+  return "";
+}
+/* At-a-glance strip for the hub landing: first bar tile + first 3 short stats found
+   across the Vitals/Combat groups. Read-only render of existing values. */
+function v76Glance(data, catOf) {
+  var out = [], bar = null;
+  try {
+    (data.sections || []).forEach(function (sx, si) {
+      var ck = catOf && catOf[si];
+      if (ck !== "vitals" && ck !== "combat") return;
+      (sx.fields || []).forEach(function (f) {
+        if (!f || ssIsHeader(f) || ssIsTable(f)) return;
+        var k = v76Kind(f);
+        if (k === "bar" && !bar) { bar = { f: f, catKey: ck }; return; }
+        if (k === "short" && out.length < 3) out.push({ f: f, catKey: ck });
+      });
+    });
+  } catch (e) {}
+  return (bar ? [bar] : []).concat(out);
+}
+function V76Body(props) {
+  var T = props.T, sec = props.sec, si = props.si, h = React.createElement;
+  var fields = sec.fields || [];
+  var segs = v76Segments(fields);
+  var bd = (kbScheme(T) === "light" ? (T.borderLight || T.border) : (T.border || T.borderLight)); /* T.border is all but invisible on paper/parchment */
+  var mk = function (fi) { return "f" + si + "_" + fi; };
+  var menu = function (fi, extra) {
+    return h(FieldMenu, { T: T, k: mk(fi), menuKey: props.menuKey, setMenuKey: props.setMenuKey,
+      onEdit: function () { props.setEditField({ si: si, fi: fi }); },
+      onMoveUp: function () { props.moveField(si, fi, -1); },
+      onMoveDown: function () { props.moveField(si, fi, 1); },
+      onMoveToSection: props.sectionsLen > 1 ? (function () { props.setMoveItem({ si: si, fi: fi }); }) : null,
+      onDelete: function () { props.delField(si, fi); },
+      canUp: fi > 0, canDown: fi < fields.length - 1, style: extra || {} });
+  };
+  var dot = function (f, fi, st) { return h(Dot, { c: f.confidence, onVerify: function () { props.updateField(si, fi, "confidence", "high"); }, T: T, s: st }); };
+  var lbl = function (f, fi, st) {
+    return h(EditableLabel, { value: f.label, onChange: function (v) { props.updateField(si, fi, "label", v); }, field: true,
+      forceEdit: props.editKey === mk(fi), onClose: function () { props.setEditKey(null); }, T: T,
+      style: Object.assign({ fontFamily: "'EB Garamond',Georgia,serif", fontVariant: "small-caps", textTransform: "none", letterSpacing: ".14em", fontSize: 12.5, fontWeight: 600, color: T.accentDim || T.label }, st || {}) });
+  };
+  var val = function (f, fi, st, override) {
+    return h(EditableValue, { value: override ? override.value : f.value,
+      onChange: override ? override.onChange : (function (v) { props.updateField(si, fi, "value", v); }), field: true,
+      forceEdit: props.editKey === mk(fi), onClose: function () { props.setEditKey(null); }, T: T, noTranslate: true,
+      style: Object.assign({ fontFamily: "'EB Garamond',Georgia,serif", fontWeight: 600, fontVariantNumeric: "lining-nums tabular-nums", color: T.text, borderBottom: "none", padding: 0 }, st || {}) });
+  };
+  var tap = function (fi) { return function () { props.setEditField({ si: si, fi: fi }); }; };
+  var out = [];
+  segs.forEach(function (sg) {
+    var gkey = "v76_" + sg.t + "_" + sg.a;
+    if (sg.t === "table") {
+      var tfi = sg.a, tf = fields[tfi];
+      out.push(h(TableField, { key: tf.id, elId: "fld-" + tf.id, hl: props.hlField === tf.id, T: T, f: tf, si: si, fi: tfi,
+        updateField: props.updateField, moveField: props.moveField, delField: props.delField,
+        setMenuKey: props.setMenuKey, menuKey: props.menuKey, canUp: tfi > 0, canDown: tfi < fields.length - 1,
+        setMoveItem: props.setMoveItem, sectionsLen: props.sectionsLen }));
+      return;
+    }
+    if (sg.t === "header") {
+      var hfi = sg.a, hf = fields[hfi];
+      out.push(h("div", { key: hf.id, id: "fld-" + hf.id, className: (props.hlField === hf.id ? "ss-jump " : "") + "v76-sec",
+        style: { display: "flex", alignItems: "center", gap: 10, margin: "22px 0 4px", minHeight: 34 } },
+        h("span", { style: { flex: "none", minWidth: 0 } },
+          h(EditableLabel, { value: hf.label, onChange: function (v) { props.updateField(si, hfi, "label", v); }, field: true,
+            forceEdit: props.editKey === mk(hfi), onClose: function () { props.setEditKey(null); }, T: T,
+            style: { fontFamily: "'EB Garamond',Georgia,serif", fontVariant: "small-caps", textTransform: "none", letterSpacing: ".16em", fontSize: 13.5, fontWeight: 600, color: T.textMuted } })),
+        h("span", { "aria-hidden": "true", style: { flex: 1, height: 1, background: bd } }),
+        h(FieldMenu, { T: T, k: mk(hfi), menuKey: props.menuKey, setMenuKey: props.setMenuKey,
+          onEdit: function () { props.setEditField({ si: si, fi: hfi, header: true }); },
+          onMoveUp: function () { props.moveField(si, hfi, -1); }, onMoveDown: function () { props.moveField(si, hfi, 1); },
+          onDelete: function () { props.delHeader(si, hfi); }, deleteLabel: "Delete header",
+          canUp: hfi > 0, canDown: hfi < fields.length - 1 })));
+      return;
+    }
+    if (sg.t === "grid") {
+      var tiles = [];
+      for (var q = sg.a; q < sg.b; q++) (function (fi) {
+        var f = fields[fi], sc = v76Score(f.value) || { n: v76s(f.value), mod: "" };
+        tiles.push(h("div", { key: f.id, id: "fld-" + f.id, onClick: tap(fi),
+          className: (props.hlField === f.id ? "ss-jump " : "") + "v76-tile",
+          style: { position: "relative", background: T.cardGrad || T.surface, border: "1px solid " + bd, borderRadius: 14,
+            padding: "17px 0 12px", textAlign: "center", minHeight: 112, cursor: "pointer",
+            boxShadow: "inset 0 1px 0 " + T.borderLight } },
+          /* ⋮ in the bottom-right corner (44px hit area, flush to the tile edge) so the
+             label can have the whole tile width; the needs-a-check dot stays top-left. */
+          h("span", { style: { position: "absolute", right: 0, bottom: 0 } }, menu(fi)),
+          h("span", { style: { position: "absolute", left: 6, top: 5 } }, dot(f, fi)),
+          h("span", { style: { display: "block", marginBottom: 6, padding: "0 8px", boxSizing: "border-box", width: "100%" } }, lbl(f, fi, { fontSize: 10.5, letterSpacing: ".05em", display: "block", lineHeight: 1.25, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" })),
+          h("span", { className: "v76-num", style: { display: "block" } },
+            val(f, fi, { fontSize: 34, lineHeight: 1, display: "block", textAlign: "center" },
+              { value: sc.n, onChange: function (v) { props.updateField(si, fi, "value", sc.mod ? (v + " (" + sc.mod + ")") : v); } })),
+          /* The ⋮'s hit box is 48px wide and flush to the right edge, so the chip row
+             reserves that column and centres the chip in what is left (measured, not
+             assumed: see tests/results.txt "chip-hit"). */
+          sc.mod ? h("span", { style: { display: "block", boxSizing: "border-box", width: "100%", textAlign: "center", paddingRight: 48, marginTop: 8 } },
+            h("span", { className: "v76-num", style: { display: "inline-block", fontSize: 13.5,
+              color: T.accentBright || T.accent, border: "1px solid " + T.borderLight, borderRadius: 999, padding: "2px 9px", background: T.accentFaint } }, sc.mod)) : null));
+      })(q);
+      out.push(h("div", { key: gkey, className: "v76-grid" }, tiles));
+      return;
+    }
+    if (sg.t === "strip") {
+      var st2 = [];
+      for (var q2 = sg.a; q2 < sg.b; q2++) (function (fi) {
+        var f = fields[fi], cm = v76CurMax(f.value);
+        st2.push(h("div", { key: f.id, id: "fld-" + f.id, onClick: tap(fi),
+          className: (props.hlField === f.id ? "ss-jump " : "") + "v76-st" + (cm ? " v76-bar" : ""),
+          style: { position: "relative", minWidth: 0, background: T.surface,
+            border: "1px solid " + bd, borderRadius: 12, padding: "10px 10px 9px", minHeight: 72, cursor: "pointer" } },
+          /* .v76-strip is a grid: a bar tile takes brief §1.3's extra width as
+             grid-column:span 2, applied by CSS once the strip has 3+ columns. */
+          /* ⋮ bottom-right like the score tiles; label one line; the bar keeps the bottom
+             but stops short of the ⋮. Below 430px .v76-strip is a 2-column grid. */
+          h("span", { style: { position: "absolute", right: 0, bottom: 0 } }, menu(fi)),
+          h("span", { style: { display: "flex", alignItems: "center", gap: 5, marginBottom: 4, minWidth: 0 } }, dot(f, fi), lbl(f, fi, { fontSize: 11, letterSpacing: ".08em", display: "block", flex: "1 1 auto", minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" })),
+          h("span", { className: "v76-num", style: { display: "block", paddingRight: 30 } }, val(f, fi, { fontSize: 22, lineHeight: 1.1, display: "block" })),
+          cm ? h("span", { "aria-hidden": "true", style: { display: "block", height: 4, borderRadius: 2, background: T.accentFaint, marginTop: 8, marginRight: 34, overflow: "hidden" } },
+            h("span", { style: { display: "block", height: "100%", width: (Math.round(Math.max(0, Math.min(1, cm.max > 0 ? cm.cur / cm.max : 1)) * 100)) + "%",
+              background: "linear-gradient(90deg," + (T.accentDim || T.accent) + "," + (T.accentBright || T.accent) + ")" } })) : null));
+      })(q2);
+      out.push(h("div", { key: gkey, className: "v76-strip" }, st2));
+      return;
+    }
+    if (sg.t === "prose") {
+      var pfi = sg.a, pf = fields[pfi];
+      out.push(h("div", { key: pf.id, id: "fld-" + pf.id, className: (props.hlField === pf.id ? "ss-jump " : "") + "v76-prose",
+        style: { padding: "14px 2px 16px", borderBottom: "1px solid " + bd } },
+        h("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 5, minHeight: 30 } },
+          dot(pf, pfi), h("span", { style: { flex: 1, minWidth: 0 } }, lbl(pf, pfi)), menu(pfi)),
+        h("div", { style: { maxWidth: "62ch" } }, val(pf, pfi, { fontSize: 17, fontWeight: 500, maxWidth: "62ch", whiteSpace: "pre-wrap", fontVariantNumeric: "normal" }))));
+      return;
+    }
+    var rows = [];
+    for (var q3 = sg.a; q3 < sg.b; q3++) (function (fi) {
+      var f = fields[fi], sv = v76s(f.value);
+      /* Every compact row is full width — one grid line of `1fr auto 44px`: label left
+         (small-caps), value right-aligned (lining nums, 18px), ⋮ in column 3 vertically
+         centred, hairline below. A value over 24 chars drops to grid row 2 under its
+         label, the ⋮ still in column 3. (Supersedes the D5 two-column span rule.) */
+      var stack = sv.length > 24 || sv.indexOf("\n") >= 0;
+      rows.push(h("div", { key: f.id, id: "fld-" + f.id,
+        className: (props.hlField === f.id ? "ss-jump " : "") + "v76-row",
+        style: { display: "grid", gridTemplateColumns: "minmax(0,1fr) auto 44px", alignItems: "center",
+          columnGap: 8, rowGap: 2, padding: "10px 0", minHeight: 44, borderBottom: "1px solid " + bd } },
+        h("span", { style: { gridColumn: "1 / 2", gridRow: "1", minWidth: 0, display: "flex", alignItems: "center", gap: 7 } },
+          dot(f, fi), h("span", { style: { minWidth: 0, overflowWrap: "break-word" } }, lbl(f, fi, { fontSize: 11.5, letterSpacing: ".08em" }))),
+        h("span", { className: "v76-num", style: stack
+          ? { gridColumn: "1 / 3", gridRow: "2", minWidth: 0, marginTop: 1 }
+          : { gridColumn: "2 / 3", gridRow: "1", minWidth: 0, textAlign: "right", overflowWrap: "break-word" } },
+          val(f, fi, { fontSize: 18, lineHeight: 1.45, textAlign: stack ? "left" : "right", display: "block" })),
+        menu(fi, { gridColumn: "3 / 4", gridRow: "1 / -1", alignSelf: "center", justifySelf: "end" })));
+    })(q3);
+    out.push(h("div", { key: gkey, className: "v76-kv" }, rows));
+  });
+  return h("div", { className: "v76-body", style: { display: "flex", flexDirection: "column", gap: 0 } }, out);
 }
 
 function HeaderAwareBody({ T, sec, si, hlField, menuKey, setMenuKey, updateField, moveField, delField, delHeader, setEditField, setMoveItem, editKey, setEditKey, sectionsLen }) {
@@ -5848,13 +6072,14 @@ function SectionTitle({
   });
   return /*#__PURE__*/React.createElement("h2", {
     style: {
-      fontSize: 20,
+      fontSize: 22,
       fontWeight: 700,
-      color: T.accent,
+      color: T.accentBright || T.accent,
       fontFamily: "'Cinzel',Georgia,serif",
-      letterSpacing: 2.5,
+      letterSpacing: 0.7,
       textShadow: T.titleShadow,
-      margin: 0
+      margin: 0,
+      lineHeight: 1.2
     }
   }, value);
 }
@@ -6917,29 +7142,32 @@ function CharacterScreen({
     }
   }, /*#__PURE__*/React.createElement("button", {
     onClick: goBack,
+    className: "ss-press",
     style: {
+      /* v76: the only Cinzel pill left in the chrome; the gold "metal" fill is gone. */
       display: "flex",
       alignItems: "center",
+      justifyContent: "center",
       gap: 5,
-      background: T.metalGrad,
-      border: "none",
-      borderRadius: 8,
-      padding: "5px 14px",
-      cursor: "pointer",
-      boxShadow: `0 1px 4px rgba(0,0,0,0.3)`
+      minHeight: 44,
+      background: "none",
+      border: `1px solid ${T.borderLight}`,
+      borderRadius: 999,
+      padding: "8px 16px",
+      cursor: "pointer"
     }
   }, /*#__PURE__*/React.createElement("span", {
     style: {
       fontSize: 14,
-      color: T.headerText || T.bg
+      color: T.accent
     }
   }, "\u2039"), /*#__PURE__*/React.createElement("span", {
     style: {
-      fontSize: 13,
+      fontSize: 12,
       fontWeight: 700,
-      color: T.headerText || T.bg,
+      color: T.accent,
       fontFamily: "'Cinzel',Georgia,serif",
-      letterSpacing: 0.5
+      letterSpacing: "0.06em"
     }
   }, "Back"))), /*#__PURE__*/React.createElement("div", {
     style: {
@@ -6953,43 +7181,41 @@ function CharacterScreen({
     title: "Export / Share PDF",
     className: "ss-press",
     style: {
-      width: 28,
-      height: 28,
+      /* v76: flat accent glyph on transparent, 44x44 hit area (was a 28px metal disc). */
+      width: 44,
+      height: 44,
       borderRadius: "50%",
       border: "none",
-      background: T.metalGrad,
+      background: "none",
       cursor: "pointer",
-      fontSize: 17,
-      fontWeight: 900,
-      color: T.headerText || T.bg,
+      fontSize: 19,
+      fontWeight: 700,
+      color: T.accent,
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
       flexShrink: 0,
       fontFamily: "-apple-system,'Segoe UI',system-ui,sans-serif",
-      textShadow: "0 0 1px currentColor",
-      boxShadow: `0 1px 4px rgba(0,0,0,0.3)`,
       marginRight: 2
     }
   }, "⤓"), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowHelp(true),
     style: {
-      width: 28,
-      height: 28,
+      /* v76: flat accent glyph on transparent, 44x44 hit area (was a 28px metal disc). */
+      width: 44,
+      height: 44,
       borderRadius: "50%",
       border: "none",
-      background: T.metalGrad,
+      background: "none",
       cursor: "pointer",
-      fontSize: 17,
-      fontWeight: 900,
-      color: T.headerText || T.bg,
+      fontSize: 19,
+      fontWeight: 700,
+      color: T.accent,
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
       flexShrink: 0,
       fontFamily: "-apple-system,'Segoe UI',system-ui,sans-serif",
-      textShadow: "0 0 1px currentColor",
-      boxShadow: `0 1px 4px rgba(0,0,0,0.3)`,
       marginRight: 2
     }
   }, "?"), /*#__PURE__*/React.createElement("div", {
@@ -7096,13 +7322,16 @@ function CharacterScreen({
       height: 1,
       background: T.sectionRule
     }
-  })), /*#__PURE__*/React.createElement(AvatarEditor, {
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "v76-portrait",
+    style: { width: "100%" }
+  }, /*#__PURE__*/React.createElement(AvatarEditor, {
     data: data,
     setData: setData,
     snap: snap,
     T: T,
     editing: true
-  }), /*#__PURE__*/React.createElement("div", {
+  })), /*#__PURE__*/React.createElement("div", {
     style: {
       textAlign: "center",
       margin: "12px 0 4px"
@@ -7234,18 +7463,54 @@ function CharacterScreen({
     onClose: () => setShowVerify(false),
     onVerify: verifyItem,
     onEdit: editItem
-  }), /*#__PURE__*/React.createElement("div", {
+  }), (function () {
+    /* v76 at-a-glance strip: a read-only render of the first bar tile and first three
+       short stats already present in Vitals/Combat. Tapping one navigates through the
+       existing category navigation + pending-jump path used by search results. */
+    var _g = v76Glance(data, group.catOf);
+    if (!_g.length) return null;
+    return /*#__PURE__*/React.createElement("div", { className: "v76-glance" }, _g.map(function (it) {
+      var cm = v76CurMax(it.f.value);
+      return /*#__PURE__*/React.createElement("button", {
+        key: it.f.id,
+        className: "ss-press",
+        onClick: function () { setActiveCat(it.catKey); setPendingJump({ fid: it.f.id, catKey: it.catKey }); },
+        style: { minWidth: 0, minHeight: 72, textAlign: "left", cursor: "pointer",
+          background: T.surface, border: "1px solid " + (kbScheme(T) === "light" ? (T.borderLight || T.border) : (T.border || T.borderLight)), borderRadius: 12, padding: "9px 10px 8px" }
+      }, /*#__PURE__*/React.createElement("span", {
+        style: { display: "block", fontFamily: "'EB Garamond',Georgia,serif", fontVariant: "small-caps", letterSpacing: ".08em",
+          fontSize: 11, fontWeight: 600, color: T.accentDim || T.label, marginBottom: 3,
+          whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }
+      }, it.f.label), /*#__PURE__*/React.createElement("span", {
+        className: "v76-num",
+        style: { display: "block", fontFamily: "'EB Garamond',Georgia,serif", fontWeight: 600, fontSize: 21, lineHeight: 1.1, color: T.text }
+      }, it.f.value), cm ? /*#__PURE__*/React.createElement("span", {
+        "aria-hidden": "true",
+        style: { display: "block", height: 4, borderRadius: 2, background: T.accentFaint, marginTop: 7, overflow: "hidden" }
+      }, /*#__PURE__*/React.createElement("span", {
+        style: { display: "block", height: "100%", width: (Math.round(Math.max(0, Math.min(1, cm.max > 0 ? cm.cur / cm.max : 1)) * 100)) + "%",
+          background: "linear-gradient(90deg," + (T.accentDim || T.accent) + "," + (T.accentBright || T.accent) + ")" }
+      })) : null);
+    }));
+  })(), /*#__PURE__*/React.createElement("div", {
+    className: "v76-num",
     style: {
-      fontSize: 15,
+      fontFamily: "'EB Garamond',Georgia,serif",
+      fontVariant: "small-caps",
+      letterSpacing: ".14em",
+      fontSize: 12.5,
       fontWeight: 600,
-      color: T.textSoft,
-      marginTop: 6
+      color: T.textMuted,
+      marginTop: 12
     }
-  }, totalFields, " fields \xB7 ", data.sections.length, " sections")), /*#__PURE__*/React.createElement(Ornament, {
-    T: T,
-    width: "60%",
-    spacing: "4px auto 12px"
-  })), activeCat === null && /*#__PURE__*/React.createElement("div", { style: { width: "100%", maxWidth: 360, margin: "6px auto 2px" } }, /*#__PURE__*/React.createElement("div", { style: { position: "relative" } }, /*#__PURE__*/React.createElement("svg", { width: 19, height: 19, viewBox: "0 0 24 24", fill: "none", stroke: T.accent, strokeWidth: 2.2, "aria-hidden": true, style: { position: "absolute", left: 15, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" } }, /*#__PURE__*/React.createElement("circle", { cx: 11, cy: 11, r: 7 }), /*#__PURE__*/React.createElement("line", { x1: 16.5, y1: 16.5, x2: 21, y2: 21 })), /*#__PURE__*/React.createElement("input", { value: query, onChange: function (e) { setQuery(e.target.value); }, placeholder: "Search this character…", style: { width: "100%", padding: "12px 40px 12px 44px", borderRadius: 12, border: `2px solid ${T.accent}`, background: T.accentFaint, color: T.text, fontSize: 15.5, boxSizing: "border-box", fontFamily: "Georgia,serif", boxShadow: `0 2px 12px rgba(0,0,0,0.18)` } }), query.trim() && /*#__PURE__*/React.createElement("button", { onClick: function () { setQuery(""); }, "aria-label": "Clear search", style: { position: "absolute", right: 6, top: "50%", transform: "translateY(-50%)", width: 30, height: 30, borderRadius: "50%", border: "none", background: T.accentFaint, color: T.text, fontSize: 15, lineHeight: 1, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" } }, "✕")), query.trim() && /*#__PURE__*/React.createElement("div", { style: { marginTop: 8, border: `1px solid ${T.borderLight}`, borderRadius: 12, background: T.surface, overflow: "hidden" } }, /*#__PURE__*/React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 8px 8px 12px", background: T.accentFaint, borderBottom: `1px solid ${T.accentFaint}` } }, /*#__PURE__*/React.createElement("span", { style: { fontSize: 12, color: T.accent, fontFamily: "'Cinzel',Georgia,serif", letterSpacing: ".5px" } }, searchResults.length + (searchResults.length === 1 ? " result" : " results")), /*#__PURE__*/React.createElement("button", { onClick: function () { setQuery(""); }, "aria-label": "Close search results", className: "ss-press", style: { display: "flex", alignItems: "center", gap: 5, padding: "7px 14px", minHeight: 36, background: T.surface, border: `1px solid ${T.borderLight}`, borderRadius: 18, color: T.text, fontSize: 13, cursor: "pointer", fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700 } }, "✕ Close")), /*#__PURE__*/React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 6, padding: 8, maxHeight: "50vh", overflowY: "auto", overscrollBehavior: "contain" } }, searchResults.length === 0 ? /*#__PURE__*/React.createElement("div", { style: { padding: "10px", textAlign: "center", color: T.textMuted, fontSize: 14, fontStyle: "italic" } }, "No matches — try fewer or different words") : searchResults.map(function (r, idx) { return /*#__PURE__*/React.createElement("button", { key: idx, className: "ss-press", onClick: function () { if (r.tool) ssdlPendingOpen = r.tool; setActiveCat(r.catKey); setQuery(""); if (r.fid) setPendingJump({ fid: r.fid, catKey: r.catKey }); }, style: { textAlign: "left", display: "block", width: "100%", padding: "10px 12px", background: T.surface, border: `1px solid ${T.accentFaint}`, borderRadius: 10, cursor: "pointer" } }, /*#__PURE__*/React.createElement("div", { style: { fontSize: 11, color: T.accent, textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 2 } }, r.sectionTitle), /*#__PURE__*/React.createElement("div", { style: { fontSize: 14, color: T.text } }, hl(r.label), r.value != null && r.value !== "" ? /*#__PURE__*/React.createElement("span", { style: { color: T.textMuted } }, ": ") : null, r.value != null && r.value !== "" ? hl(r.value) : null)); })))), /*#__PURE__*/React.createElement(HubNav, {
+  }, (function () {
+    /* v76: the scan date replaces "N fields \xB7 N sections" (counts moved to the cards). */
+    void totalFields;
+    var d = data.createdAt ? new Date(data.createdAt) : null;
+    if (!d || isNaN(d.getTime())) return "Scanned";
+    try { return "Scanned " + d.toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" }); }
+    catch (e) { return "Scanned " + d.toDateString(); }
+  })()))), activeCat === null && /*#__PURE__*/React.createElement("div", { style: { width: "100%", maxWidth: 360, margin: "6px auto 2px" } }, /*#__PURE__*/React.createElement("div", { style: { position: "relative" } }, /*#__PURE__*/React.createElement("svg", { width: 19, height: 19, viewBox: "0 0 24 24", fill: "none", stroke: T.accent, strokeWidth: 2.2, "aria-hidden": true, style: { position: "absolute", left: 15, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" } }, /*#__PURE__*/React.createElement("circle", { cx: 11, cy: 11, r: 7 }), /*#__PURE__*/React.createElement("line", { x1: 16.5, y1: 16.5, x2: 21, y2: 21 })), /*#__PURE__*/React.createElement("input", { value: query, onChange: function (e) { setQuery(e.target.value); }, placeholder: "Search this character…", style: { width: "100%", padding: "12px 40px 12px 44px", borderRadius: 12, border: `2px solid ${T.accent}`, background: T.accentFaint, color: T.text, fontSize: 15.5, boxSizing: "border-box", fontFamily: "Georgia,serif", boxShadow: `0 2px 12px rgba(0,0,0,0.18)` } }), query.trim() && /*#__PURE__*/React.createElement("button", { onClick: function () { setQuery(""); }, "aria-label": "Clear search", style: { position: "absolute", right: 6, top: "50%", transform: "translateY(-50%)", width: 30, height: 30, borderRadius: "50%", border: "none", background: T.accentFaint, color: T.text, fontSize: 15, lineHeight: 1, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" } }, "✕")), query.trim() && /*#__PURE__*/React.createElement("div", { style: { marginTop: 8, border: `1px solid ${T.borderLight}`, borderRadius: 12, background: T.surface, overflow: "hidden" } }, /*#__PURE__*/React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 8px 8px 12px", background: T.accentFaint, borderBottom: `1px solid ${T.accentFaint}` } }, /*#__PURE__*/React.createElement("span", { style: { fontSize: 12, color: T.accent, fontFamily: "'Cinzel',Georgia,serif", letterSpacing: ".5px" } }, searchResults.length + (searchResults.length === 1 ? " result" : " results")), /*#__PURE__*/React.createElement("button", { onClick: function () { setQuery(""); }, "aria-label": "Close search results", className: "ss-press", style: { display: "flex", alignItems: "center", gap: 5, padding: "7px 14px", minHeight: 36, background: T.surface, border: `1px solid ${T.borderLight}`, borderRadius: 18, color: T.text, fontSize: 13, cursor: "pointer", fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700 } }, "✕ Close")), /*#__PURE__*/React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 6, padding: 8, maxHeight: "50vh", overflowY: "auto", overscrollBehavior: "contain" } }, searchResults.length === 0 ? /*#__PURE__*/React.createElement("div", { style: { padding: "10px", textAlign: "center", color: T.textMuted, fontSize: 14, fontStyle: "italic" } }, "No matches — try fewer or different words") : searchResults.map(function (r, idx) { return /*#__PURE__*/React.createElement("button", { key: idx, className: "ss-press", onClick: function () { if (r.tool) ssdlPendingOpen = r.tool; setActiveCat(r.catKey); setQuery(""); if (r.fid) setPendingJump({ fid: r.fid, catKey: r.catKey }); }, style: { textAlign: "left", display: "block", width: "100%", padding: "10px 12px", background: T.surface, border: `1px solid ${T.accentFaint}`, borderRadius: 10, cursor: "pointer" } }, /*#__PURE__*/React.createElement("div", { style: { fontSize: 11, color: T.accent, textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 2 } }, r.sectionTitle), /*#__PURE__*/React.createElement("div", { style: { fontSize: 14, color: T.text } }, hl(r.label), r.value != null && r.value !== "" ? /*#__PURE__*/React.createElement("span", { style: { color: T.textMuted } }, ": ") : null, r.value != null && r.value !== "" ? hl(r.value) : null)); })))), /*#__PURE__*/React.createElement(HubNav, {
     T: T,
     data: data,
     group: group,
@@ -7284,7 +7549,10 @@ function CharacterScreen({
     }, "No fields to verify in this section.");
     const hasHdr = sec.fields.some(ssIsHeader);
     const nReal = sec.fields.filter(f => !ssIsHeader(f) && !ssIsTable(f)).length;
-    const sty = (hasHdr || sec.fields.some(ssIsTable)) ? "__hdr" : getSectionStyle(sec);
+    const sty = "__v76"; /* v76: one pattern-driven renderer for every section (see V76Body). The
+       pre-v76 style branches below remain in the tree but never match — kept so a rollback
+       is a one-line change. hasHdr/getSectionStyle stay computed and untouched. */
+    void hasHdr;
     return /*#__PURE__*/React.createElement("div", {
       key: sec.id,
       style: {
@@ -7296,11 +7564,11 @@ function CharacterScreen({
       }
     }, /*#__PURE__*/React.createElement("div", {
       style: {
-        textAlign: "center",
-        marginBottom: 20
+        textAlign: "left",
+        marginBottom: 18
       }
     }, /*#__PURE__*/React.createElement("div", {
-      style: { display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }
+      style: { display: "flex", alignItems: "center", justifyContent: "flex-start", gap: 6 }
     }, /*#__PURE__*/React.createElement(SectionTitle, {
       T: T, value: sec.title, onChange: v => updateSectionTitle(si, v), forceEdit: editKey === "s" + si, onClose: () => setEditKey(null)
     }), /*#__PURE__*/React.createElement(FieldMenu, {
@@ -7308,39 +7576,20 @@ function CharacterScreen({
       onMoveUp: () => moveSection(si, -1), onMoveDown: () => moveSection(si, 1),
       onMoveToSection: group.cats.filter(c => c.key !== "journal").length > 1 ? (() => setMoveItem({ kind: "section", si: si })) : null, moveToLabel: "Move to group…",
       onDelete: () => delSection(si), canUp: group.catOf.some((c, i) => c === group.catOf[si] && i < si), canDown: group.catOf.some((c, i) => c === group.catOf[si] && i > si)
-    })), /*#__PURE__*/React.createElement("div", {
-      style: {
-        display: "flex",
-        alignItems: "center",
-        gap: 10,
-        width: "40%",
-        margin: "10px auto 0"
-      }
-    }, /*#__PURE__*/React.createElement("div", {
-      style: {
-        flex: 1,
-        height: 1,
-        background: T.sectionRule
-      }
-    }), /*#__PURE__*/React.createElement("span", {
-      style: {
-        color: T.accent,
-        fontSize: 10,
-        opacity: 0.4
-      }
-    }, T.ornChar), /*#__PURE__*/React.createElement("div", {
-      style: {
-        flex: 1,
-        height: 1,
-        background: T.sectionRule
-      }
-    })), /*#__PURE__*/React.createElement("div", {
-      style: {
-        fontSize: 12,
-        color: T.textMuted,
-        marginTop: 6
-      }
-    }, nReal, nReal === 1 ? " field" : " fields"), false && /*#__PURE__*/React.createElement("div", {
+    })), (function () {
+      /* v76: the ornament / ornament / "N fields" stack is replaced by one italic
+         subtitle (class-level line, else the section's first header) and one gradient
+         rule. Field counts live on the hub landing cards. */
+      var _first = group.catOf.indexOf(activeCat) === si;
+      var _sub = _first ? v76Sub(data, sec) : "";
+      void nReal;
+      return _sub ? /*#__PURE__*/React.createElement("div", {
+        style: { fontSize: 14, color: T.textMuted, fontStyle: "italic", margin: "3px 0 0" }
+      }, _sub) : null;
+    })(), /*#__PURE__*/React.createElement("div", {
+      "aria-hidden": "true",
+      style: { height: 1, background: T.sectionRule, margin: "14px 0 0" }
+    }), false && /*#__PURE__*/React.createElement("div", {
       style: {
         display: "flex",
         gap: 8,
@@ -7517,13 +7766,14 @@ function CharacterScreen({
       onMoveUp: () => moveField(si, fi, -1), onMoveDown: () => moveField(si, fi, 1), onMoveToSection: data.sections.length > 1 ? (() => setMoveItem({ si: si, fi: fi })) : null,
       onDelete: () => delField(si, fi), canUp: fi > 0, canDown: fi < sec.fields.length - 1,
       style: { marginTop: 4 }
-    })))), sty === "__hdr" && /*#__PURE__*/React.createElement(HeaderAwareBody, { T: T, sec: sec, si: si, hlField: hlField, menuKey: menuKey, setMenuKey: setMenuKey, updateField: updateField, moveField: moveField, delField: delField, delHeader: delHeader, setEditField: setEditField, setMoveItem: setMoveItem, editKey: editKey, setEditKey: setEditKey, sectionsLen: data.sections.length }), /*#__PURE__*/React.createElement("button", {
+    })))), sty === "__v76" && /*#__PURE__*/React.createElement(V76Body, { T: T, sec: sec, si: si, hlField: hlField, menuKey: menuKey, setMenuKey: setMenuKey, updateField: updateField, moveField: moveField, delField: delField, delHeader: delHeader, setEditField: setEditField, setMoveItem: setMoveItem, editKey: editKey, setEditKey: setEditKey, sectionsLen: data.sections.length }), /*#__PURE__*/React.createElement("button", {
       onClick: () => addField(si),
       style: {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
         gap: 6,
+        minHeight: 44,
         padding: "10px",
         background: "none",
         border: `1px dashed ${T.borderLight}`,
@@ -7537,7 +7787,7 @@ function CharacterScreen({
         fontSize: 14,
         color: T.accentDim
       }
-    }, "+ Add Field")), /*#__PURE__*/React.createElement("button", { onClick: () => addHeader(si), style: { display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px", background: "none", border: "1px dashed " + T.borderLight, borderRadius: 8, cursor: "pointer", width: "100%", marginTop: 8 } }, /*#__PURE__*/React.createElement("span", { style: { fontSize: 14, color: T.accentDim } }, "+ Add Header")));
+    }, "+ Add Field")), /*#__PURE__*/React.createElement("button", { onClick: () => addHeader(si), style: { display: "flex", alignItems: "center", justifyContent: "center", gap: 6, minHeight: 44, padding: "10px", background: "none", border: "1px dashed " + T.borderLight, borderRadius: 8, cursor: "pointer", width: "100%", marginTop: 8 } }, /*#__PURE__*/React.createElement("span", { style: { fontSize: 14, color: T.accentDim } }, "+ Add Header")));
   }), activeCat === "__dice" && /*#__PURE__*/React.createElement(DiceLibraryPage, { T: T, onScrollTop: function(){ var f=function(){ try { if (swipeRef.current) swipeRef.current.scrollTop = 0; } catch(e){} try { window.scrollTo(0,0); } catch(e){} }; f(); try { requestAnimationFrame(f); } catch(e){ setTimeout(f,0); } }, onSwipe: function(dir){ try { handleSwipeRef.current(dir); } catch(e){} } }), activeCat === "__album" && /*#__PURE__*/React.createElement(AlbumPage, { T: T, charId: charId, signedIn: signedIn }), activeCat === "journal" && /*#__PURE__*/React.createElement("div", {
     style: {
       padding: "24px 18px 40px",
@@ -7546,46 +7796,7 @@ function CharacterScreen({
       gap: 16,
       animation: "pageFadeIn 0.3s ease"
     }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      textAlign: "center"
-    }
-  }, /*#__PURE__*/React.createElement("h2", {
-    style: {
-      fontSize: 20,
-      fontWeight: 700,
-      color: T.accent,
-      fontFamily: "'Cinzel',Georgia,serif",
-      letterSpacing: 2.5,
-      textShadow: T.titleShadow
-    }
-  }, "Journal"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      alignItems: "center",
-      gap: 10,
-      width: "40%",
-      margin: "10px auto 0"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      flex: 1,
-      height: 1,
-      background: T.sectionRule
-    }
-  }), /*#__PURE__*/React.createElement("span", {
-    style: {
-      color: T.accent,
-      fontSize: 10,
-      opacity: 0.4
-    }
-  }, T.ornChar), /*#__PURE__*/React.createElement("div", {
-    style: {
-      flex: 1,
-      height: 1,
-      background: T.sectionRule
-    }
-  }))), /*#__PURE__*/React.createElement("div", {
+  },  /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       flexDirection: "column",
@@ -7620,14 +7831,15 @@ function CharacterScreen({
     "aria-label": "Add journal entry",
     style: {
       padding: "10px 16px",
+      minWidth: 44,
       minHeight: 44,
-      background: T.metalGrad,
-      border: "none",
+      background: "transparent",
+      border: `1px solid ${T.borderLight}`,
       borderRadius: 8,
       cursor: "pointer",
-      fontSize: 14,
+      fontSize: 18,
       fontWeight: 700,
-      color: T.bg,
+      color: T.accent,
       fontFamily: "'Cinzel',Georgia,serif",
       flexShrink: 0
     }
