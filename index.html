@@ -2883,7 +2883,7 @@ function HomeScreen({
       marginTop: 4,
       letterSpacing: 1
     }
-  }, "Sheetmancer · build v76a"))), /*#__PURE__*/React.createElement("button", {
+  }, "Sheetmancer · build v76b"))), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowHelp(false),
     className: "ss-press",
     style: {
@@ -7467,7 +7467,7 @@ function CharacterScreen({
     /* v76 at-a-glance strip: a read-only render of the first bar tile and first three
        short stats already present in Vitals/Combat. Tapping one navigates through the
        existing category navigation + pending-jump path used by search results. */
-    var _g = v76Glance(data, group.catOf);
+    var _g = []; /* v76b: glance strip off */
     if (!_g.length) return null;
     return /*#__PURE__*/React.createElement("div", { className: "v76-glance" }, _g.map(function (it) {
       var cm = v76CurMax(it.f.value);
