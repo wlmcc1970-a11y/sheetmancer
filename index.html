@@ -1441,7 +1441,7 @@ const THEMES = {
     metalGrad: "linear-gradient(145deg, #7a5a20, #c9973a 44%, #e8c060 52%, #a07830 100%)",
     titleShadow: "0 0 16px rgba(201,151,58,0.40), 0 2px 4px rgba(0,0,0,0.7)"
   },
-  arcaneViolet: {
+  verdant: { name: "Verdant Grove", icon: "#3FA66B", bg: "#0B120D", surface: "#131A15", border: "rgba(120,190,140,0.12)", borderLight: "rgba(120,190,140,0.22)", accent: "#5FBF86", accentBright: "#8EE0AE", accentDim: "#3E8A5F", label: "#7FD1A0", accentFaint: "rgba(95,191,134,0.07)", text: "#EAF3EC", textSoft: "rgba(234,243,236,0.92)", textMuted: "rgba(234,243,236,0.80)", green: "#5BBA6F", yellow: "#E5A538", nameGlow: "0 0 8px rgba(142,224,174,0.65), 0 0 22px rgba(95,191,134,0.40), 0 0 55px rgba(95,191,134,0.18), 0 2px 4px rgba(0,0,0,0.85)", bodyGrad: "radial-gradient(ellipse at 20% 8%, rgba(95,191,134,0.10) 0%, transparent 52%), radial-gradient(ellipse at 80% 92%, rgba(40,110,70,0.08) 0%, transparent 52%)", ornament: "gold", ornChar: "❦", heroGlow: "0 0 40px rgba(95,191,134,0.08)", sectionRule: "linear-gradient(90deg, transparent, rgba(95,191,134,0.32), transparent)", frame: "4px double rgba(95,191,134,0.45)", vignette: "radial-gradient(ellipse 120% 120% at 50% 26%, rgba(0,0,0,0) 32%, rgba(0,0,0,0.46) 100%)", noiseFreq: "0.6", noiseOpacity: 0.06, noiseBlend: "overlay", frameInset: "1px solid rgba(95,191,134,0.30)", surfaceShadow: "0 14px 44px rgba(0,0,0,0.62), inset 0 1px 0 rgba(95,191,134,0.18), inset 0 0 30px rgba(0,0,0,0.42)", cardGrad: "linear-gradient(158deg, rgba(22,40,28,0.92), rgba(12,19,14,0.62))", cardShadow: "0 4px 13px rgba(0,0,0,0.52), inset 0 1px 0 rgba(95,191,134,0.22), inset 0 -4px 11px rgba(0,0,0,0.42)", metalGrad: "linear-gradient(145deg, #2f6b48, #5fbf86 44%, #a8f0c6 52%, #3e8a5f 100%)", titleShadow: "0 0 18px rgba(95,191,134,0.40), 0 2px 4px rgba(0,0,0,0.7)" }, arcaneViolet: {
     name: "Arcane Violet",
     icon: "#9B7ACC",
     bg: "#1A1028",
@@ -2883,7 +2883,7 @@ function HomeScreen({
       marginTop: 4,
       letterSpacing: 1
     }
-  }, "Sheetmancer · build v76b"))), /*#__PURE__*/React.createElement("button", {
+  }, "Sheetmancer · build v76c"))), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowHelp(false),
     className: "ss-press",
     style: {
@@ -7159,13 +7159,13 @@ function CharacterScreen({
   }, /*#__PURE__*/React.createElement("span", {
     style: {
       fontSize: 14,
-      color: T.accent
+      color: T.headerText || T.accent
     }
   }, "\u2039"), /*#__PURE__*/React.createElement("span", {
     style: {
       fontSize: 12,
       fontWeight: 700,
-      color: T.accent,
+      color: T.headerText || T.accent,
       fontFamily: "'Cinzel',Georgia,serif",
       letterSpacing: "0.06em"
     }
@@ -7190,7 +7190,7 @@ function CharacterScreen({
       cursor: "pointer",
       fontSize: 19,
       fontWeight: 700,
-      color: T.accent,
+      color: T.headerText || T.accent,
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
@@ -7210,7 +7210,7 @@ function CharacterScreen({
       cursor: "pointer",
       fontSize: 19,
       fontWeight: 700,
-      color: T.accent,
+      color: T.headerText || T.accent,
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
@@ -7225,7 +7225,7 @@ function CharacterScreen({
       background: T.borderLight,
       flexShrink: 0
     }
-  }), ["darkGold", "parchment", "neonCircuit", "silverIce", "crimson", "arcaneViolet", "paper"].map(key => {
+  }), ["darkGold", "parchment", "neonCircuit", "silverIce", "crimson", "arcaneViolet", "verdant", "paper"].map(key => {
     const theme = THEMES[key];
     const isLight = theme.icon === "#FFFFFF";
     const isDark = theme.icon === "#0A0A0C";
