@@ -2883,7 +2883,7 @@ function HomeScreen({
       marginTop: 4,
       letterSpacing: 1
     }
-  }, "Sheetmancer · build v76"))), /*#__PURE__*/React.createElement("button", {
+  }, "Sheetmancer · build v76a"))), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowHelp(false),
     className: "ss-press",
     style: {
@@ -5688,11 +5688,11 @@ function v76CurMax(v) { var m = V76_CURMAX.exec(v76s(v).trim()); return m ? { cu
 function v76Segments(fields) {
   var kinds = fields.map(v76Kind), n = fields.length, segs = [], i = 0, j, run, prev, last;
   while (i < n) {
-    if (kinds[i] === "score") {
+    if (false && kinds[i] === "score") {
       j = i; while (j < n && kinds[j] === "score") j++;
       if (j - i >= 3) { segs.push({ t: "grid", a: i, b: j }); i = j; continue; }
     }
-    if (kinds[i] === "short" || kinds[i] === "bar") {
+    if (false && (kinds[i] === "short" || kinds[i] === "bar")) {
       j = i; while (j < n && (kinds[j] === "short" || kinds[j] === "bar")) j++;
       run = j - i; prev = segs.length ? segs[segs.length - 1].t : null;
       if (run >= 2 && run <= 4 && (prev === null || prev === "grid")) { segs.push({ t: "strip", a: i, b: j }); i = j; continue; }
