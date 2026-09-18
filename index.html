@@ -1602,7 +1602,7 @@ const Dot = ({
   return /*#__PURE__*/React.createElement("span", {
     role: clickable ? "button" : "img",
     tabIndex: clickable ? 0 : undefined,
-    "aria-label": low ? (clickable ? "Low confidence — tap to mark verified" : "Low confidence — please verify") : "High confidence",
+    "aria-label": low ? (clickable ? "Needs a check — tap to confirm it's right" : "Needs a check — double-check this one") : "High confidence",
     title: low ? (clickable ? "Tap to confirm it's right" : "Double-check this one") : "Read clearly",
     onClick: clickable ? (e => { e.stopPropagation(); onVerify(); }) : undefined,
     style: {
@@ -2883,7 +2883,7 @@ function HomeScreen({
       marginTop: 4,
       letterSpacing: 1
     }
-  }, "Sheetmancer · build v76f"))), /*#__PURE__*/React.createElement("button", {
+  }, "Sheetmancer · build v76g"))), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowHelp(false),
     className: "ss-press",
     style: {
