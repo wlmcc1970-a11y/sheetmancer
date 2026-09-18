@@ -2883,7 +2883,7 @@ function HomeScreen({
       marginTop: 4,
       letterSpacing: 1
     }
-  }, "Sheetmancer · build v76e"))), /*#__PURE__*/React.createElement("button", {
+  }, "Sheetmancer · build v76f"))), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowHelp(false),
     className: "ss-press",
     style: {
@@ -3788,13 +3788,13 @@ function ProcessingScreen({
       lineHeight: 1.4,
       marginBottom: 6
     }
-  }, eNet ? "Couldn't reach the scanning service" : eSrv ? "Our scanner hit a snag" : eClosed ? "Scanning isn't open yet" : eBusy ? "Just a moment" : eAuth ? "Sign-in needed to scan" : "Couldn't quite read that"), /*#__PURE__*/React.createElement("div", {
+  }, eNet ? "Couldn't reach the scanning service" : eSrv ? "Our scanner hit a snag" : eClosed ? "Scanning isn't open yet" : eBusy ? "Just a moment" : eAuth ? "Sign-in needed to scan" : "That scan didn't come through"), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 15,
       color: "#E8D9BE",
       lineHeight: 1.55
     }
-  }, eNet ? "Your photos are fine — this looks like a connection hiccup, not a bad shot. Check your signal and give it another try in a moment." : eSrv ? "Your photos are fine — our reader is just catching its breath. Give it another try in a minute." : eClosed ? "Your photos look fine — this device just isn't on the tester list yet. Scanning is in closed testing right now, and opens to everyone at launch." : eBusy ? "You've run several scans in a row — take a short breather and give it another go in a minute." : eAuth ? "You'll need to sign in first. Open the menu, tap Sign in to sync, then try the scan again." : "More light or a flatter, straight-on angle usually does the trick. Fill the frame with the page and hold steady — then give it another go."), /*#__PURE__*/React.createElement("div", {
+  }, eNet ? "Your photos are fine — this looks like a connection hiccup, not a bad shot. Check your signal and give it another try in a moment." : eSrv ? "Your photos are fine — our reader is just catching its breath. Give it another try in a minute." : eClosed ? "Your photos look fine — this device just isn't on the tester list yet. Scanning is in closed testing right now, and opens to everyone at launch." : eBusy ? "You've run several scans in a row — take a short breather and give it another go in a minute." : eAuth ? "You'll need to sign in first. Open the menu, tap Sign in to sync, then try the scan again." : "If the pages were dim or shot at an angle, more light and a flat, straight-on photo usually does the trick. If they already look clear, it may just be a long or dense scan — try again, or split it into a couple of shorter scans."), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 12,
       color: "#9A8B76",
@@ -4422,7 +4422,8 @@ function HubNav({
       })), /*#__PURE__*/React.createElement("span", {
         style: {
           flex: 1,
-          minWidth: 0
+          minWidth: 0,
+          width: "100%"
         }
       }, /*#__PURE__*/React.createElement("span", {
         style: {
