@@ -2883,7 +2883,7 @@ function HomeScreen({
       marginTop: 4,
       letterSpacing: 1
     }
-  }, "Sheetmancer · build v76g"))), /*#__PURE__*/React.createElement("button", {
+  }, "Sheetmancer · build v76h"))), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowHelp(false),
     className: "ss-press",
     style: {
@@ -3719,7 +3719,26 @@ function ProcessingScreen({
         const sysUnread = isUnreadable(parsed.system);
         parsed.system = sysUnread ? "Unknown system" : String(parsed.system || "Unknown System");
         parsed.system_confidence = sysUnread || parsed.system_confidence === "low" ? "low" : "high";
-        parsed.sections = (parsed.sections || []).filter(s => s && s.title).map((s, si) => ({
+        // ── Multi-page dense-scan artifact fix (2026-09-20) ──
+        // A scan over the batch threshold reads the sheet in 2-page chunks (separate model
+        // calls) whose sections are then concatenated. A topic that spans a chunk boundary
+        // comes back once per chunk under the SAME title, so the hub showed it twice AND the
+        // two copies shared a React key (list renders `key: sec.id`), which silently breaks
+        // that section's ⋮ menu (tap buzzes, no menu opens). Fix, client-side / scan-ingest
+        // ONLY (scanner, worker, billing, entitlement all untouched):
+        //   1) fold CONSECUTIVE same-title sections into one, joining fields in page order;
+        //   2) then guarantee every section id and every field id is unique.
+        const _foldKey = s => String((s && s.title) || "").trim().toLowerCase().replace(/\s+/g, " ");
+        const _foldedRaw = [];
+        (parsed.sections || []).filter(s => s && s.title).forEach(s => {
+          const prev = _foldedRaw[_foldedRaw.length - 1];
+          if (prev && _foldKey(prev) === _foldKey(s)) {
+            prev.fields = (Array.isArray(prev.fields) ? prev.fields : []).concat(Array.isArray(s.fields) ? s.fields : []);
+          } else {
+            _foldedRaw.push(Object.assign({}, s, { fields: Array.isArray(s.fields) ? s.fields.slice() : [] }));
+          }
+        });
+        parsed.sections = _foldedRaw.map((s, si) => ({
           id: s.id || `sec_${si}`,
           title: String(s.title),
           fields: (s.fields || []).filter(f => f && (f.label || f.type === "table")).map((f, fi) => {
@@ -3737,6 +3756,20 @@ function ProcessingScreen({
             return out;
           })
         })).filter(s => s.fields.length > 0);
+        (function () {
+          const secSeen = Object.create(null);
+          parsed.sections.forEach(sec => {
+            let base = sec.id || "sec", id = base, n = 2;
+            while (secSeen[id]) id = base + "-" + (n++);
+            secSeen[id] = 1; sec.id = id;
+            const fSeen = Object.create(null);
+            (sec.fields || []).forEach(f => {
+              let fb = f.id || "f", fid = fb, m = 2;
+              while (fSeen[fid]) fid = fb + "-" + (m++);
+              fSeen[fid] = 1; f.id = fid;
+            });
+          });
+        })();
         if (!parsed.sections.length) throw new Error("No readable sections found");
         parsed._verification = verification;
         setTimeout(() => { buzz([30, 60, 40]); onComplete(parsed); }, 800);
