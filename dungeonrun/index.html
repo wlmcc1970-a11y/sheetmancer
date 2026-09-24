@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sheetmancer — Get the app</title>
+<meta name="description" content="Sheetmancer: scan your paper character sheets into a complete, editable Character Hub. Any RPG, any system. $9.99 once, no subscription.">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0b0806">
+<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+<style>
+  :root{--bg:#0b0806;--surface:#191210;--line:rgba(212,168,67,.35);--gold:#D4A843;--cream:#F4EAD4;--body:#CFC1A1;--muted:#9c8e75}
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:radial-gradient(120% 90% at 50% -10%,#241a12 0%,#150f0b 45%,var(--bg) 80%);color:var(--body);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;padding:24px 16px;text-align:center}
+  .card{max-width:440px;width:100%}
+  img.icon{width:88px;height:88px;border-radius:20px;margin:0 auto 16px;display:block;box-shadow:0 0 0 1px var(--line),0 12px 40px rgba(0,0,0,.6)}
+  h1{font-family:Georgia,serif;color:var(--cream);font-size:30px;margin:0 0 8px}
+  p{margin:0 0 22px;line-height:1.55}
+  .btns{display:flex;flex-direction:column;gap:12px}
+  a.b{display:block;padding:14px 18px;border-radius:12px;background:#000;color:#fff;text-decoration:none;font-weight:600;border:1px solid var(--line)}
+  a.b:hover{border-color:var(--gold)}
+  .small{font-size:13px;color:var(--muted);margin-top:22px}
+  .small a{color:var(--gold)}
+</style>
+</head>
+<body>
+<div class="card">
+  <img class="icon" src="/icon-192.png" alt="Sheetmancer app icon">
+  <h1>Sheetmancer</h1>
+  <p>Photograph your character sheet and all your other character pages, and get one complete, fully editable Character Hub on your phone. Any RPG, any system. $9.99 once, no subscription.</p>
+  <div class="btns">
+    <a class="b" id="ios" href="https://apps.apple.com/app/apple-store/id6793684089?pt=128989957&amp;ct=dungeonrun-oct26&amp;mt=8">Download on the App Store</a>
+    <a class="b" id="play" href="https://play.google.com/store/apps/details?id=com.digirunestudios.sheetmancer&amp;referrer=utm_source%3Ddungeonrun%26utm_medium%3Dpodcast%26utm_campaign%3Doct26">Get it on Google Play</a>
+  </div>
+  <p class="small">Want to see it first? <a href="/about.html">Take the tour</a></p>
+</div>
+<script>
+(function(){
+  var ua=navigator.userAgent||'';
+  var ios=/iPhone|iPad|iPod/.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1);
+  var android=/Android/.test(ua);
+  var t=ios?document.getElementById('ios'):android?document.getElementById('play'):null;
+  if(t){location.replace(t.href);}
+})();
+</script>
+</body>
+</html>
