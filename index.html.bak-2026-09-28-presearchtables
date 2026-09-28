@@ -6431,29 +6431,7 @@ function CharacterScreen({
       data.sections.forEach(function (sec, si) {
         var st = _strip(sec.title);
         (sec.fields || []).forEach(function (f) {
-          if (ssIsTable(f)) {
-            /* Tables and charts are searchable too (Will, 2026-09-28): match the title, column headings and each row. */
-            var tTitle = String(f.title != null && f.title !== "" ? f.title : (f.label || "Table"));
-            var tCols = Array.isArray(f.columns) ? f.columns : [];
-            var tRows = Array.isArray(f.rows) ? f.rows : [];
-            var tHead = _strip(tTitle) + " " + tCols.map(_strip).join(" ");
-            var tLine = function (cells) { return (Array.isArray(cells) ? cells : []).map(function (c) { return String(c == null ? "" : c).trim(); }).filter(Boolean).join("  |  "); };
-            var tHits = 0;
-            tRows.forEach(function (row) {
-              if (tHits >= 5) return;
-              var line = tLine(row);
-              if (!line) return;
-              var lineS = _strip(line);
-              if (matcher(tHead + " " + lineS + " " + st) && _tokens.some(function (tk) { return lineS.indexOf(tk) >= 0; })) {
-                tHits++;
-                out.push({ kind: "field", sectionTitle: sec.title, catKey: group.catOf[si], fid: f.id, label: tTitle, value: line, score: score(tTitle, line, sec.title) });
-              }
-            });
-            if (tHits === 0 && matcher(tHead + " " + st) && _tokens.some(function (tk) { return tHead.indexOf(tk) >= 0; })) {
-              out.push({ kind: "field", sectionTitle: sec.title, catKey: group.catOf[si], fid: f.id, label: tTitle, value: tLine(tCols), score: score(tTitle, tLine(tCols), sec.title) });
-            }
-            return;
-          }
+          if (ssIsTable(f)) return;
           if (matcher(_strip(f.label) + " " + _strip(f.value) + " " + st)) {
             out.push({ kind: "field", sectionTitle: sec.title, catKey: group.catOf[si], fid: f.id, label: f.label, value: f.value, score: score(f.label, f.value, sec.title) });
           }
