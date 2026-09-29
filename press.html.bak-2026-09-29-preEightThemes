@@ -145,7 +145,7 @@ digital character, captioned, 45 seconds. There's a GIF version for chat and Dis
 <div class="features">
   <div class="feat"><b>Reads your paper into a digital character.</b> Photograph or upload your pages (typed, printed, PDF, or handwritten) and each Character Scan takes in up to 10 pages of one character (the main sheet plus the spell lists, skills and notes that go with it), not just the front page.</div>
   <div class="feat"><b>Keeps your game's own terms.</b> Any system: it reads the character in front of it rather than assuming a ruleset, so nothing gets renamed to fit a template: Hull Integrity stays Hull Integrity, Sanity stays Sanity.</div>
-  <div class="feat"><b>Make it yours.</b> Every field is editable by hand; rename or reorder sections, add gear, log XP and level up, search the whole character, pick from eight themes, and view and edit offline after the scan.</div>
+  <div class="feat"><b>Make it yours.</b> Every field is editable by hand; rename or reorder sections, add gear, log XP and level up, search the whole character, pick from seven themes, and view and edit offline after the scan.</div>
   <div class="feat"><b>Print-ready PDF.</b> Export any character as a print-ready PDF (for your table or your GM) or back it up to a file you keep.</div>
   <div class="feat"><b>Session Journal.</b> Keep session notes and campaign history alongside the character they belong to.</div>
   <div class="feat"><b>Photo Album.</b> A per-character gallery for maps, minis, tokens and art, synced across devices.</div>
@@ -174,8 +174,8 @@ digital character, captioned, 45 seconds. There's a GIF version for chat and Dis
 drop that text into editable fields. That's the only thing the technology does here: read pages you chose to
 photograph. It is the same job a document scanner or a visual-lookup app does.</p>
 <p>It does <strong>not</strong> generate characters, art, rules, or lore. It doesn't write anything that wasn't
-already on your paper, and every field is yours to correct by hand afterwards. The app's own artwork and icons
-weren't made with generative AI.</p>
+already on your paper, and every field is yours to correct by hand afterwards. I also didn't use any generative
+AI for the app's own artwork, icons, store listing, or written copy. That all comes from me.</p>
 <p>Exactly how your data is handled is spelled out in the <a href="./privacy.html">Sheetmancer Privacy Policy</a>,
 and you can delete your account and everything tied to it from inside the app whenever you want
 (<a href="./delete-account.html">instructions here</a>).</p>
