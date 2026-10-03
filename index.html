@@ -135,7 +135,8 @@ var SS_PAL={"parchment":{"n":"Parchment & Leather","ground":[0.9796,0.9516,0.900
 
   /* word-wrap; breaks over-long single words so nothing ever bleeds out of a column */
   function wrap(str, font, size, maxW) {
-    str = toWin(String(str == null ? "" : str));
+    /* v77: map each line separately so the line breaks survive (toWin drops control characters) */
+    str = String(str == null ? "" : str).split(/\r?\n/).map(toWin).join("\n");
     var out = [];
     var paras = str.split(/\r?\n/);
     for (var p = 0; p < paras.length; p++) {
@@ -3087,7 +3088,7 @@ function HomeScreen({
       color: T.accent,
       fontFamily: "'Cinzel',Georgia,serif"
     }
-  }, "How to Use ", /*#__PURE__*/React.createElement("span", { translate: "no" }, "Sheetmancer")), /*#__PURE__*/React.createElement("button", {
+  }, /*#__PURE__*/React.createElement("span", { className: "smx-nowrap", style: { display: "block", fontSize: 12.5, letterSpacing: 2.5, color: T.textMuted, marginBottom: 2 } }, "How to Use"), /*#__PURE__*/React.createElement("span", { className: "smx-nowrap", translate: "no", style: { display: "block" } }, "Sheetmancer")), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowHelp(false),
     "aria-label": "Close help",
     className: "smx-x",
@@ -3410,7 +3411,10 @@ function HomeScreen({
       letterSpacing: characters.length > 0 ? 0.8 : 1.5,
       textShadow: characters.length > 0 ? "none" : T.nameGlow
     }
-  }, characters.length > 0 ? "Add Another Character" : "Add Your Character(s)"), characters.length === 0 && /*#__PURE__*/React.createElement("p", {
+  }, characters.length > 0 ? "Add Another Character" : /*#__PURE__*/React.createElement(React.Fragment, null,
+    /* v77: a deliberate two-line lockup (kicker + headline) instead of a wrapped line ending on one word */
+    /*#__PURE__*/React.createElement("span", { className: "smx-nowrap", style: { display: "block", fontSize: 16, letterSpacing: 3.5, opacity: 0.88, marginBottom: 4 } }, "Add Your"),
+    /*#__PURE__*/React.createElement("span", { className: "smx-nowrap", style: { display: "block" } }, "Character(s)"))), characters.length === 0 && /*#__PURE__*/React.createElement("p", {
     style: {
       fontSize: 17,
       lineHeight: 1.6,
@@ -7713,7 +7717,7 @@ function CharacterScreen({
     const active = key === themeKey;
     return /*#__PURE__*/React.createElement("button", {
       key: key,
-      onClick: () => handleTheme(key),
+      onClick: () => { handleTheme(key); setThemeOpen(false); },
       className: "smx-theme",
       "aria-pressed": active,
       "aria-label": "Theme: " + theme.name,
