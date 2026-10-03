@@ -1927,6 +1927,27 @@ const Ornament = ({
     }
   }));
 };
+/* v76t (2026-10-02): the four corner brackets of the character frame stay subtle but visible on
+   every theme. They sit on the header (top pair) or the page (bottom pair); pick the theme accent
+   at the lowest opacity that reaches a 2.3:1 contrast with what is behind it, falling back to the
+   header text or body text colour when the accent is too close to that background. */
+const smxCornerTone = (T, where) => {
+  const hex = c => { const m = /#([0-9a-f]{6})/i.exec(String(c || "")); if (!m) return null; const n = m[1]; return [0, 2, 4].map(k => parseInt(n.substr(k, 2), 16) / 255); };
+  const lum = rgb => { const f = v => v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); return 0.2126 * f(rgb[0]) + 0.7152 * f(rgb[1]) + 0.0722 * f(rgb[2]); };
+  const ratio = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+  const behind = hex(where === "top" ? (T.headerBg || T.bg) : T.surface) || hex(T.bg);
+  const fallback = { color: T.accent, opacity: 0.3 };
+  if (!behind) return fallback;
+  const cands = [T.accent, where === "top" ? T.headerText : null, T.text].filter(Boolean);
+  for (const c of cands) {
+    const fg = hex(c); if (!fg) continue;
+    for (let o = 0.3; o <= 0.86; o += 0.05) {
+      const mixed = fg.map((v, k) => v * o + behind[k] * (1 - o));
+      if (ratio(mixed, behind) >= 2.3) return { color: c, opacity: Math.round(o * 100) / 100 };
+    }
+  }
+  return fallback;
+};
 const AtmoBg = ({
   T
 }) => {
@@ -7462,6 +7483,7 @@ function CharacterScreen({
     }
   }, ["top:8px;left:8px;border-top;border-left", "top:8px;right:8px;border-top;border-right", "bottom:8px;left:8px;border-bottom;border-left", "bottom:8px;right:8px;border-bottom;border-right"].map((cfg, i) => {
     const [pos1, pos2, b1, b2] = cfg.split(";");
+    const orn = smxCornerTone(T, i < 2 ? "top" : "bottom");
     return /*#__PURE__*/React.createElement(React.Fragment, {
       key: i
     }, /*#__PURE__*/React.createElement("span", {
@@ -7471,9 +7493,9 @@ function CharacterScreen({
         [pos2.split(":")[0]]: pos2.split(":")[1],
         width: 20,
         height: 20,
-        [b1]: `2px solid ${T.accent}`,
-        [b2]: `2px solid ${T.accent}`,
-        opacity: 0.3,
+        [b1]: `2px solid ${orn.color}`,
+        [b2]: `2px solid ${orn.color}`,
+        opacity: orn.opacity,
         pointerEvents: "none",
         zIndex: 2,
         borderRadius: 2
@@ -7494,8 +7516,8 @@ function CharacterScreen({
     }, /*#__PURE__*/React.createElement("span", {
       style: {
         fontSize: 8,
-        color: T.accent,
-        opacity: 0.4
+        color: orn.color,
+        opacity: Math.min(1, orn.opacity + 0.1)
       }
     }, T.ornChar)));
   }), /*#__PURE__*/React.createElement("div", {
