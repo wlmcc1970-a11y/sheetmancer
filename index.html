@@ -3590,28 +3590,32 @@ function HomeScreen({
       marginTop: 4
     }
   }, fallenHeroes.map((c, i) => /*#__PURE__*/React.createElement("div", {
+    /* v77: retired characters use the same card as Your Characters: the name opens it, Restore and
+       Delete sit in a bar inside the card. Same handlers as before. */
     key: i,
     style: {
       display: "flex",
-      alignItems: "center",
-      gap: 0,
+      flexDirection: "column",
+      border: `1px solid ${T.border}`,
+      borderLeft: `3px solid ${T.textMuted}`,
+      borderRadius: 14,
+      overflow: "hidden",
+      background: T.surface,
       animation: "fadeIn 0.2s ease"
     }
   }, /*#__PURE__*/React.createElement("button", {
     onClick: () => onOpenFallen(i),
     style: {
-      flex: 1,
       display: "flex",
       alignItems: "center",
       gap: 14,
-      padding: "16px 18px",
+      width: "100%",
+      padding: "14px 16px",
       background: T.surface,
-      border: `1px solid ${T.border}`,
-      borderLeft: `3px solid ${T.textMuted}`,
-      borderRadius: "14px 0 0 14px",
+      border: "none",
       cursor: "pointer",
       textAlign: "left",
-      opacity: 0.65
+      opacity: 0.7
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
@@ -3634,7 +3638,8 @@ function HomeScreen({
     }
   }, c.name.charAt(0))), /*#__PURE__*/React.createElement("div", {
     style: {
-      flex: 1
+      flex: 1,
+      minWidth: 0
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
@@ -3649,47 +3654,21 @@ function HomeScreen({
       color: T.textMuted,
       marginTop: 2
     }
-  }, c.system, " \xB7 Archived ", c.archivedAt ? new Date(c.archivedAt).toLocaleDateString() : ""))), /*#__PURE__*/React.createElement("button", {
+  }, c.system, /*#__PURE__*/React.createElement("span", { className: "smx-nowrap" }, "\u00a0\xB7 Archived ", c.archivedAt ? new Date(c.archivedAt).toLocaleDateString() : "")))), /*#__PURE__*/React.createElement("div", {
+    style: { display: "flex", borderTop: `1px solid ${T.border}` }
+  }, /*#__PURE__*/React.createElement("button", {
     onClick: () => onRestoreChar(i),
     "aria-label": "Restore character",
     title: "Restore character",
-    style: {
-      padding: "12px 10px",
-      background: T.surface,
-      border: `1px solid ${T.border}`,
-      borderLeft: "none",
-      cursor: "pointer",
-      fontSize: 14,
-      color: T.accent,
-      alignSelf: "stretch",
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: 3
-    }
-  }, "\u21A9", /*#__PURE__*/React.createElement("span", { style: { fontSize: 9, letterSpacing: 0.3 } }, "Restore")), /*#__PURE__*/React.createElement("button", {
+    className: "smx-cact",
+    style: { background: "none", border: "none", color: T.accent }
+  }, /*#__PURE__*/React.createElement("span", { "aria-hidden": "true", style: { fontSize: 15, lineHeight: 1 } }, "\u21A9"), "Restore"), /*#__PURE__*/React.createElement("button", {
     onClick: () => onDeleteFallen(i),
     "aria-label": "Delete character",
     title: "Delete character",
-    style: {
-      padding: "12px 10px",
-      background: T.surface,
-      border: `1px solid ${T.border}`,
-      borderLeft: "none",
-      borderRadius: "0 14px 14px 0",
-      cursor: "pointer",
-      fontSize: 15,
-      color: T.textMuted,
-      alignSelf: "stretch",
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: 3
-    }
-  }, "\u2715", /*#__PURE__*/React.createElement("span", { style: { fontSize: 9, letterSpacing: 0.3 } }, "Delete")))))), null)), /*#__PURE__*/React.createElement(Footer, {
-    T: T
+    className: "smx-cact",
+    style: { background: "none", border: "none", borderLeft: `1px solid ${T.border}`, color: T.textMuted }
+  }, /*#__PURE__*/React.createElement("span", { "aria-hidden": "true", style: { fontSize: 14, lineHeight: 1 } }, "\u2715"), "Delete")))))), null)), /*#__PURE__*/React.createElement(Footer, {    T: T
   }));
 }
 
