@@ -8,6 +8,7 @@
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
 <style>
+  h1,h2,h3,li{text-wrap:balance} p{text-wrap:pretty}
   :root{--ink:#1a1108;--muted:#5b5145;--leather:#5a2d0c;--gold:#9c6b1f;--rule:#c9973a;--bg:#f7ecd8;--surface:#fffdf7;}
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--ink);font-family:Georgia,'Times New Roman',serif;line-height:1.6;}
@@ -38,7 +39,7 @@
 <header>
   <div class="kicker">DigiRune Studios</div>
   <h1>Delete Your Sheetmancer Account</h1>
-  <div class="eff">Last updated: July 20, 2026</div>
+  <div class="eff">Last updated: October 10, 2026</div>
 </header>
 
 <div class="supp">
@@ -59,7 +60,7 @@ from the address you signed in with and we'll take care of it.
 <div class="steps">
 <ol>
   <li>Open <strong>Sheetmancer</strong>.</li>
-  <li>On the Home screen, tap the <strong>green account pill</strong> at the top (it reads &ldquo;Signed in&rdquo;).</li>
+  <li>On the Home screen, tap <strong>Account</strong> at the top.</li>
   <li>Choose <strong>Delete account</strong>.</li>
   <li>Read the warning, then confirm with <strong>Delete my account</strong>.</li>
 </ol>
@@ -97,8 +98,9 @@ case within <strong>30 days</strong> of receiving the request. We will reply to 
       <ul>
         <li>Your account and sign-in identity</li>
         <li>The email address associated with it</li>
-        <li>Your <strong>cloud copy</strong> of every character, including retired ones, and your theme preference</li>
-        <li>Your scan records on our scanning service: the count of scans used, your access entry, rate-limit counters, and any cached scan result</li>
+        <li>Your <strong>cloud copy</strong> of every character, including retired ones, your theme preference and your settings</li>
+        <li>Your <strong>Photo Album</strong> pictures</li>
+        <li>Your scan records on our scanning service: your Character Scan balance, the count of scans used, your access entry, rate-limit counters tied to your account, and any cached scan result</li>
       </ul>
     </td>
     <td>
@@ -109,7 +111,12 @@ case within <strong>30 days</strong> of receiving the request. We will reply to 
         <li>A small <strong>deletion record</strong> containing only your former account's internal ID and the date.
         It carries no personal information and exists so a device that is still signed in elsewhere cannot quietly
         re-create the account you just deleted.</li>
-        <li><strong>Your purchase history is held by Apple or Google</strong>, not by us, and only they can remove it.</li>
+        <li>A <strong>record of each purchase</strong> (the store's transaction ID, the product, the number of scans,
+        the date and your former account's internal ID), and a note that your Apple or Google sign-in already
+        received the scans included with the app. These hold no character data and exist so a purchase or the
+        included scans can never be credited twice. Apple or Google also keep their own purchase history, which
+        only they can remove.</li>
+        <li>Short-lived counters tied to a network address (not to your account) expire on their own within about a day.</li>
       </ul>
     </td>
   </tr>
@@ -118,13 +125,14 @@ case within <strong>30 days</strong> of receiving the request. We will reply to 
 <div class="box">
 <strong>Please note:</strong> deletion is permanent and cannot be undone. <strong>Any character scans you have
 purchased and not yet used are forfeited</strong>. They are tied to the account, and creating a new
-account does not restore them. If you only want to stop syncing, use <strong>Sign out</strong> instead; that
-leaves your account and your characters intact.
+account does not restore them. If you only want to stop using Sheetmancer on one device, use
+<strong>Sign out</strong> instead; that removes your characters from that device only and keeps your account
+and everything in it.
 </div>
 
 <h2>Photographs of your character sheets</h2>
 
-<p>The photos you scan are never stored in your account. They are sent once to our AI provider only to read the
+<p>The photos you scan are never stored in your account. They are sent to our AI provider only to read the
 text on them, are never used to train any AI model, and are deleted from that provider's systems after a short
 retention period. There is nothing left of them for an account deletion to remove. This is described in more
 detail in the <a href="./privacy.html">Privacy Policy</a>.</p>

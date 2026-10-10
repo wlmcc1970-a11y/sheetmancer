@@ -2,7 +2,7 @@
   "id": "./",
   "name": "Sheetmancer: Character Sheet Scanner",
   "short_name": "Sheetmancer",
-  "description": "Scan any tabletop character sheet into an editable digital character. By DigiRune Studios.",
+  "description": "Turn your character sheet and every page that goes with it into one editable Character Hub. By DigiRune Studios.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
