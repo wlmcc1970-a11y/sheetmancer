@@ -3122,7 +3122,7 @@ function HomeScreen({
       marginTop: 4,
       letterSpacing: 1
     }
-  }, "Sheetmancer · build v77a"))), /*#__PURE__*/React.createElement("button", {
+  }, "Sheetmancer · build v77b"))), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowHelp(false),
     className: "ss-press",
     style: {
@@ -9004,6 +9004,81 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
  function gather(){var o={};KEYS.forEach(function(k){var v=localStorage.getItem(k);if(v!=null)o[k]=v;});return o;}
  function apply(m){var ch=false;Object.keys(m||{}).forEach(function(k){if(KEYS.indexOf(k)>=0&&localStorage.getItem(k)!==m[k]){localStorage.setItem(k,m[k]);ch=true;}});return ch;}
  var user=null,last="",timer=null,syncing=false,lastSyncedAt=0,errState=false,pending=false;
+ /* v77b data-safety hotfix (DS-01, DS-02, audit B1-B3). Sync only.
+    - No upload for an account until its cloud copy has been READ in this page (loadedUid).
+      Failed or hung reads retry with backoff (2, 5, 10, 20, 30 s, then 60 s while online).
+    - localStorage "ss-sync-dirty" {uid,at,pre,emptied,b} marks local changes the cloud has
+      not acknowledged; b = fingerprints of this device's characters as last in sync. It is
+      cleared only by an acknowledged upload that still matches local.
+    - When the read arrives and the device is marked, the two copies are MERGED per
+      character (cid, else exact content, else same name with lineage proof): a local
+      version wins only if it was edited here, cloud-only characters are kept, a character
+      is dropped only if it was deleted here and is unchanged in the cloud. When unsure,
+      both are kept.
+    - Writing cloud data into local storage needs a page refresh (the app reads storage at
+      start). The refresh never happens during a scan, the capture or confirm screens, an
+      open text box or a dialog; after the player has touched the app it waits for the Home
+      screen idle 4 s or the app going to the background. Until then nothing is uploaded. */
+ var DIRTY_KEY="ss-sync-dirty",UID_KEY="ss-sync-uid",RELOADS_KEY="ss-sync-reloads",RETRY_S=[2,5,10,20,30],MAX_RELOADS=4;
+ var loadedUid="",loadingUid="",cloudCount=-1,acked=null,baseSnap=null,retryT=null,retryN=0,refusedFor="",authKnown=false,notedS=null,deferred=null,reloading=false,acted=false,actedAt=0;
+ var bootSnap=null;try{bootSnap=JSON.stringify(gather());}catch(e){}
+ function syncLog(m){try{var L=window.ssSyncLog=window.ssSyncLog||[];L.push(new Date().toISOString()+" "+m);if(L.length>50)L.shift();console.warn("Sheetmancer sync: "+m);}catch(e){}}
+ function countChars(o){var n=0;try{["ss-chars","ss-fallen"].forEach(function(k){if(o==null||o[k]==null)return;var a=JSON.parse(o[k]);if(!Array.isArray(a))throw 0;n+=a.length;});}catch(e){return -1;}return n;}
+ function hashStr(s){var h1=0xdeadbeef,h2=0x41c6ce57;for(var i=0,c;i<s.length;i++){c=s.charCodeAt(i);h1=Math.imul(h1^c,2654435761);h2=Math.imul(h2^c,1597334677);}
+  h1=Math.imul(h1^(h1>>>16),2246822507)^Math.imul(h2^(h2>>>13),3266489909);h2=Math.imul(h2^(h2>>>16),2246822507)^Math.imul(h1^(h1>>>13),3266489909);return (4294967296*(2097151&h2)+(h1>>>0)).toString(36);}
+ function charHash(c){try{var o={};for(var k in (c||{}))if(k!=="cid")o[k]=c[k];return hashStr(JSON.stringify(o));}catch(e){return "";}}
+ function baseHashes(s){var out=[];try{var o=JSON.parse(s);["ss-chars","ss-fallen"].forEach(function(k){if(o[k]==null)return;var a=JSON.parse(o[k]);if(Array.isArray(a))a.forEach(function(c){out.push(charHash(c));});});}catch(e){}return out;}
+ function readDirty(){try{var r=JSON.parse(localStorage.getItem(DIRTY_KEY)||"null");return (r&&r.uid)?r:null;}catch(e){return null;}}
+ function dirtyFor(uid){var r=readDirty();return !!(r&&uid&&r.uid===uid);}
+ function clearDirty(uid){try{var r=readDirty();if(r&&r.uid===uid)localStorage.removeItem(DIRTY_KEY);}catch(e){}}
+ /* Mark local changes against a baseline (what this account last read/acked, or local at sign-in). */
+ function noteFor(uid,base,pre){if(!uid||base==null)return;
+  try{var o=gather(),s=JSON.stringify(o);if(s===base||s===notedS)return;notedS=s;
+   var r=readDirty(),same=!!(r&&r.uid===uid);var n=countChars(o),emptied=false;
+   if(n===0){emptied=!!(same&&r.emptied);try{if(countChars(JSON.parse(base))>0)emptied=true;}catch(e){}}
+   var m={uid:uid,at:same?r.at:Date.now(),pre:!!(pre||(same&&r.pre)),emptied:emptied,b:(same&&r.b)?r.b:baseHashes(base)};
+   if(same&&r.pre===m.pre&&!!r.emptied===m.emptied&&r.b)return;
+   localStorage.setItem(DIRTY_KEY,JSON.stringify(m));}catch(e){}}
+ function noteLocal(){if(reloading)return;
+  if(user){var pre=loadedUid!==user.uid;noteFor(user.uid,pre?baseSnap:acked,pre);return;}
+  if(!authKnown){var lu=null;try{lu=localStorage.getItem(UID_KEY);}catch(e){}if(lu)noteFor(lu,bootSnap,true);}}   /* SDK not up yet (e.g. opened with no signal) */
+ /* Per-character merge of one list. B = fingerprints of this device's last-synced characters. */
+ function mergeList(L,C,B){
+  var out=L.slice(),used={},lh=L.map(charHash),add=[];
+  C.forEach(function(c){var ch=charHash(c),m=-1,j;
+   if(c&&c.cid){for(j=0;j<L.length;j++)if(!used[j]&&L[j]&&L[j].cid===c.cid){m=j;break;}}
+   if(m<0){for(j=0;j<L.length;j++)if(!used[j]&&lh[j]===ch&&!(c&&c.cid&&L[j]&&L[j].cid&&L[j].cid!==c.cid)){m=j;break;}}
+   var named=[];for(j=0;j<L.length;j++)if(!used[j]&&L[j]&&c&&L[j].name===c.name&&!(c.cid&&L[j].cid&&L[j].cid!==c.cid))named.push(j);
+   if(m<0&&B[ch]&&named.length===1)m=named[0];          /* cloud copy is this device's own last-synced version: the local one descends from it */
+   if(m>=0){used[m]=1;
+    if(B[lh[m]]&&lh[m]!==ch)out[m]=(c&&!c.cid&&L[m]&&L[m].cid)?Object.assign({},c,{cid:L[m].cid}):c;   /* not edited here, changed elsewhere: take the cloud version */
+    else if(c&&c.cid&&L[m]&&!L[m].cid)out[m]=Object.assign({},L[m],{cid:c.cid});
+    return;}
+   if(B[ch]&&!L.some(function(x){return x&&c&&x.name===c.name;}))return;   /* deleted here, unchanged in the cloud */
+   add.push(c);});
+  return out.concat(add);}
+ function mergeInto(cObj,dr){
+  try{var lo=gather(),B={},out={},changed=false;(dr.b||[]).forEach(function(h){B[h]=1;});
+   ["ss-chars","ss-fallen"].forEach(function(k){
+    var L=lo[k]!=null?JSON.parse(lo[k]):[],C=cObj[k]!=null?JSON.parse(cObj[k]):[];
+    if(!Array.isArray(L)||!Array.isArray(C))throw 0;
+    var M=mergeList(L,C,B);if(lo[k]==null&&!M.length)return;
+    var s=JSON.stringify(M);if(s!==lo[k]){out[k]=s;changed=true;}});
+   return changed?out:null;
+  }catch(e){syncLog("could not merge; keeping this device's copy");return false;}}
+ function wouldChange(m){return Object.keys(m||{}).some(function(k){return KEYS.indexOf(k)>=0&&typeof m[k]==="string"&&localStorage.getItem(k)!==m[k];});}
+ function navView(){try{var n=JSON.parse(localStorage.getItem("ss-nav")||"null");return (n&&n.view)||"";}catch(e){return "";}}
+ function busyNow(){var v=navView();if(v==="capture"||v==="processing")return true;
+  try{var a=document.activeElement;if(a&&(/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)||a.isContentEditable))return true;
+   if(document.querySelector('[aria-modal="true"]'))return true;
+   if(/Uploading your pages|Reading your pages|Extracting stats, gear|Assembling your character|Each character you scan uses one Character Scan|Working\u2026/.test(document.body.innerText||""))return true;}catch(e){}   /* scan running, or the scan-purchase panel open (also while a store billing sheet covers the page) */
+  return false;}
+ function safeToReload(){if(busyNow())return false;if(document.visibilityState==="hidden")return true;if(!acted)return true;
+  var v=navView();return (v==="home"||v==="")&&Date.now()-actedAt>=4000;}
+ ["pointerdown","keydown","touchstart"].forEach(function(t){window.addEventListener(t,function(){acted=true;actedAt=Date.now();},{capture:true,passive:true});});
+ setInterval(noteLocal,2000);
+ window.addEventListener("pagehide",noteLocal);
+ document.addEventListener("visibilitychange",function(){if(document.visibilityState==="hidden")noteLocal();});
  var authM=null;   /* hoisted: keepTok() below runs at this scope and needs it */
  /* ---- iOS native sign-in bridge detection (F6) --------------------------------
     Inside the WKWebView shell the web OAuth popup cannot work: Google refuses to
@@ -9522,10 +9597,30 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
    try{return fsM.setDoc(albumDoc(uid,String(rec.id)),docv).then(function(){return {ok:true,photo:Object.assign({id:rec.id},docv)};},function(e){return {ok:false,reason:"error",err:String((e&&(e.code||e.message))||e)};});}
    catch(e){return Promise.resolve({ok:false,reason:"error",err:String(e)});}
   };
-  function push(){if(!user)return;
+  function retryLoad(){if(retryT){clearTimeout(retryT);retryT=null;}
+   if(!user||loadedUid===user.uid||loadingUid===user.uid)return;var u=user;
+   if(deleting){scheduleRetry(u);return;}
+   loadingUid=u.uid;syncing=true;broadcast();
+   reconcile(u).then(function(go){if(!go){if(loadingUid===u.uid)loadingUid="";syncing=false;broadcast();return;}return loadCloud(u);})
+    .catch(function(){if(loadingUid===u.uid)loadingUid="";syncing=false;errState=navigator.onLine;broadcast();scheduleRetry(u);});}
+  function scheduleRetry(u){if(retryT){clearTimeout(retryT);retryT=null;}
+   if(!user||user.uid!==u.uid||loadedUid===u.uid)return;
+   if(!navigator.onLine){syncLog("cloud read failed while offline; will retry when online");return;}
+   var sec=retryN<RETRY_S.length?RETRY_S[retryN]:60;retryN++;
+   syncLog("cloud read failed; no upload until it succeeds; retrying in "+sec+"s");
+   retryT=setTimeout(retryLoad,sec*1000);}
+  function push(){if(!user||reloading)return;
    /* Blocked, not synced - a delete in flight or a tombstone standing. Say so. */
    if(deleting||deletedUids[user.uid]){if(!errState){errState=true;broadcast();}return;}
-   var uu=user.uid;var s=JSON.stringify(gather());if(s===last)return;last=s;syncing=true;broadcast();fsM.setDoc(ref(uu),{sheetsnap_blob:s,sheetsnap_updatedAt:Date.now()},{merge:true}).then(function(){lastSyncedAt=Date.now();syncing=false;errState=false;broadcast();}).catch(function(e){syncing=false;errState=true;if(/permission/i.test(String((e&&(e.code||e.message))||"")))deletedUids[uu]=1;else last="";broadcast();});}
+   var uu=user.uid;
+   if(loadedUid!==uu)return;   /* DS-01: never upload before this uid's cloud copy has been read */
+   var o=gather();var s=JSON.stringify(o);if(s===last)return;
+   if(cloudCount!==0&&countChars(o)===0){var dr=readDirty();
+    if(!(dr&&dr.uid===uu&&dr.emptied)){if(refusedFor!==uu){refusedFor=uu;syncLog("refused to replace a non-empty cloud copy with an empty one");}if(!errState){errState=true;broadcast();}return;}}
+   last=s;syncing=true;broadcast();fsM.setDoc(ref(uu),{sheetsnap_blob:s,sheetsnap_updatedAt:Date.now()},{merge:true}).then(function(){
+    if(user&&user.uid===uu){acked=s;cloudCount=countChars(o);}
+    try{if(JSON.stringify(gather())===s)clearDirty(uu);}catch(e){}
+    lastSyncedAt=Date.now();syncing=false;errState=false;broadcast();}).catch(function(e){syncing=false;errState=true;if(/permission/i.test(String((e&&(e.code||e.message))||"")))deletedUids[uu]=1;else last="";broadcast();});}
   /* A deletion that died between the tombstone and the finish would otherwise leave
      the account permanently unable to sync, silently and with no way back. On sign-in,
      an OLD tombstone (older than the few seconds a real deletion takes) is reconciled:
@@ -9548,27 +9643,64 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
     });
    },function(){return true;});
   }
+  /* Decide what a successful read means for this device (see the v77b note at the top). */
+  function settle(u,cloudS){
+   if(reloading)return;   /* a refresh is already under way */
+   noteLocal();                                   /* record an edit made since the last tick */
+   var dr=readDirty(),dirty=!!(dr&&dr.uid===u.uid);
+   var cObj=null,cc=0;if(cloudS!=null){try{cObj=JSON.parse(cloudS);cc=countChars(cObj);}catch(e){cObj=null;cc=-1;}}
+   var target=null;
+   if(!dirty){if(cObj&&wouldChange(cObj))target=cObj;}
+   else if(cObj){var mg=mergeInto(cObj,dr);if(mg)target=mg;}
+   if(target){applyAndRefresh(u,target,cloudS);return;}
+   deferred=null;cloudCount=cc;loadedUid=u.uid;retryN=0;if(retryT){clearTimeout(retryT);retryT=null;}
+   if(dirty){
+    last=(cloudS!=null)?cloudS:"";acked=last;
+    if(JSON.stringify(gather())===last)clearDirty(u.uid);
+    else syncLog("uploading this device's unsynced changes (merged with the cloud copy)");
+   } else { last=JSON.stringify(gather());acked=last; }
+   lastSyncedAt=Date.now();syncing=false;errState=false;broadcast();push();
+  }
+  function applyAndRefresh(u,target,cloudS){
+   if(!safeToReload()){if(!deferred)syncLog("cloud copy ready; waiting for a safe moment to refresh");deferred={uid:u.uid,cloudS:cloudS};syncing=true;errState=false;broadcast();return;}
+   var n=0;try{n=+(sessionStorage.getItem(RELOADS_KEY)||0)||0;}catch(e){}
+   if(n>=MAX_RELOADS){deferred=null;syncLog("refresh limit reached; sync paused until the app is reopened");syncing=false;errState=true;broadcast();return;}
+   try{sessionStorage.setItem(RELOADS_KEY,String(n+1));}catch(e){}
+   try{apply(target);}catch(e){deferred=null;syncLog("could not write the cloud copy on this device");syncing=false;errState=true;broadcast();return;}
+   try{baseSnap=JSON.stringify(gather());notedS=baseSnap;}catch(e){}   /* our own write is not a local edit */
+   deferred=null;reloading=true;location.reload();
+  }
+  function tryDeferred(){if(reloading)return;if(deferred&&user&&user.uid===deferred.uid&&!loadingUid&&loadedUid!==user.uid&&safeToReload()){deferred=null;retryN=0;retryLoad();}}   /* re-read; never settle on an old snapshot */
   function loadCloud(u){
-    return fsM.getDoc(ref(u.uid)).then(function(snap){
+    loadingUid=u.uid;
+    return raceOut(fsM.getDoc(ref(u.uid)),20000,new Error("read-timeout")).then(function(snap){
+     if(loadingUid===u.uid)loadingUid="";
+     if(!(user&&user.uid===u.uid)){syncing=false;broadcast();return;}   /* a late answer for an account no longer signed in changes nothing */
+     if(snap.metadata&&snap.metadata.fromCache)throw new Error("from-cache");   /* only a server answer counts as a read */
      var d=snap.exists()?snap.data():null;
-     if(d&&d.sheetsnap_blob){try{var c=JSON.parse(d.sheetsnap_blob);if(apply(c)&&!sessionStorage.getItem("ss-sync-reloaded")){sessionStorage.setItem("ss-sync-reloaded","1");location.reload();return;}}catch(e){}}
-     last=JSON.stringify(gather());lastSyncedAt=Date.now();syncing=false;errState=false;broadcast();push();
-    }).catch(function(e){syncing=false;errState=navigator.onLine;broadcast();});
+     settle(u,(d&&typeof d.sheetsnap_blob==="string")?d.sheetsnap_blob:null);
+    }).catch(function(e){if(loadingUid===u.uid)loadingUid="";if(!(user&&user.uid===u.uid))return;syncing=false;errState=navigator.onLine;broadcast();scheduleRetry(u);});
   }
   authM.onAuthStateChanged(auth,function(u){
    if(!u||(!u.isAnonymous&&appleTokUid&&u.uid!==appleTokUid))dropTok();   /* G2: never carry a token across accounts. Deliberately NOT on isAnonymous: a scan can trigger signInAnonymously before Firebase restores the session, and that must not wipe a rehydrated token. An anon uid never matches appleTokUid anyway. */
    user=(u&&u.isAnonymous)?null:u;
    pending=false;
+   /* v77b: every auth change starts a fresh "cloud not read yet" state */
+   loadedUid="";loadingUid="";cloudCount=-1;acked=null;retryN=0;refusedFor="";deferred=null;notedS=null;if(retryT){clearTimeout(retryT);retryT=null;}
+   if(!u||!u.isAnonymous)authKnown=true;
    if(u&&!u.isAnonymous){
-    syncing=true;broadcast();
-    reconcile(u).then(function(go){if(!go){syncing=false;broadcast();return;}return loadCloud(u);})
-     .catch(function(){syncing=false;errState=navigator.onLine;broadcast();});
-   } else { syncing=false;broadcast(); }
+    try{localStorage.setItem(UID_KEY,u.uid);}catch(e){}
+    try{var dr=readDirty();if(dr&&dr.uid!==u.uid){localStorage.removeItem(DIRTY_KEY);syncLog("discarded an unsynced-changes marker that belonged to another account");}}catch(e){}
+    try{baseSnap=JSON.stringify(gather());}catch(e){baseSnap=null;}
+    loadingUid=u.uid;syncing=true;broadcast();
+    reconcile(u).then(function(go){if(!go){if(loadingUid===u.uid)loadingUid="";syncing=false;broadcast();return;}return loadCloud(u);})
+     .catch(function(){if(loadingUid===u.uid)loadingUid="";syncing=false;errState=navigator.onLine;broadcast();scheduleRetry(u);});
+   } else { if(!u){try{localStorage.removeItem(UID_KEY);}catch(e){}}baseSnap=null;syncing=false;broadcast(); }
   });
-  setInterval(function(){if(user){var s=JSON.stringify(gather());if(s!==last){if(timer)clearTimeout(timer);timer=setTimeout(push,1200);}}},2000);
+  setInterval(function(){if(user){tryDeferred();var s=JSON.stringify(gather());if(s!==last){if(timer)clearTimeout(timer);timer=setTimeout(push,1200);}}},2000);
   window.addEventListener("pagehide",push);
-  document.addEventListener("visibilitychange",function(){if(document.visibilityState==="hidden")push();});
-  window.addEventListener("online",function(){if(user){broadcast();push();}else broadcast();});
+  document.addEventListener("visibilitychange",function(){if(document.visibilityState==="hidden"){tryDeferred();push();}});
+  window.addEventListener("online",function(){if(user){broadcast();if(loadedUid!==user.uid){retryN=0;retryLoad();}else push();}else broadcast();});
   window.addEventListener("offline",broadcast);
   setInterval(function(){if(user&&!syncing&&navigator.onLine)broadcast();},20000);
  }).catch(function(){window.ssAuth={signedIn:false,email:"",status:"Sign in",detail:"sync offline"};try{window.dispatchEvent(new CustomEvent("ss-auth"));}catch(e){}});
