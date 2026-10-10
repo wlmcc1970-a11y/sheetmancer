@@ -3234,6 +3234,41 @@ function BuyScansSheet({ T, onClose, onBought, reason }) {
   const slotsLeft = (ssBal && typeof ssBal.remaining === "number") ? ssBal.remaining : null;
   const close = () => { if (buying) return; setBuyMsg(null); onClose(); };
   useSsBack(true, close);
+  /* v78.1: "Restore my included scans" (iPhone app 1.0.2 and later only; older builds have no handler, so
+     the button never shows there). Tap only, because Apple may show its own sign-in prompt. The shell
+     refreshes the app receipt, then the existing base-grant bridge claims it; the server verifies with
+     Apple and grants once per owner (a repeat answers "already granted" with the real balance). */
+  const restoreBusy = useRef(false);
+  const signedInNow = () => !!(window.ssAuth && window.ssAuth.signedIn);
+  const canRestore = !!(/PWAShell/.test(navigator.userAgent || "") && window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.refreshAppTransaction && window.ssGrantBase && signedInNow());
+  const doRestore = async () => {
+    if (buying || restoreBusy.current || !signedInNow()) return;
+    restoreBusy.current = true;
+    setBuying(true); setBuyMsg(null);
+    try {
+      const rr = await new Promise(function (resolve) {
+        if (window.__onNativeAppTransactionRefresh) { resolve({ ok: false, error: "busy" }); return; }
+        window.__onNativeAppTransactionRefresh = function (r) { window.__onNativeAppTransactionRefresh = null; resolve(r || {}); };
+        try { window.webkit.messageHandlers.refreshAppTransaction.postMessage({}); }
+        catch (e) { window.__onNativeAppTransactionRefresh = null; resolve({ ok: false, error: "bridge" }); return; }
+        setTimeout(function () { if (window.__onNativeAppTransactionRefresh) { window.__onNativeAppTransactionRefresh = null; resolve({ ok: false, error: "timeout" }); } }, 120000);
+      });
+      if (rr && rr.error === "cancelled") { setBuyMsg(null); return; }
+      if (!rr || !rr.ok) { setBuyMsg({ ok: false, text: "Apple couldn't confirm your purchase just now. Please try again in a moment." }); return; }
+      /* The launch-time claim may still be running, or Apple may need a beat after the refresh:
+         "no-apptxn" means nothing reached the server yet, so wait and ask once more. */
+      let g = await window.ssGrantBase();
+      if (g && !g.ok && g.error === "no-apptxn") { await new Promise(function (r) { setTimeout(r, 1500); }); g = await window.ssGrantBase(); }
+      try { if (window.ssGetBalance) await window.ssGetBalance(); } catch (_) {}
+      setBuyMsg(g && g.ok
+        ? { ok: true, text: "Your included scans are on your account." }
+        : (g && g.error === "no-apptxn")
+          ? { ok: false, text: "Apple couldn't confirm your purchase just now. Please try again in a moment." }
+          : { ok: false, text: "We couldn't add them just now. If you signed in a different way before, they may be on that account. Otherwise, please try again in a moment." });
+    } catch (_) {
+      setBuyMsg({ ok: false, text: "We couldn't add them just now. Please try again in a moment." });
+    } finally { restoreBusy.current = false; setBuying(false); }
+  };
   const doBuy = async (pid) => {
     if (buying) return;
     setBuying(true); setBuyMsg(null);
@@ -3271,7 +3306,10 @@ function BuyScansSheet({ T, onClose, onBought, reason }) {
   }, "Each new character, or Add pages on one you have, uses one Character Scan (up to 10 pages). Your purchase includes ", INCLUDED_SLOTS, ". Deleting a character doesn't give a scan back. You can buy more below anytime."), ["com.digirunestudios.sheetmancer.scan1", "com.digirunestudios.sheetmancer.scan5"].map(function (pid, ix) {
     var pr = (window.ssProducts || {})[pid] || {};
     return /*#__PURE__*/React.createElement("div", { key: pid, style: { marginBottom: 10 } }, /*#__PURE__*/React.createElement("button", { disabled: buying, onClick: () => doBuy(pid), className: "ss-press", style: pill }, "Buy " + (pr.scans || "") + (pr.scans === 1 ? " scan" : " scans") + " \u00b7 " + (pr.price || "")), ix === 1 && /*#__PURE__*/React.createElement("div", { style: { fontSize: 12.5, color: T.accent, marginTop: 4, fontFamily: "'Cinzel',Georgia,serif", letterSpacing: 0.4 } }, "Best value"));
-  }), buyMsg && /*#__PURE__*/React.createElement("div", { role: "status", style: { fontSize: 13.5, lineHeight: 1.5, color: buyMsg.ok ? (T.success || "#3a7d44") : "#a3402a", margin: "4px 0 12px" } }, buyMsg.text), /*#__PURE__*/React.createElement("button", {
+  }), canRestore && /*#__PURE__*/React.createElement("button", {
+    disabled: buying, onClick: doRestore, className: "ss-press",
+    style: { display: "block", width: "100%", minHeight: 44, padding: "10px 12px", margin: "2px 0 10px", background: "transparent", border: "none", cursor: buying ? "default" : "pointer", fontFamily: "Georgia,serif", fontSize: 14, color: T.accent, textDecoration: "underline", textUnderlineOffset: 3 }
+  }, "Restore my included scans"), buyMsg && /*#__PURE__*/React.createElement("div", { role: "status", style: { fontSize: 13.5, lineHeight: 1.5, textWrap: "balance", color: buyMsg.ok ? (T.success || "#3a7d44") : "#a3402a", margin: "4px 0 12px" } }, buyMsg.text), /*#__PURE__*/React.createElement("button", {
     onClick: close, className: "ss-press",
     style: { minHeight: 44, minWidth: 120, padding: "10px 24px", background: "transparent", border: `1.5px solid ${T.borderLight}`, borderRadius: 22, cursor: buying ? "default" : "pointer", fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, color: T.textMuted, fontSize: 14, letterSpacing: 0.5 }
   }, buying ? "Working\u2026" : (buyMsg && buyMsg.ok ? "Done" : "Not now"))) : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("p", {
