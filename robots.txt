@@ -1,0 +1,10 @@
+# sheetmancer.digirunestudios.com
+# The marketing pages (about.html and its guides) are for search engines.
+# The address root (/) and /index.html are the Sheetmancer app itself: kept out of search
+# (they also send "noindex, nofollow" in the page and in the hosting headers).
+User-agent: *
+Disallow: /$
+Disallow: /index.html
+Allow: /
+
+Sitemap: https://sheetmancer.digirunestudios.com/sitemap.xml
