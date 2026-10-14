@@ -30,7 +30,7 @@
 <header>
   <div class="kicker">DigiRune Studios</div>
   <h1>Sheetmancer Privacy Policy</h1>
-  <div class="eff">Effective date: June 6, 2026 &middot; Last updated: October 10, 2026</div>
+  <div class="eff">Effective date: June 6, 2026 &middot; Last updated: October 14, 2026</div>
 </header>
 
 <div class="supp">
@@ -103,6 +103,14 @@ copy; that check result is kept for about 15 minutes, and a short-lived counter 
 <p>To keep the service fair and running, our scanning service also keeps short-lived counters of how often
 scans are started on your account (they expire on their own after about a day).</p>
 
+<h3>Notes you send us (optional)</h3>
+<p>The app's Help has a <strong>Report a problem or suggest an idea</strong> link. If you choose to use it, we
+receive your message, the kind of note (problem, idea or other), the app name and version, your device
+type (iPhone, Android or web), the address of the page you sent it from and, only if you add it, your email
+address so we can reply. A random code kept on your device lets us limit how many notes one device can send in a day. Your
+network (IP) address is never stored with your note. Notes are kept for one year and then deleted
+automatically; to have one deleted sooner, email us.</p>
+
 <h3>What we do <em>not</em> collect</h3>
 <ul>
   <li>No advertising identifiers, and no third-party advertising or analytics tracking SDKs.</li>
@@ -114,7 +122,7 @@ scans are started on your account (they expire on their own after about a day).<
 <h2>2. Our AI processing service</h2>
 <p>To read the text on your character sheets, Sheetmancer sends the photos to <strong>Anthropic</strong>, the
 maker of the Claude AI models, through a secure server we operate. We use Anthropic's commercial API for
-this single purpose: turning the writing on your page into editable fields.</p>
+this purpose: turning the writing on your page into editable fields (and, separately, AI may help sort through notes you choose to send us).</p>
 <p>Per Anthropic's commercial API terms, <strong>inputs and outputs sent through the API are not used to
 train Anthropic's AI models</strong>, and they are automatically deleted from Anthropic's systems after a
 short retention period (currently about 7 days) kept only to detect misuse. Your character photos are never
@@ -127,9 +135,10 @@ used to build or improve any AI model. Anthropic's data practices are described 
   <li>To extract the text from your character sheet photos and build your digital character.</li>
   <li>To store and sync your characters so they appear on all your devices.</li>
   <li>To process optional in-app purchases through the app stores, and to keep your Character Scan balance.</li>
+  <li>If you send us a note, to fix problems, improve the app and, if you included your email, reply to you. AI may help sort through the notes.</li>
 </ul>
 <p>We do not use your information for advertising, profiling, or any purpose beyond operating the app's
-core features.</p>
+core features and answering notes you send us.</p>
 
 <h2>4. Service providers we rely on</h2>
 <p>We do not sell, rent, or trade your information. We share data only with the service providers needed to
@@ -138,9 +147,10 @@ run the app, each for the limited purpose described:</p>
   <li><strong>Google Firebase</strong> (Authentication &amp; Firestore): to sign you in and store/sync
   your characters securely.</li>
   <li><strong>Anthropic</strong>: to read your scan photos and return the extracted text, as described
-  in Section 2.</li>
+  in Section 2; AI may also help sort through any notes you send us.</li>
   <li><strong>Cloudflare</strong>: the secure server that relays scan requests to Anthropic and keeps your
-  Character Scan balance and purchase records.</li>
+  Character Scan balance and purchase records; it also receives and stores any note you choose to send us,
+  and, when you open the note form, Cloudflare Turnstile checks that a note comes from a person and not a spam robot.</li>
   <li><strong>Apple / Google</strong>: sign-in and purchase processing.</li>
 </ul>
 <p>We may also disclose information if required by law.</p>

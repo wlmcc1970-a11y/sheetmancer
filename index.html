@@ -1,6 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<style>:root{--fb-accent:#8a6a2f;--fb-accent-ink:#ffffff}</style>
+<script>window.DIGIRUNE_FEEDBACK={app:'Sheetmancer',version:'build v78',endpoint:'https://digirune-feedback.will-6d6.workers.dev/report',siteKey:'0x4AAAAAAFW88K0K9FyRmEzA',fallbackEmail:'will@digirunestudios.com'};</script>
+<script src="digirune-feedback.js"></script>
+
 <!-- Sheetmancer (formerly SheetSnap) v1.1.0-chassis — DigiRune Studios. Self-contained PWA: precompiled React (no Babel/CDN), data-URI manifest + icons, offline service worker (sw-v1.js), install prompt, safe-area + back-button. Built 2026-06-06. -->
 <meta charset="UTF-8">
 <script>/* v78 store-only bouncer (same address, no move). Keeps: localhost; the iOS store app (PWAShell);
@@ -3504,7 +3508,8 @@ function HomeScreen({
       /*#__PURE__*/React.createElement("button", { onClick: () => { ssBackupAll({ skipAlbum: false }).catch(() => {}); }, className: "ss-press", style: { minHeight: 44, width: "100%", padding: "10px 14px", borderRadius: 12, border: "1px solid " + T.borderLight, background: "none", color: T.text, fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, fontSize: 14, cursor: "pointer" } }, "Back up all characters"),
       /*#__PURE__*/React.createElement("div", { style: { display: "flex", gap: 9 } },
         /*#__PURE__*/React.createElement("button", { onClick: () => setHelpPage("privacy"), className: "ss-press", style: { flex: 1, minHeight: 44, padding: "10px 8px", borderRadius: 12, border: "1px solid " + T.borderLight, background: "none", color: T.textSoft, fontSize: 14, cursor: "pointer" } }, "Privacy policy"),
-        /*#__PURE__*/React.createElement("button", { onClick: () => setHelpPage("delete"), className: "ss-press", style: { flex: 1, minHeight: 44, padding: "10px 8px", borderRadius: 12, border: "1px solid " + T.borderLight, background: "none", color: T.textSoft, fontSize: 14, cursor: "pointer" } }, "Account deletion"))),/*#__PURE__*/React.createElement("div", {
+        /*#__PURE__*/React.createElement("button", { onClick: () => setHelpPage("delete"), className: "ss-press", style: { flex: 1, minHeight: 44, padding: "10px 8px", borderRadius: 12, border: "1px solid " + T.borderLight, background: "none", color: T.textSoft, fontSize: 14, cursor: "pointer" } }, "Account deletion")),
+        /*#__PURE__*/React.createElement("button", { onClick: () => { try { if (window.DigiRuneFeedback) window.DigiRuneFeedback.open(); else window.location.href = "mailto:will@digirunestudios.com?subject=" + encodeURIComponent("Sheetmancer: report a problem or idea") + "&body=" + encodeURIComponent("App: Sheetmancer build v78\n\nWhat happened:\n"); } catch (_) {} }, className: "ss-press", style: { minHeight: 44, width: "100%", padding: "8px 14px", border: "none", background: "none", color: T.textSoft, fontSize: 14, textDecoration: "underline", cursor: "pointer" } }, "Report a problem or suggest an idea")),/*#__PURE__*/React.createElement("div", {
     style: {
       textAlign: "center",
       fontSize: 12,
@@ -10462,5 +10467,6 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
   } catch (e) {}
 })();
 </script>
+<script src="digirune-keepawake.js" defer></script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-/* Sheetmancer service worker (v78).
+/* Sheetmancer service worker (v79: report-a-problem form + screen stays awake, 2026-10-14).
    - App page (/ and /index.html): network first, but if the network has not answered in 2.5 s the saved
      copy opens at once and the network answer refreshes the saved copy for next time. Only a real
      (200) HTML answer for the app page is ever saved as the app.
@@ -6,10 +6,10 @@
      and never saved as the app, so an offline launch always opens the app.
    - Fonts, icons, manifest and the pinned Firebase SDK files: cache first (they never change at a URL).
    - Update cleanup deletes only old sheetmancer-shell-* caches; nothing else in Cache Storage is touched. */
-const CACHE='sheetmancer-shell-v78';
+const CACHE='sheetmancer-shell-v79';
 const PREFIX='sheetmancer-shell-';
 const FB='https://www.gstatic.com/firebasejs/10.12.2/';
-const STATIC=['./manifest.json','./icon-192.png','./icon-512.png','./icon-192-maskable.png','./icon-512-maskable.png','./apple-touch-icon.png',
+const STATIC=['./manifest.json','./digirune-feedback.js','./digirune-keepawake.js','./icon-192.png','./icon-512.png','./icon-192-maskable.png','./icon-512-maskable.png','./apple-touch-icon.png',
  './fonts/cinzel-latin-400-normal.woff2','./fonts/cinzel-latin-700-normal.woff2','./fonts/cormorant-garamond-latin-700-normal.woff2',
  './fonts/eb-garamond-latin-400-normal.woff2','./fonts/eb-garamond-latin-600-normal.woff2','./fonts/eb-garamond-latin-700-normal.woff2','./fonts/eb-garamond-latin-400-italic.woff2'];
 const SDK=[FB+'firebase-app.js',FB+'firebase-auth.js',FB+'firebase-firestore.js'];
@@ -55,7 +55,7 @@ self.addEventListener('fetch',function(e){
   }
   var u;try{u=new URL(url);}catch(_){return;}
   var same=u.origin===self.location.origin;
-  var cacheable=(same&&(/\/fonts\/[^/]+\.woff2$/.test(u.pathname)||/\/(manifest\.json|icon-[^/]+\.png|apple-touch-icon\.png)$/.test(u.pathname)))||url.indexOf(FB)===0||/^fonts\.(googleapis|gstatic)\.com$/.test(u.host);
+  var cacheable=(same&&(/\/fonts\/[^/]+\.woff2$/.test(u.pathname)||/\/(manifest\.json|icon-[^/]+\.png|apple-touch-icon\.png|digirune-(feedback|keepawake)\.js)$/.test(u.pathname)))||url.indexOf(FB)===0||/^fonts\.(googleapis|gstatic)\.com$/.test(u.host);
   if(!cacheable)return;   /* everything else goes straight to the network */
   e.respondWith(caches.match(req).then(function(hit){
     if(hit)return hit;
