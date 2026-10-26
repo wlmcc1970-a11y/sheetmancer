@@ -33,7 +33,7 @@ jobs:
           service_account: github-actions-publisher@sheetmancer-app.iam.gserviceaccount.com
 
       - name: Install the Firebase CLI
-        run: npm install -g firebase-tools
+        run: npm install -g firebase-tools@15.34.0
 
       # Uses the short-lived credentials from the auth step above
       # (GOOGLE_APPLICATION_CREDENTIALS is set for us).
