@@ -1,4 +1,4 @@
-/* Sheetmancer service worker (v79: report-a-problem form + screen stays awake, 2026-10-14).
+/* Sheetmancer service worker (v80: Candlelit Table + Arcane Violet theme art precached, 2026-10-26; logic unchanged since v79).
    - App page (/ and /index.html): network first, but if the network has not answered in 2.5 s the saved
      copy opens at once and the network answer refreshes the saved copy for next time. Only a real
      (200) HTML answer for the app page is ever saved as the app.
@@ -6,12 +6,13 @@
      and never saved as the app, so an offline launch always opens the app.
    - Fonts, icons, manifest and the pinned Firebase SDK files: cache first (they never change at a URL).
    - Update cleanup deletes only old sheetmancer-shell-* caches; nothing else in Cache Storage is touched. */
-const CACHE='sheetmancer-shell-v79';
+const CACHE='sheetmancer-shell-v80';
 const PREFIX='sheetmancer-shell-';
 const FB='https://www.gstatic.com/firebasejs/10.12.2/';
 const STATIC=['./manifest.json','./digirune-feedback.js','./digirune-keepawake.js','./icon-192.png','./icon-512.png','./icon-192-maskable.png','./icon-512-maskable.png','./apple-touch-icon.png',
  './fonts/cinzel-latin-400-normal.woff2','./fonts/cinzel-latin-700-normal.woff2','./fonts/cormorant-garamond-latin-700-normal.woff2',
- './fonts/eb-garamond-latin-400-normal.woff2','./fonts/eb-garamond-latin-600-normal.woff2','./fonts/eb-garamond-latin-700-normal.woff2','./fonts/eb-garamond-latin-400-italic.woff2'];
+ './fonts/eb-garamond-latin-400-normal.woff2','./fonts/eb-garamond-latin-600-normal.woff2','./fonts/eb-garamond-latin-700-normal.woff2','./fonts/eb-garamond-latin-400-italic.woff2',
+ './studio/table-plate.webp','./studio/candle-bokeh.webp','./studio/splash-whirlwind.webp','./studio/room-violet.webp','./studio/room-violet-plate.webp','./studio/room-neon.webp','./studio/room-neon-plate.webp','./studio/room-iron.webp','./studio/room-iron-plate.webp','./studio/room-verdant.webp','./studio/room-verdant-plate.webp','./studio/room-frost.webp','./studio/room-frost-plate.webp','./studio/room-gold.webp','./studio/room-gold-plate.webp','./studio/room-parch.webp','./studio/room-parch-plate.webp','./studio/room-paper.webp','./studio/room-paper-plate.webp'];
 const SDK=[FB+'firebase-app.js',FB+'firebase-auth.js',FB+'firebase-firestore.js'];
 const APP_URL=new URL('./index.html',self.location).href;
 function isAppPage(u){try{var x=new URL(u);if(x.origin!==self.location.origin)return false;var base=new URL('./',self.location).pathname;return x.pathname===base||x.pathname===base+'index.html';}catch(_){return false;}}
