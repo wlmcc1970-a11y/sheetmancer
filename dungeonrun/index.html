@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Sheetmancer: Get the app</title>
-<meta name="description" content="Sheetmancer: photograph your character sheet and every page that goes with it, and get one complete, editable Character Hub. Any RPG, any system. $9.99 once, no subscription.">
+<meta name="description" content="Sheetmancer: photograph your character sheet and every page that goes with it, and get one complete, editable Character Hub. Any tabletop RPG, any system. One-time purchase, no subscription.">
 <meta name="robots" content="noindex">
 <meta name="theme-color" content="#0b0806">
 <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
@@ -27,7 +27,7 @@
 <div class="card">
   <img class="icon" src="/icon-192.png" alt="Sheetmancer app icon">
   <h1>Sheetmancer</h1>
-  <p>Photograph your character sheet and all your other character pages, and get one complete, fully editable Character Hub on your phone. Any RPG, any system. $9.99 once, no subscription.</p>
+  <p>Photograph your character sheet and all your other character pages, and get one complete, fully editable Character Hub on your phone. Any tabletop RPG, any system. <span data-sale="$2.99 until Dec 1 (regular price $9.99)">$9.99</span> once, no subscription.</p>
   <div class="btns">
     <a class="b" id="ios" href="https://apps.apple.com/app/apple-store/id6793684089?pt=128989957&amp;ct=dungeonrun-oct26&amp;mt=8">Download on the App Store</a>
     <a class="b" id="play" href="https://play.google.com/store/apps/details?id=com.digirunestudios.sheetmancer&amp;referrer=utm_source%3Ddungeonrun%26utm_medium%3Dpodcast%26utm_campaign%3Doct26">Get it on Google Play</a>
@@ -42,6 +42,10 @@
   var t=ios?document.getElementById('ios'):android?document.getElementById('play'):null;
   if(t){location.replace(t.href);}
 })();
+</script>
+<script>
+/* Limited-time price window (Will 2026-10-26): Nov 2 2026 00:00 PT to Dec 1 2026 00:00 PT. Outside it the page shows the regular price. */
+(function(){try{var n=Date.now();if(n>=Date.UTC(2026,10,2,7)&&n<Date.UTC(2026,11,1,8)){var e=document.querySelectorAll('[data-sale]');for(var i=0;i<e.length;i++)e[i].innerHTML=e[i].getAttribute('data-sale');}}catch(x){}})();
 </script>
 </body>
 </html>
