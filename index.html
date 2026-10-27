@@ -984,6 +984,24 @@ html[data-smx-theme="candlelit"] div[style*="max-height: 50vh"] .ss-press{backgr
 html[data-smx-theme="candlelit"] div[style*="max-height: 50vh"] .ss-press *:not(mark){color:var(--smx-ink)!important}
 html[data-smx-theme="candlelit"] div[style*="max-height: 50vh"] mark{background:#E8C46A!important;color:var(--smx-ink)!important}
 
+/* ---------- round 2 (Will 19:42): everything scanned onto a page stays readable on the paper ---------- */
+/* header rows and long-text labels */
+html[data-smx-theme="candlelit"] .smx-sec .v76-sec span{color:var(--smx-rubric)!important}
+html[data-smx-theme="candlelit"] .smx-sec .v76-prose>div:first-child>span span{color:var(--smx-rubric)!important}
+/* scanned tables become paper tables: dark ink, red headings, brown rules */
+html[data-smx-theme="candlelit"] .smx-sec [data-ss-table-scroll]{background:#F6EBD3!important;border-color:rgba(90,55,20,.45)!important}
+html[data-smx-theme="candlelit"] .smx-sec [data-ss-table-scroll] :is(th,td){background:transparent!important;border-right-color:rgba(90,55,20,.28)!important;border-bottom-color:rgba(90,55,20,.28)!important}
+html[data-smx-theme="candlelit"] .smx-sec [data-ss-table-scroll] th{background:#EFE0C0!important;border-bottom:2px solid var(--smx-rubric)!important}
+html[data-smx-theme="candlelit"] .smx-sec [data-ss-table-scroll] td[style*="sticky"]{background:#F1E4C8!important}
+html[data-smx-theme="candlelit"] .smx-sec [data-ss-table-scroll] th[style*="sticky"]{background:#EADAB7!important}
+html[data-smx-theme="candlelit"] .smx-sec [data-ss-table-scroll] th *{color:var(--smx-rubric)!important}
+html[data-smx-theme="candlelit"] .smx-sec [data-ss-table-scroll] td *{color:var(--smx-ink)!important}
+html[data-smx-theme="candlelit"] .smx-sec [data-ss-table-scroll]~div[style*="right: 1px"]{background:linear-gradient(to right,rgba(246,235,211,0),#F6EBD3)!important}
+html[data-smx-theme="candlelit"] .smx-sec [data-ss-table-scroll]~div[style*="left: 1px"]{background:linear-gradient(to left,rgba(246,235,211,0),#F6EBD3)!important}
+/* typing into a field on the paper */
+html[data-smx-theme="candlelit"] .smx-sec :is(input,textarea,select){background:#FFF9EC!important;color:var(--smx-ink)!important;caret-color:var(--smx-ink);border-color:rgba(90,55,20,.5)!important}
+html[data-smx-theme="candlelit"] .smx-sec :is(input,textarea)::placeholder{color:rgba(62,42,22,.7)!important}
+
 /* Sheetmancer studio polish for EVERY theme (v80, 2026-10-26), DigiRune Studios. Visual layer only.
    Will: "I don't want them to appear unfinished in comparison." Each theme keeps its own colours; these rules
    fix the reading layer everywhere. Nothing here changes what a button does or the size of anything tappable. */
