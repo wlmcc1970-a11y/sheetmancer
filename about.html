@@ -348,9 +348,9 @@
 <!-- GoatCounter analytics (privacy-friendly, no cookies) -->
 <script data-goatcounter="https://digirune.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 <script>
-/* Limited-time price window (Will 2026-10-26): shows only from Nov 2 2026 00:00 PT to Dec 1 2026 00:00 PT, so the page never states a price that isn't true. */
+/* Limited-time price window: OFF until launch day (Will 2026-10-26: the sale starts the same day the ads launch). Set the start date then. */
 (function(){try{
-  var now=Date.now(), start=Date.UTC(2026,10,2,7,0,0), end=Date.UTC(2026,11,1,8,0,0);
+  var now=Date.now(), start=Date.UTC(2099,0,1,8,0,0), end=Date.UTC(2026,11,1,8,0,0);
   if(now>=start && now<end){
     var h=document.getElementById('sale-hero'); if(h) h.hidden=false;
     var c=document.getElementById('price-card'); if(c) c.innerHTML='<b>$2.99 until Dec 1</b><span>Limited-time price. Regular price $9.99. No ads, no subscriptions.</span>';
