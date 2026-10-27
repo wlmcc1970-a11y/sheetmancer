@@ -6,7 +6,7 @@
      and never saved as the app, so an offline launch always opens the app.
    - Fonts, icons, manifest and the pinned Firebase SDK files: cache first (they never change at a URL).
    - Update cleanup deletes only old sheetmancer-shell-* caches; nothing else in Cache Storage is touched. */
-const CACHE='sheetmancer-shell-v80';
+const CACHE='sheetmancer-shell-v81';
 const PREFIX='sheetmancer-shell-';
 const FB='https://www.gstatic.com/firebasejs/10.12.2/';
 const STATIC=['./manifest.json','./digirune-feedback.js','./digirune-keepawake.js','./icon-192.png','./icon-512.png','./icon-192-maskable.png','./icon-512-maskable.png','./apple-touch-icon.png',
