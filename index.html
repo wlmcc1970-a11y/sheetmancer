@@ -9727,12 +9727,42 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
   };
 })();
 </script>
-<script>/*Sheetmancer cloud sync — Firebase project sheetsnap-fb659 (legacy id, data continuity). Bridges to React: publishes window.ssAuth + fires 'ss-auth'; React drives sign-in via window.ssSignIn / window.ssSignOut.*/
+<script>/*Sheetmancer cloud sync — Firebase project sheetmancer-app (cfg.projectId below; the sync field names sheetsnap_* are legacy, kept for data continuity). Bridges to React: publishes window.ssAuth + fires 'ss-auth'; React drives sign-in via window.ssSignIn / window.ssSignOut.*/
 (function(){
  var FB="https://www.gstatic.com/firebasejs/10.12.2/";
  var cfg={apiKey:"AIzaSyAikdOX-Fgp-KSTsKt4OJ-P-UDqFXtFTl8",authDomain:"sheetmancer.digirunestudios.com",projectId:"sheetmancer-app",storageBucket:"sheetmancer-app.firebasestorage.app",messagingSenderId:"993832930737",appId:"1:993832930737:web:cf3987936ec98c1ec44190"};
  var KEYS=["ss-chars","ss-fallen","ss-theme"];
- function gather(){var o={};KEYS.forEach(function(k){var v=localStorage.getItem(k);if(v!=null)o[k]=v;});return o;}
+ function gather(){var o={};KEYS.forEach(function(k){var v=localStorage.getItem(k);if(v!=null)o[k]=(k!=="ss-theme"&&v.indexOf("avatarRef")>=0&&v.indexOf("avatarImg")>=0)?dropStaleRefs(v):v;});return o;}
+ /* v85 (DS-05, item 10): portraits travel to the cloud as their own documents, users/<uid>/portraits/<ref>,
+    and the one sync document carries only a short reference (avatarRef). On this device nothing changes:
+    characters keep their picture in avatarImg exactly as before. The swap happens only at the cloud boundary:
+    dehydrate() just before an upload, hydrate() right after a read. A portrait that cannot be fetched fails the
+    read (and the read retries), so a character is never taken from the cloud without its picture. The ref is
+    the picture's own fingerprint, so uploads are idempotent and two devices can never disagree about one.
+    Review round 2 (independent Opus review, 2026-10-27): an account switches to references ONLY when its sync
+    document would come near Firestore's 1 MiB limit (INLINE_MAX, round 3: 1,000,000 bytes, so every account v83
+    can sync today stays inline). Every other account keeps today's inline
+    format byte for byte, so older open clients and a page rollback keep showing its portraits. */
+ var PIMG_RE=/^data:image\/(jpeg|jpg|png|webp|gif);base64,[A-Za-z0-9+\/=\s]+$/i,PREF_RE=/^p[0-9a-z]+_[0-9a-z]+$/;
+ var PUP_RE=/^data:image\/(jpeg|jpg|png|webp|gif);base64,[A-Za-z0-9+\/=]+$/,INLINE_MAX=1000000;   /* PUP_RE matches the portraits rule; anything else stays inline */
+ function utf8Len(s){if(s.length<INLINE_MAX/3)return s.length;try{return new TextEncoder().encode(s).length;}catch(e){return s.length*3;}}
+ var refMemo=new Map();
+ function portraitRef(img){var r=refMemo.get(img);if(r)return r;r="p"+hashStr(img)+"_"+img.length.toString(36);if(refMemo.size>200)refMemo.clear();refMemo.set(img,r);return r;}
+ /* Copy c with key fromK renamed to toK (same position, so JSON round trips are byte-exact); any other toK is dropped. */
+ function swapKey(c,fromK,toK,val){var o={};for(var k in c){if(!Object.prototype.hasOwnProperty.call(c,k))continue;if(k===fromK)o[toK]=val;else if(k!==toK)o[k]=c[k];}return o;}
+ function dropStaleRefs(v){try{var a=JSON.parse(v);if(!Array.isArray(a))return v;var ch=false;
+  var b=a.map(function(c){if(c&&typeof c==="object"&&c.avatarImg!=null&&c.avatarRef!=null){ch=true;var o={};for(var k in c)if(Object.prototype.hasOwnProperty.call(c,k)&&k!=="avatarRef")o[k]=c[k];return o;}return c;});
+  return ch?JSON.stringify(b):v;}catch(e){return v;}}
+ /* Run fn over each character list of a gathered/cloud JSON string; returns the same string when nothing changed. */
+ function mapLists(s,fn){var o=JSON.parse(s),ch=false;
+  ["ss-chars","ss-fallen"].forEach(function(k){if(typeof o[k]!=="string")return;var a;try{a=JSON.parse(o[k]);}catch(e){return;}if(!Array.isArray(a))return;var r=fn(a);if(r){o[k]=JSON.stringify(r);ch=true;}});
+  return ch?JSON.stringify(o):s;}
+ function dehydrate(s){var need={};if(s.indexOf("avatarImg")<0||utf8Len(s)<INLINE_MAX)return {s:s,need:need};   /* small accounts: unchanged format */
+  var out=mapLists(s,function(a){var ch=false;var b=a.map(function(c){
+    if(c&&typeof c==="object"&&typeof c.avatarImg==="string"&&c.avatarImg.length<1000000&&PUP_RE.test(c.avatarImg)){var r=portraitRef(c.avatarImg);need[r]=c.avatarImg;ch=true;return swapKey(c,"avatarImg","avatarRef",r);}
+    return c;});return ch?b:null;});
+  return {s:out,need:need};}
+ function localPortraits(){var m={};try{var o=gather();["ss-chars","ss-fallen"].forEach(function(k){if(typeof o[k]!=="string"||o[k].indexOf("avatarImg")<0)return;var a=JSON.parse(o[k]);if(Array.isArray(a))a.forEach(function(c){if(c&&typeof c.avatarImg==="string"&&PIMG_RE.test(c.avatarImg))m[portraitRef(c.avatarImg)]=c.avatarImg;});});}catch(e){}return m;}
  function apply(m){var ch=false;Object.keys(m||{}).forEach(function(k){if(KEYS.indexOf(k)>=0&&localStorage.getItem(k)!==m[k]){localStorage.setItem(k,m[k]);ch=true;}});return ch;}
  var user=null,last="",timer=null,syncing=false,lastSyncedAt=0,errState=false,pending=false;
  /* v77b data-safety hotfix (DS-01, DS-02, audit B1-B3). Sync only.
@@ -9756,6 +9786,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
  /* v78 (DS-04, SEC-07): which account the characters on this device belong to. */
  var OWNER_KEY="ss-owner-uid",bootUid=null;try{bootUid=localStorage.getItem(UID_KEY);}catch(e){}
  var foreign=null,foreignOk={},tooBig=false,pushing=false,deviceFull=false,authCalls=0;
+ var ackedCloud=null,pushFails=0,pushHold=0;   /* v85: the acked copy in its cloud form; push back-off */
  window.addEventListener("ss-storage-full",function(){deviceFull=true;try{broadcast();}catch(e){}});
  window.addEventListener("ss-storage-ok",function(){deviceFull=false;try{broadcast();}catch(e){}});
  function ownerNow(){try{return localStorage.getItem(OWNER_KEY)||bootUid||"";}catch(e){return bootUid||"";}}
@@ -9765,7 +9796,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
   h1=Math.imul(h1^(h1>>>16),2246822507)^Math.imul(h2^(h2>>>13),3266489909);h2=Math.imul(h2^(h2>>>16),2246822507)^Math.imul(h1^(h1>>>13),3266489909);return (4294967296*(2097151&h2)+(h1>>>0)).toString(36);}
  function charHash(c){try{var o={};for(var k in (c||{}))if(k!=="cid"&&k!=="upd")o[k]=c[k];return hashStr(JSON.stringify(o));}catch(e){return "";}}   /* v78: "upd" is a save stamp, not content */
  function baseCids(s){var out=[];try{var o=JSON.parse(s);["ss-chars","ss-fallen"].forEach(function(k){if(o[k]==null)return;var a=JSON.parse(o[k]);if(Array.isArray(a))a.forEach(function(c){if(c&&c.cid)out.push(c.cid);});});}catch(e){}return out;}
- function baseHashes(s){var out=[];try{var o=JSON.parse(s);["ss-chars","ss-fallen"].forEach(function(k){if(o[k]==null)return;var a=JSON.parse(o[k]);if(Array.isArray(a))a.forEach(function(c){out.push(charHash(c));});});}catch(e){}return out;}
+ function baseHashes(s){var out=[];try{var o=JSON.parse(s);["ss-chars","ss-fallen"].forEach(function(k){if(o[k]==null)return;var a=JSON.parse(o[k]);if(Array.isArray(a))a.forEach(function(c){out.push(charHash(c));
+   try{var x=(typeof ssSanitizeChar==="function")?ssSanitizeChar(c,Object.create(null)):null;if(x&&x!==c)out.push(charHash(x));}catch(e){}});});}catch(e){}return out;}   /* R7-1: the loader-repaired form of a baseline character is in sync too */
  function readDirty(){try{var r=JSON.parse(localStorage.getItem(DIRTY_KEY)||"null");return (r&&r.uid)?r:null;}catch(e){return null;}}
  function dirtyFor(uid){var r=readDirty();return !!(r&&uid&&r.uid===uid);}
  function clearDirty(uid){try{var r=readDirty();if(r&&r.uid===uid)localStorage.removeItem(DIRTY_KEY);}catch(e){}}
@@ -9810,13 +9842,40 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
    var keep=[];out.forEach(function(x,i){if(i<L.length&&!used[i]&&x===L[i]&&B[lh[i]]&&x&&x.cid&&K&&K[x.cid])return;keep.push(x);});out=keep.slice(0,keep.length);
    return out.concat(add);}
   return out.concat(add);}
+ /* Round 6 (R6-1/R6-2): the cloud copy in the form the app's loader would leave it in.
+    cleanCloudList: content repaired per character, but NO new ids minted (a character without an id stays
+    without one, so it still matches its repaired device copy by content). loaderForm: the full loader pass
+    (active then fallen, one shared used set) - exactly what a device holds after writing that copy and
+    reloading - used when the cloud copy is taken as is. */
+ function cleanCloudList(C){if(typeof ssSanitizeChar!=="function")return C;var out=[];
+  C.forEach(function(c){try{var had=!!(c&&typeof c==="object"&&typeof c.cid==="string"&&c.cid);var x=ssSanitizeChar(c,Object.create(null));if(!x)return;
+   if(!had&&x.cid!=null){var o={};for(var k in x)if(Object.prototype.hasOwnProperty.call(x,k)&&k!=="cid")o[k]=x[k];x=o;}out.push(x);}catch(e){out.push(c);}});return out;}
+ function loaderForm(o){if(!o||typeof ssSanitizeList!=="function")return o;try{var used=Object.create(null),out=null;
+  ["ss-chars","ss-fallen"].forEach(function(k){if(typeof o[k]!=="string")return;var a=JSON.parse(o[k]);if(!Array.isArray(a))return;var s2=JSON.stringify(ssSanitizeList(a,used));if(s2!==o[k]){out=out||Object.assign({},o);out[k]=s2;}});
+  return out||o;}catch(e){return o;}}
  function mergeInto(cObj,dr){
   try{var lo=gather(),B={},out={},changed=false;(dr.b||[]).forEach(function(h){B[h]=1;});
+   var Ms={},usedC={};
    ["ss-chars","ss-fallen"].forEach(function(k){
     var L=lo[k]!=null?JSON.parse(lo[k]):[],C=cObj[k]!=null?JSON.parse(cObj[k]):[];
     if(!Array.isArray(L)||!Array.isArray(C))throw 0;
+    C=cleanCloudList(C);   /* R6-1 */
     var K=null;if(Array.isArray(dr.c)){K={};dr.c.forEach(function(x){K[x]=1;});}
-    var M=mergeList(L,C,B,!dr.pre,K);if(lo[k]==null&&!M.length)return;
+    Ms[k]=mergeList(L,C,B,!dr.pre,K);});
+   /* v85 (found on a live account 2026-10-27): the app keeps character ids unique across BOTH lists when it
+      loads (ssSanitizeChar: active list first, then fallen; a repeated id gets "-2", "-3"...). The merge must
+      hand back ids in that same final form, or the app re-suffixes them on reload, the next merge undoes it,
+      and the device reloads until the refresh limit and never uploads (a character on both lists did this). */
+   /* Round 5 (R5-1/2/3): run the app's OWN loader on the merged lists (ssSanitizeList, one shared used set,
+      active then fallen, exactly as at app start), so the merge hands back what the loader would save and a
+      reload rewrites nothing - ids, legacy shapes and blank entries alike. Hand-rolled fallback only if the
+      loader is somehow absent. */
+   if(typeof ssSanitizeList==="function"){var usedL=Object.create(null);Ms["ss-chars"]=ssSanitizeList(Ms["ss-chars"],usedL);Ms["ss-fallen"]=ssSanitizeList(Ms["ss-fallen"],usedL);}
+   else{usedC=Object.create(null);["ss-chars","ss-fallen"].forEach(function(k){Ms[k]=Ms[k].map(function(c){
+    if(!c||typeof c!=="object"||typeof c.cid!=="string"||!c.cid)return c;
+    var cid=c.cid,q=2;while(usedC[cid])cid=c.cid+"-"+(q++);usedC[cid]=1;
+    if(cid===c.cid)return c;var o={};for(var x in c)if(Object.prototype.hasOwnProperty.call(c,x))o[x]=(x==="cid")?cid:c[x];return o;});});}
+   ["ss-chars","ss-fallen"].forEach(function(k){var M=Ms[k];if(lo[k]==null&&!M.length)return;
     var s=JSON.stringify(M);if(s!==lo[k]){out[k]=s;changed=true;}});
    return changed?out:null;
   }catch(e){syncLog("could not merge; keeping this device's copy");return false;}}
@@ -10049,8 +10108,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
        worked - never claim a restore that was only attempted. */
     function restoreDoc(){
      var s=JSON.stringify(gather());
-     return fsM.setDoc(ref(uid),{sheetsnap_blob:s,sheetsnap_updatedAt:Date.now()},{merge:true})
-      .then(function(){last=s;lastSyncedAt=Date.now();errState=false;return true;},function(){errState=true;return false;});
+     return cloudWrite(uid,s)
+      .then(function(ds){if(user&&user.uid===uid){last=s;acked=s;ackedCloud=ds;lastSyncedAt=Date.now();errState=false;}return true;},function(){if(user&&user.uid===uid)errState=true;return false;});   /* R4-1: only the same account's state */
     }
     /* Roll back. Runs even if the caller was already released by the timer - an
        abandoned chain must still clean up after itself. The tombstone delete is
@@ -10246,26 +10305,31 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
         is swallowed so it can NEVER look like a failed deletion — the outcome is only
         recorded in window.ssLastAlbumPurge. (>300 photos would page; the cap is ~100,
         and any residue stays unreadable, so a single page is enough.) */
-     function albumPurge(){
-       try{ if(window.ssAlbumCacheClear) window.ssAlbumCacheClear(); }catch(_){}
+     function colPurge(col,stat){
        var base="https://firestore.googleapis.com/v1/projects/"+encodeURIComponent(cfg.projectId)+"/databases/(default)/documents";
        var hdr={Authorization:"Bearer "+savedTok};
-       return fetch(base+"/users/"+encodeURIComponent(uid)+"/album?pageSize=300",{headers:hdr})
-         .then(function(r){return r&&r.ok?r.json():null;})
-         .then(function(j){
-           var names=(((j||{}).documents)||[]).map(function(d){return d&&d.name;}).filter(Boolean);
-           window.ssLastAlbumPurge={found:names.length,deleted:0,ok:true};
+       /* v85 (review M3): names only (mask), every page, deletes 8 at a time. */
+       var names=[],pages=0;window[stat]={found:0,deleted:0,ok:true};
+       function list(tok){
+         return fetch(base+"/users/"+encodeURIComponent(uid)+"/"+col+"?pageSize=300&mask.fieldPaths=ts"+(tok?"&pageToken="+encodeURIComponent(tok):""),{headers:hdr})
+           .then(function(r){return r&&r.ok?r.json():null;})
+           .then(function(j){(((j||{}).documents)||[]).forEach(function(d){if(d&&d.name)names.push(d.name);});pages++;
+             if(j&&j.nextPageToken&&pages<20)return list(j.nextPageToken);});
+       }
+       function del(n){return fetch("https://firestore.googleapis.com/v1/"+n,{method:"DELETE",headers:hdr}).then(function(rr){if(rr&&rr.ok)window[stat].deleted++;},function(){});}
+       return list("").then(function(){
+           window[stat].found=names.length;
            var i=0;
-           function next(){
-             if(i>=names.length)return;
-             return fetch("https://firestore.googleapis.com/v1/"+names[i++],{method:"DELETE",headers:hdr})
-               .then(function(rr){if(rr&&rr.ok)window.ssLastAlbumPurge.deleted++;},function(){})
-               .then(next);
-           }
-           return next();
-         },function(err){window.ssLastAlbumPurge={found:-1,deleted:0,ok:false,err:String((err&&(err.code||err.message))||err)};});
+           function batch(){if(i>=names.length)return;var part=names.slice(i,i+8);i+=8;return Promise.all(part.map(del)).then(batch);}
+           return batch();
+         },function(err){window[stat]={found:-1,deleted:0,ok:false,err:String((err&&(err.code||err.message))||err)};});
      }
-     return raceOut(albumPurge(),12000,derr("album-purge-timeout","album purge timed out"))
+     function albumPurge(){
+       try{ if(window.ssAlbumCacheClear) window.ssAlbumCacheClear(); }catch(_){}
+       return colPurge("album","ssLastAlbumPurge");
+     }
+     /* v85 (DS-05): the portraits subcollection goes the same way, at the same point, for the same reasons. */
+     return raceOut(Promise.all([albumPurge(),colPurge("portraits","ssLastPortraitPurge")]),12000,derr("album-purge-timeout","album purge timed out"))
       .then(function(){},function(){})   /* best-effort: cleanup must never look like a failed deletion */
       .then(function(){
        /* STEP 5 - server-side purge. Best effort: the account is already gone, and a
@@ -10304,6 +10368,51 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
    });
   };
   function ref(uid){return fsM.doc(db,"users",uid);}
+  /* ---- v85 (DS-05): portraits, users/<uid>/portraits/<ref> (see the note at the top) ---- */
+  var pCache=Object.create(null),pCacheN=0,pMissing=Object.create(null);   /* keyed uid|ref */
+  /* Refs THIS device has itself uploaded or downloaded (so it knows they exist). Kept on the device
+     (ss-pup) so a portrait is uploaded once per device, not once per app open. A ref merely named by
+     the cloud copy is NOT trusted: a device holding the picture re-uploads it if it never confirmed it,
+     which also repairs a portrait missing from the cloud. */
+  var PUP_KEY="ss-pup",pUpMem=null;
+  function pUpGet(uid){if(!pUpMem||pUpMem.uid!==uid){var o=null;try{o=JSON.parse(localStorage.getItem(PUP_KEY)||"null");}catch(e){}pUpMem=(o&&o.uid===uid&&o.r&&typeof o.r==="object")?o:{uid:uid,r:{}};}return pUpMem;}
+  function pUpHas(uid,r){return !!pUpGet(uid).r[r];}
+  function pUpSet(uid,r,on){var m=pUpGet(uid);if(on)m.r[r]=1;else delete m.r[r];var k=Object.keys(m.r);if(k.length>400)m.r={};try{localStorage.setItem(PUP_KEY,JSON.stringify(m));}catch(e){}}
+  function pCachePut(uid,r,img){if(pCacheN>40){pCache=Object.create(null);pCacheN=0;}pCache[uid+"|"+r]=img;pCacheN++;}
+  function pDoc(uid,r){return fsM.doc(db,"users",uid,"portraits",r);}
+  function fetchPortrait(uid,r){
+   return raceOut(fsM.getDoc(pDoc(uid,r)),20000,new Error("portrait-read-timeout")).catch(function(e){var x=new Error("portrait-read "+String((e&&(e.code||e.message))||e));x.portrait=true;throw x;}).then(function(snap){
+    if(snap.metadata&&snap.metadata.fromCache)throw new Error("from-cache");
+    if(!snap.exists()){pMissing[uid+"|"+r]=1;pUpSet(uid,r,false);syncLog("a portrait is missing from the cloud; that character keeps its place without it until a device that has the picture syncs");return;}
+    var img=(snap.data()||{}).img;
+    if(typeof img==="string"&&PIMG_RE.test(img)&&portraitRef(img)===r){pCachePut(uid,r,img);pUpSet(uid,r,true);}
+    else{pMissing[uid+"|"+r]=1;syncLog("a cloud portrait failed its check; skipped");}});}
+  /* Round 3 (R3-1): ONE write per picture at a time. A write that outlives the 60 s wait is reused by the next
+     attempt (never sent again), and its success is recorded when it lands, not when the wait ends. Nothing is
+     queued while the device is offline. */
+  var pInflight=Object.create(null);
+  function uploadPortraits(uid,need){
+   var todo=Object.keys(need).filter(function(r){return !pUpHas(uid,r);});
+   if(todo.length&&!navigator.onLine){var off=new Error("portrait-write offline");off.portrait=true;return Promise.reject(off);}
+   return Promise.all(todo.map(function(r){var k=uid+"|"+r;
+    var w=pInflight[k]||(pInflight[k]=fsM.setDoc(pDoc(uid,r),{img:need[r],ts:Date.now()}).then(function(){delete pInflight[k];pUpSet(uid,r,true);delete pMissing[k];},function(e){delete pInflight[k];throw e;}));
+    return raceOut(w,60000,new Error("portrait-write-timeout")).catch(function(e){var x=new Error("portrait-write "+String((e&&(e.code||e.message))||e));x.portrait=true;throw x;});}));}
+  /* Cloud string -> the device form (pictures back in avatarImg). Rejects if a portrait read fails. */
+  function hydrate(uid,cs){
+   if(cs==null||cs.indexOf("avatarRef")<0)return Promise.resolve(cs);
+   var refs={},local=localPortraits();
+   try{mapLists(cs,function(a){a.forEach(function(c){if(c&&typeof c.avatarRef==="string"&&c.avatarImg==null&&PREF_RE.test(c.avatarRef))refs[c.avatarRef]=1;});return null;});}
+   catch(e){return Promise.resolve(cs);}   /* unreadable: settle() handles it exactly as before */
+   var want=Object.keys(refs).filter(function(r){return !local[r]&&!pCache[uid+"|"+r]&&!pMissing[uid+"|"+r];});
+   return Promise.all(want.map(function(r){return fetchPortrait(uid,r);})).then(function(){
+    return mapLists(cs,function(a){var ch=false;var b=a.map(function(c){
+      if(!(c&&typeof c.avatarRef==="string"&&c.avatarImg==null))return c;
+      var img=local[c.avatarRef]||pCache[uid+"|"+c.avatarRef];if(!img)return c;ch=true;return swapKey(c,"avatarRef","avatarImg",img);});
+     return ch?b:null;});});}
+  /* Device string -> cloud: upload any portrait the cloud does not have yet, THEN the sync document. */
+  function cloudWrite(uid,s){
+   var d=dehydrate(s);
+   return uploadPortraits(uid,d.need).then(function(){return fsM.setDoc(ref(uid),{sheetsnap_blob:d.s,sheetsnap_updatedAt:Date.now()},{merge:true});}).then(function(){return d.s;});}
   /* ---- Photo Album — free Firestore per-photo subcollection users/<uid>/album/<photoId> ----
      Kept OUT of sheetsnap_blob (one ~1-MB doc) on purpose: base64 images would break ALL sync.
      Each photo is its own <1MB doc. Needs a real (non-anon) signed-in user — the album is a cloud
@@ -10375,26 +10484,38 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
    var o=gather();var s=JSON.stringify(o);if(s===last)return;
    if(cloudCount!==0&&countChars(o)===0){var dr=readDirty();
     if(!(dr&&dr.uid===uu&&dr.emptied)){if(refusedFor!==uu){refusedFor=uu;syncLog("refused to replace a non-empty cloud copy with an empty one");}if(!errState){errState=true;broadcast();}return;}}
-   if(pushing)return;pushing=true;
+   if(pushing)return;if(Date.now()<pushHold)return;pushing=true;
    last=s;syncing=true;broadcast();
    /* v78 (DS-03): read the cloud copy first. If another device changed it since this device last
       read or wrote it, merge per character (both devices' changes kept) instead of overwriting. */
-   var base=acked;
-   raceOut(fsM.getDoc(ref(uu)),15000,new Error("read-timeout")).then(function(snap){
-    if(!(user&&user.uid===uu)||reloading){pushing=false;syncing=false;broadcast();return;}
+   /* v85 review round 2 (H1): new portraits go up FIRST, so the read-compare-write below spans one round trip,
+      exactly as in v83. The comparison runs in cloud form; pictures are downloaded only for a real merge (M1). */
+   var base=acked,baseC=ackedCloud,dh=dehydrate(s);
+   uploadPortraits(uu,dh.need).then(function(){
+    if(!(user&&user.uid===uu)||reloading)return null;
+    return raceOut(fsM.getDoc(ref(uu)),15000,new Error("read-timeout"));
+   }).then(function(snap){
+    if(!snap||!(user&&user.uid===uu)||reloading){pushing=false;syncing=false;broadcast();return;}
     if(snap.metadata&&snap.metadata.fromCache)throw new Error("from-cache");
-    var d=snap.exists()?snap.data():null,cs=(d&&typeof d.sheetsnap_blob==="string")?d.sheetsnap_blob:null;
-    if(base!=null&&cs!=null&&cs!==base&&cs!==s){
+    var d=snap.exists()?snap.data():null,cs0=(d&&typeof d.sheetsnap_blob==="string")?d.sheetsnap_blob:null;
+    var same=(cs0==null)||cs0===dh.s||(baseC!=null&&cs0===baseC);
+    return (same?Promise.resolve(null):hydrate(uu,cs0)).then(function(cs){
+    if(!(user&&user.uid===uu)||reloading){pushing=false;syncing=false;broadcast();return;}
+    if(!same&&base!=null&&cs!=null&&cs!==base&&cs!==s){
      pushing=false;syncLog("another device changed the cloud copy; merging before upload");
      try{noteFor(uu,base,false);}catch(e){}
-     loadedUid="";last="";settle(user,cs);return;}
-    return fsM.setDoc(ref(uu),{sheetsnap_blob:s,sheetsnap_updatedAt:Date.now()},{merge:true}).then(function(){
-     pushing=false;
-     if(user&&user.uid===uu){acked=s;cloudCount=countChars(o);try{localStorage.setItem(OWNER_KEY,uu);}catch(e){}}
+     loadedUid="";last="";settle(user,cs,cs0);return;}
+    return fsM.setDoc(ref(uu),{sheetsnap_blob:dh.s,sheetsnap_updatedAt:Date.now()},{merge:true}).then(function(){
+     pushing=false;pushFails=0;pushHold=0;
+     if(user&&user.uid===uu){acked=s;ackedCloud=dh.s;cloudCount=countChars(o);try{localStorage.setItem(OWNER_KEY,uu);}catch(e){}}
      try{if(JSON.stringify(gather())===s)clearDirty(uu);}catch(e){}
      tooBig=false;lastSyncedAt=Date.now();syncing=false;errState=false;broadcast();});
+    });
    }).catch(function(e){pushing=false;syncing=false;errState=true;var em=String((e&&(e.code||e.message))||"");
-    if(/permission/i.test(em))deletedUids[uu]=1;
+    pushFails++;pushHold=Date.now()+Math.min(60000,2000*Math.pow(2,Math.min(pushFails,6)-1));   /* back off: 2, 4, 8, 16, 32, 60 s */
+    if(e&&e.portrait&&!/maximum allowed size|exceeds the maximum|too large|invalid-argument/i.test(em)){syncLog("a portrait could not be uploaded; will retry");last="";
+     if(/permission/i.test(em)){try{fsM.getDoc(tomb(uu)).then(function(t){if(t.exists()){deletedUids[uu]=1;broadcast();}},function(){});}catch(_){}}}   /* a deletion only if the tombstone really stands */
+    else if(/permission/i.test(em))deletedUids[uu]=1;
     else if(/maximum allowed size|exceeds the maximum|too large|invalid-argument/i.test(em)){tooBig=true;syncLog("this account is too large to sync in one piece; back up from the Help menu");}   /* keep last=s: do not resend the same oversized copy every few seconds */
     else last="";
     broadcast();});}
@@ -10421,22 +10542,24 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
    },function(){return true;});
   }
   /* Decide what a successful read means for this device (see the v77b note at the top). */
-  function settle(u,cloudS){
+  function settle(u,cloudS,cloudRaw){
    if(reloading)return;   /* a refresh is already under way */
    noteLocal();                                   /* record an edit made since the last tick */
    var dr=readDirty(),dirty=!!(dr&&dr.uid===u.uid);
    var cObj=null,cc=0;if(cloudS!=null){try{cObj=JSON.parse(cloudS);cc=countChars(cObj);}catch(e){cObj=null;cc=-1;}}
-   var target=null;
-   var idsOnly=false;if(!dirty){if(cObj&&wouldChange(cObj)){if(sameButIds(cObj))idsOnly=true;else target=cObj;}}
+   var target=null,cFix=cObj?loaderForm(cObj):null,repaired=!!(cFix&&cFix!==cObj);   /* R6-2 */
+   if(repaired)cc=countChars(cFix);   /* R7-2: count what the device will actually hold */
+   var idsOnly=false;if(!dirty){if(cFix&&wouldChange(cFix)){if(sameButIds(cFix))idsOnly=true;else target=cFix;}}
    else if(cObj){var mg=mergeInto(cObj,dr);if(mg)target=mg;}
    if(target){applyAndRefresh(u,target,cloudS);return;}
    deferred=null;cloudCount=cc;loadedUid=u.uid;retryN=0;if(retryT){clearTimeout(retryT);retryT=null;}
+   ackedCloud=(cloudS==null)?null:(typeof cloudRaw==="string"?cloudRaw:null);pushFails=0;pushHold=0;
    try{localStorage.setItem(OWNER_KEY,u.uid);}catch(e){}
    if(dirty){
     last=(cloudS!=null)?cloudS:"";acked=last;
     if(JSON.stringify(gather())===last)clearDirty(u.uid);
     else syncLog("uploading this device's unsynced changes (merged with the cloud copy)");
-   } else { last=JSON.stringify(gather());acked=(cloudS!=null)?cloudS:"";if((cloudS==null&&countChars(gather())>0)||idsOnly)last=""; }   /* v78: no cloud copy yet: upload this device's characters once */
+   } else { last=JSON.stringify(gather());acked=(cloudS!=null)?cloudS:"";if((cloudS==null&&countChars(gather())>0)||idsOnly||repaired)last=""; }   /* R6-2: send the repaired copy once */   /* v78: no cloud copy yet: upload this device's characters once */
    lastSyncedAt=Date.now();syncing=false;errState=false;broadcast();push();
   }
   function applyAndRefresh(u,target,cloudS){
@@ -10452,12 +10575,15 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
   function loadCloud(u){
     loadingUid=u.uid;
     return raceOut(fsM.getDoc(ref(u.uid)),20000,new Error("read-timeout")).then(function(snap){
-     if(loadingUid===u.uid)loadingUid="";
-     if(!(user&&user.uid===u.uid)){syncing=false;broadcast();return;}   /* a late answer for an account no longer signed in changes nothing */
+     if(!(user&&user.uid===u.uid)){if(loadingUid===u.uid)loadingUid="";syncing=false;broadcast();return;}   /* a late answer for an account no longer signed in changes nothing */
      if(snap.metadata&&snap.metadata.fromCache)throw new Error("from-cache");   /* only a server answer counts as a read */
      var d=snap.exists()?snap.data():null;
      try{if(d&&d.ai_ok)localStorage.setItem("ss-ai-ok","1");}catch(e){}   /* v78: AI Disclosure answer follows the account (read only; written only when this account's player taps OK) */
-     settle(u,(d&&typeof d.sheetsnap_blob==="string")?d.sheetsnap_blob:null);
+     var raw=(d&&typeof d.sheetsnap_blob==="string")?d.sheetsnap_blob:null;
+     return hydrate(u.uid,raw).then(function(cs){   /* v85: a failed portrait read fails the whole read (retried) */
+      if(loadingUid===u.uid)loadingUid="";
+      if(!(user&&user.uid===u.uid)){syncing=false;broadcast();return;}
+      settle(u,cs,raw);});
     }).catch(function(e){if(loadingUid===u.uid)loadingUid="";if(!(user&&user.uid===u.uid))return;syncing=false;errState=navigator.onLine;broadcast();scheduleRetry(u);});
   }
   authM.onAuthStateChanged(auth,function(u){var firstAuth=(authCalls++===0);
@@ -10465,7 +10591,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
    user=(u&&u.isAnonymous)?null:u;
    pending=false;
    /* v77b: every auth change starts a fresh "cloud not read yet" state */
-   loadedUid="";loadingUid="";cloudCount=-1;acked=null;retryN=0;refusedFor="";deferred=null;notedS=null;if(retryT){clearTimeout(retryT);retryT=null;}
+   loadedUid="";loadingUid="";cloudCount=-1;acked=null;ackedCloud=null;pushFails=0;pushHold=0;retryN=0;refusedFor="";deferred=null;notedS=null;if(retryT){clearTimeout(retryT);retryT=null;}
    if(!u||!u.isAnonymous)authKnown=true;
    if(u&&!u.isAnonymous){
     var markUid="";try{var mk0=readDirty();markUid=(mk0&&mk0.uid)||"";}catch(e){}
@@ -10490,7 +10616,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
   window.ssResolveForeign=function(choice){
    if(!foreign||!user||user.uid!==foreign.uid)return;var u=user;
    if(choice==="remove"){
-    try{["ss-chars","ss-fallen","ss-nav",DIRTY_KEY,"ss-ai-ok"].forEach(function(k){localStorage.removeItem(k);});localStorage.setItem(OWNER_KEY,u.uid);}catch(e){}
+    try{["ss-chars","ss-fallen","ss-nav",DIRTY_KEY,"ss-ai-ok","ss-pup"].forEach(function(k){localStorage.removeItem(k);});localStorage.setItem(OWNER_KEY,u.uid);}catch(e){}
     try{ssIdb.del("capture","draft");ssIdb.all("scans").then(function(a){a.forEach(function(x){ssIdb.del("scans",x[0]);});});}catch(e){}
     foreign=null;reloading=true;setTimeout(function(){location.reload();},300);return;}
    foreignOk[u.uid]=1;foreign=null;
@@ -10506,7 +10632,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
   window.ssSignOutAndClear=function(){
    return new Promise(function(res){var done=false,t0=Date.now();
     function finish(){if(done)return;done=true;reloading=true;
-     try{["ss-chars","ss-fallen","ss-nav",DIRTY_KEY,OWNER_KEY,"ss-ai-ok"].forEach(function(k){localStorage.removeItem(k);});}catch(e){}
+     try{["ss-chars","ss-fallen","ss-nav",DIRTY_KEY,OWNER_KEY,"ss-ai-ok","ss-pup"].forEach(function(k){localStorage.removeItem(k);});}catch(e){}
      try{ssIdb.del("capture","draft");ssIdb.all("scans").then(function(a){a.forEach(function(x){ssIdb.del("scans",x[0]);});});}catch(e){}
      setTimeout(function(){res(true);location.reload();},300);}
     try{window.ssSignOut();}catch(e){}
@@ -10515,7 +10641,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
   setInterval(function(){if(user){tryDeferred();var s=JSON.stringify(gather());if(s!==last){if(timer)clearTimeout(timer);timer=setTimeout(push,1200);}}},2000);
   window.addEventListener("pagehide",push);
   document.addEventListener("visibilitychange",function(){if(document.visibilityState==="hidden"){tryDeferred();push();}});
-  window.addEventListener("online",function(){if(user){broadcast();if(loadedUid!==user.uid){retryN=0;retryLoad();}else push();}else broadcast();});
+  window.addEventListener("online",function(){pushFails=0;pushHold=0;if(user){broadcast();if(loadedUid!==user.uid){retryN=0;retryLoad();}else push();}else broadcast();});   /* R4-2: back online = no back-off */
   window.addEventListener("offline",broadcast);
   setInterval(function(){if(user&&!syncing&&navigator.onLine)broadcast();},20000);
  }).catch(function(){window.ssAuth={signedIn:false,email:"",status:"Sign in",detail:"sync offline"};try{window.dispatchEvent(new CustomEvent("ss-auth"));}catch(e){}});
