@@ -3160,13 +3160,13 @@ function SsNoticeSheet({ T, title, body, primary, onPrimary, secondary, onSecond
   children,
   btn(primary, onPrimary, "primary", "p"), btn(secondary, onSecondary, "s", "s"), btn(tertiary, onTertiary, "t", "t"))), document.body);
 }
-/* ST-01 (Apple 5.1.2(i)) - Will's approved wording, 2026-10-09. Shown once before the first scan. */
+/* ST-01 (Apple 5.1.2(i)) - Will's approved wording, 2026-10-26 (v81: states the outside AI service, per the Apple reviewer gate). Shown once before the first scan. */
 function AiDisclosureSheet({ T, onOk, onNotNow }) {
   useSsBack(true, onNotNow);
   const [page, setPage] = useState(null);
   return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(SsNoticeSheet, {
     T: T, title: "AI Disclosure", busyKey: "ai",
-    body: "Sheetmancer's scan uses AI to carefully read and copy your Character Sheet information from the photos or PDFs you submit. It does not generate content.",
+    body: "To read your pages, Sheetmancer sends the photos or PDFs you submit to an outside AI service. It copies your character's information into the app, does not generate content, and your pages are not used to train AI.",
     primary: "OK", onPrimary: onOk, secondary: "Not now", onSecondary: onNotNow
   }, /*#__PURE__*/React.createElement("button", {
     onClick: () => setPage("privacy"), className: "ss-press",
@@ -3499,7 +3499,7 @@ function BuyScansSheet({ T, onClose, onBought, reason }) {
     style: { minHeight: 44, minWidth: 120, padding: "10px 24px", background: "transparent", border: `1.5px solid ${T.borderLight}`, borderRadius: 22, cursor: buying ? "default" : "pointer", fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, color: T.textMuted, fontSize: 14, letterSpacing: 0.5 }
   }, buying ? "Working\u2026" : (buyMsg && buyMsg.ok ? "Done" : "Not now"))) : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("p", {
     className: "smx-pretty", style: { fontSize: 14, lineHeight: 1.6, color: T.textSoft, margin: "0 0 18px" }
-  }, "Each new character, or Add pages on one you have, uses one Character Scan, and your purchase includes ", INCLUDED_SLOTS, ". Deleting a character doesn't give a scan back. To buy more scans, open ", /*#__PURE__*/React.createElement("span", { translate: "no" }, "Sheetmancer"), " from the App Store or Google Play."), /*#__PURE__*/React.createElement("button", {
+  }, "Each new character, or Add pages on one you have, uses one Character Scan, and your purchase includes ", INCLUDED_SLOTS, ". Deleting a character doesn't give a scan back. To buy more scans, open ", /*#__PURE__*/React.createElement("span", { translate: "no" }, "Sheetmancer"), (/PWAShell/.test(navigator.userAgent || "") ? " from the App Store." : (window.ssWrapped ? " from Google Play." : " from the App Store or Google Play."))), /*#__PURE__*/React.createElement("button", {
     onClick: close, className: "ss-press",
     style: { minHeight: 44, padding: "11px 24px", background: T.accent, border: "none", borderRadius: 22, cursor: "pointer", fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, color: T.bg, fontSize: 14, letterSpacing: 0.5 }
   }, "Got it")))), document.body);
@@ -10026,7 +10026,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
   window.ssDeleteAccount=function(opts){
    opts=opts||{};
    return new Promise(function(resolve,reject){
-    if(deleteBusy){reject(derr("in-progress","A deletion is already running — give it a moment."));return;}
+    if(deleteBusy){reject(derr("in-progress","A deletion is already running. Give it a moment."));return;}
     var u=auth.currentUser;
     if(!u||u.isAnonymous){reject(derr("not-signed-in","You're not signed in."));return;}
     var uid=u.uid,mySeq=++deleteSeq;
@@ -10061,7 +10061,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
      /* A retired attempt (cancelled, superseded) owns no global state: it never
         armed - ssCancelDelete refuses to retire an armed chain - so it must not
         stop() a live chain's timer, release its deleteBusy, or lift its guard. */
-     if(stale()){if(!e.ssMsg)e.ssMsg="Cancelled — nothing has changed.";settle(function(){reject(e);});return;}
+     if(stale()){if(!e.ssMsg)e.ssMsg="Cancelled. Nothing has changed.";settle(function(){reject(e);});return;}
      var alive=!!(auth.currentUser&&auth.currentUser.uid===uid);
      var drop=(tombIssued&&alive)
        ? fsM.deleteDoc(tomb(uid)).then(function(){return true;},function(){return false;})
@@ -10081,7 +10081,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
        finish or roll back, and so a second attempt is refused meanwhile. */
     function timedOut(){settle(function(){
      broadcast();
-     reject(derr("timeout","This is taking longer than expected. Leave the app open a little longer — it may still finish. The characters on this device are safe either way."));
+     reject(derr("timeout","This is taking longer than expected. Leave the app open a little longer. It may still finish. The characters on this device are safe either way."));
     });}
     /* Reauthentication, done the way mobile actually behaves.
        Firebase only insists on a RECENT login, not a fresh popup - so if the user
@@ -10100,7 +10100,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
            re-auth that is already running; it never touches the delete sequence. */
         var h={ok:function(){finish(true);},
                fail:function(reason){finish(false,reason==="canceled"
-                 ?derr("reauth-cancelled","Confirmation was cancelled — nothing has changed.")
+                 ?derr("reauth-cancelled","Confirmation was cancelled. Nothing has changed.")
                  :derr("reauth-unavailable","We couldn't confirm it's you, so nothing has been changed. Please sign out, sign in again, then delete your account."));}};
         /* Safety net: a reauth that succeeded but whose popup message was lost still
            advances lastSignInTime, so watch for that rather than trusting one channel. */
@@ -10139,15 +10139,15 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
     /* STEP 1 - reauthenticate. Nothing is destroyed if this fails, times out, or is
        cancelled, so the UI keeps an escape open for the whole step. */
     raceOut(reauthStep(),REAUTH_MS,
-      derr("reauth-timeout","We didn't hear back from the sign-in window. Nothing has been changed — please try again."))
+      derr("reauth-timeout","We didn't hear back from the sign-in window. Nothing has been changed. Please try again."))
     .then(function(){
-     if(stale())throw derr("cancelled","Cancelled — nothing has changed.");
+     if(stale())throw derr("cancelled","Cancelled. Nothing has changed.");
      var cur=auth.currentUser;
-     if(!cur||cur.uid!==uid)throw derr("identity-changed","Something changed while we were working. Nothing has been deleted — please try again.");
+     if(!cur||cur.uid!==uid)throw derr("identity-changed","Something changed while we were working. Nothing has been deleted. Please try again.");
      /* captured while the account is alive; outlives it by design */
-     return raceOut(cur.getIdToken(true),30000,derr("token-timeout","We couldn't confirm your sign-in just now. Nothing has been changed — please try again."));
+     return raceOut(cur.getIdToken(true),30000,derr("token-timeout","We couldn't confirm your sign-in just now. Nothing has been changed. Please try again."));
     }).then(function(tok){
-     if(stale())throw derr("cancelled","Cancelled — nothing has changed.");
+     if(stale())throw derr("cancelled","Cancelled. Nothing has changed.");
      savedTok=tok;
      if(opts.onDestructive){try{opts.onDestructive();}catch(_){}}   /* past the point of cancelling */
      deleting=true;deletedUids[uid]=1;                 /* stop the sync loop re-creating the doc */
@@ -10281,12 +10281,12 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
      var code=String(e.code||e.message||"");
      var fixed=e.ssMsg;                                 /* messages raised above are already true */
      recover(e,function(st){
-      var tail=(tombIssued&&!st.tombGone)?" Syncing is paused on this device until a delete succeeds — reopening the app in a few minutes clears it.":"";
+      var tail=(tombIssued&&!st.tombGone)?" Syncing is paused on this device until a delete succeeds. Reopening the app in a few minutes clears it.":"";
       if(st.gone){
        /* phase 3 = the account really is gone. phase 2 = only the cloud copy is. */
-       if(phase>=3)return "Your account was removed, but we couldn't confirm the last step. Nothing more is needed on this device — the characters here are safe.";
-       if(phase>=2)return "Your cloud copy was removed, but you're no longer signed in to that account, so we couldn't finish deleting it. Sign in again and try once more — the characters on this device are safe."+tail;
-       return "You're no longer signed in to that account, so we stopped before finishing. Sign in again and try once more — the characters on this device are safe."+tail;
+       if(phase>=3)return "Your account was removed, but we couldn't confirm the last step. Nothing more is needed on this device. The characters here are safe.";
+       if(phase>=2)return "Your cloud copy was removed, but you're no longer signed in to that account, so we couldn't finish deleting it. Sign in again and try once more. The characters on this device are safe."+tail;
+       return "You're no longer signed in to that account, so we stopped before finishing. Sign in again and try once more. The characters on this device are safe."+tail;
       }
       if(fixed&&phase<2)return fixed;
       if(phase>=2){
@@ -10294,10 +10294,10 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
         ? "We removed your cloud copy but couldn't delete the account itself. The characters on this device are safe, and the cloud copy has been put back."
         : "We removed your cloud copy but couldn't delete the account itself. The characters on this device are safe, but we couldn't put the cloud copy back yet.")+" Please try again."+tail;
       }
-      if(phase===1)return "We couldn't remove your cloud copy. Nothing has been deleted — please try again."+tail;
+      if(phase===1)return "We couldn't remove your cloud copy. Nothing has been deleted. Please try again."+tail;
       /* phase 0 - nothing was destroyed. Popups only ever fail here. */
       if(/popup-blocked/i.test(code))return "Your browser blocked the confirmation window. Allow pop-ups for this site, then try again.";
-      if(/popup|cancel|closed/i.test(code))return "Confirmation was cancelled — nothing has changed.";
+      if(/popup|cancel|closed/i.test(code))return "Confirmation was cancelled. Nothing has changed.";
       return "We couldn't finish that just now. Your account has not been changed."+tail;
      });
     });
