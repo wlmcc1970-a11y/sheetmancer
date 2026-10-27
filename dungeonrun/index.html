@@ -44,8 +44,8 @@
 })();
 </script>
 <script>
-/* Limited-time price window (Will 2026-10-26): Nov 2 2026 00:00 PT to Dec 1 2026 00:00 PT. Outside it the page shows the regular price. */
-(function(){try{var n=Date.now();if(n>=Date.UTC(2026,10,2,7)&&n<Date.UTC(2026,11,1,8)){var e=document.querySelectorAll('[data-sale]');for(var i=0;i<e.length;i++)e[i].innerHTML=e[i].getAttribute('data-sale');}}catch(x){}})();
+/* Limited-time price window: OFF until launch day (Will 2026-10-26: the sale starts the same day the ads launch). Set the start date then. */
+(function(){try{var n=Date.now();if(n>=Date.UTC(2099,0,1,8)&&n<Date.UTC(2026,11,1,8)){var e=document.querySelectorAll('[data-sale]');for(var i=0;i<e.length;i++)e[i].innerHTML=e[i].getAttribute('data-sale');}}catch(x){}})();
 </script>
 </body>
 </html>
