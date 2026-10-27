@@ -3224,7 +3224,7 @@ function LockLine({ T }) {
     style: { display: "inline-flex", alignItems: "center", gap: 6, marginTop: 7, fontSize: 13.5, fontWeight: 600, color: T.accent, fontFamily: "'EB Garamond',Georgia,serif", letterSpacing: 0.2 }
   }, /*#__PURE__*/React.createElement("svg", {
     viewBox: "0 0 24 24", width: 14, height: 14, fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": "true"
-  }, /*#__PURE__*/React.createElement("rect", { x: 5, y: 11, width: 14, height: 9, rx: 2 }), /*#__PURE__*/React.createElement("path", { d: "M8 11V8a4 4 0 0 1 8 0v3" })), "Sign in to scan (free)");
+  }, /*#__PURE__*/React.createElement("rect", { x: 5, y: 11, width: 14, height: 9, rx: 2 }), /*#__PURE__*/React.createElement("path", { d: "M8 11V8a4 4 0 0 1 8 0v3" })), "Sign in (free) to scan");
 }
 function ConfirmCreate({ T, count, slotsLeft, onConfirm, onClose }) {
   useSsBack(true, onClose);
@@ -3490,7 +3490,7 @@ function BuyScansSheet({ T, onClose, onBought, reason }) {
     className: "smx-pretty", style: { fontSize: 14, lineHeight: 1.6, color: T.textSoft, margin: "0 0 16px" }
   }, "Each new character, or Add pages on one you have, uses one Character Scan (up to 10 pages). Your purchase includes ", INCLUDED_SLOTS, ". Deleting a character doesn't give a scan back. You can buy more below anytime."), ["com.digirunestudios.sheetmancer.scan1", "com.digirunestudios.sheetmancer.scan5"].map(function (pid, ix) {
     var pr = (window.ssProducts || {})[pid] || {};
-    return /*#__PURE__*/React.createElement("div", { key: pid, style: { marginBottom: 10 } }, /*#__PURE__*/React.createElement("button", { disabled: buying, onClick: () => doBuy(pid), className: "ss-press", style: pill }, "Buy " + (pr.scans || "") + (pr.scans === 1 ? " scan" : " scans") + " \u00b7 " + (pr.price || "")), ix === 1 && /*#__PURE__*/React.createElement("div", { style: { fontSize: 12.5, color: T.accent, marginTop: 4, fontFamily: "'Cinzel',Georgia,serif", letterSpacing: 0.4 } }, "Best value"));
+    return /*#__PURE__*/React.createElement("div", { key: pid, style: { marginBottom: 10 } }, /*#__PURE__*/React.createElement("button", { disabled: buying, onClick: () => doBuy(pid), className: "ss-press", style: pill }, "Buy " + (pr.scans || "") + (pr.scans === 1 ? " scan" : " scans")), ix === 1 && /*#__PURE__*/React.createElement("div", { style: { fontSize: 12.5, color: T.accent, marginTop: 4, fontFamily: "'Cinzel',Georgia,serif", letterSpacing: 0.4 } }, "Best value"));
   }), canRestore && /*#__PURE__*/React.createElement("button", {
     disabled: buying, onClick: doRestore, className: "ss-press",
     style: { display: "block", width: "100%", minHeight: 44, padding: "10px 12px", margin: "2px 0 10px", background: "transparent", border: "none", cursor: buying ? "default" : "pointer", fontFamily: "Georgia,serif", fontSize: 14, color: T.accent, textDecoration: "underline", textUnderlineOffset: 3 }
