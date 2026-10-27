@@ -66,118 +66,106 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=EB+Garamond:ital@1&display=swap" rel="stylesheet">
 <style>
-
-  /* v78: balanced lines (no lone last words) */
   h1,h2,h3,.lede{text-wrap:balance} p,li{text-wrap:pretty} .nw{white-space:nowrap}
   :root{
-    --bg:#0b0806; --bg2:#120d0a; --surface:#191210; --surface2:#241a12;
-    --line:rgba(212,168,67,.20); --line2:rgba(212,168,67,.42);
-    --gold:#D4A843; --gold2:#C4832A; --goldlite:#F3D07A; --cream:#F4EAD4; --body:#CFC1A1; --muted:#9c8e75; --ink:#160d05;
+    --bg:#0E0A08; --bg2:#140f0b; --line:rgba(214,168,82,.22); --line2:rgba(214,168,82,.45);
+    --gold:#D6A852; --goldlite:#F3D58A; --cream:#F3E8D2; --body:#D9CBB0; --muted:#A8987C;
+    --paper:linear-gradient(176deg,#FBF3E2 0%,#F4E8CF 55%,#ECDDBE 100%); --ink:#1E1309; --inksoft:#3E2A16; --rubric:#7A2318;
     --disp:'Cormorant Garamond',Georgia,serif; --label:'Cinzel',Georgia,serif; --voice:'EB Garamond',Georgia,serif;
-    --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
-    --wrap:1080px;
+    --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; --wrap:1080px;
   }
-  *{box-sizing:border-box}
-  html{scroll-behavior:smooth}
+  *{box-sizing:border-box} html{scroll-behavior:smooth}
   body{margin:0;background:var(--bg);color:var(--body);font-family:var(--sans);line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden}
-  img{max-width:100%;display:block}
-  a{color:var(--gold)}
-  .wrap{max-width:var(--wrap);margin:0 auto;padding:0 22px}
-  section{position:relative}
-  .kick{font-family:var(--label);font-weight:600;font-size:12px;letter-spacing:.34em;text-transform:uppercase;color:var(--gold);margin:0 0 14px}
-  h2{font-family:var(--disp);font-weight:700;color:var(--cream);font-size:clamp(28px,4.4vw,44px);line-height:1.08;margin:0 0 10px;letter-spacing:.5px}
-  .lede{font-family:var(--voice);font-style:italic;font-size:clamp(17px,2.2vw,21px);color:var(--goldlite);margin:0 0 6px}
-  p{font-size:16px}
+  img{max-width:100%;display:block} a{color:var(--gold)}
+  .wrap{max-width:var(--wrap);margin:0 auto;padding:0 20px} section{position:relative}
+  .kick{font-family:var(--label);font-weight:600;font-size:12px;letter-spacing:.34em;text-transform:uppercase;color:var(--gold);margin:0 0 12px}
+  h2{font-family:var(--disp);font-weight:700;color:var(--cream);font-size:clamp(30px,4.6vw,46px);line-height:1.06;margin:0 0 10px;letter-spacing:.4px}
+  .lede{font-family:var(--voice);font-style:italic;font-size:clamp(17px,2.2vw,21px);color:var(--goldlite);margin:0}
+  .rule{display:flex;align-items:center;justify-content:center;gap:12px;margin:16px auto 0;color:var(--gold)}
+  .rule:before,.rule:after{content:"";height:1px;width:min(120px,22vw);background:linear-gradient(90deg,transparent,var(--gold))}
+  .rule:after{background:linear-gradient(90deg,var(--gold),transparent)}
+  .rule i{width:7px;height:7px;border:1px solid var(--gold);transform:rotate(45deg);display:block}
+  .band{padding:72px 0} .head{max-width:680px;margin:0 auto 34px;text-align:center}
 
-  /* HERO */
-  .hero{padding:56px 0 20px;text-align:center;background:
-      radial-gradient(120% 90% at 50% -10%, #241a12 0%, #150f0b 42%, var(--bg) 78%);
-      border-bottom:1px solid var(--line)}
-  .appicon{width:84px;height:84px;border-radius:20px;margin:0 auto 16px;box-shadow:0 0 0 1px rgba(243,208,122,.35),0 14px 44px rgba(0,0,0,.6),0 0 60px rgba(212,168,67,.25)}
-  .brand{font-family:var(--disp);font-weight:700;font-size:26px;letter-spacing:1px;margin:0}
-  .brand .a{color:var(--cream)} .brand .b{color:var(--gold);text-shadow:0 0 22px rgba(243,208,122,.4)}
-  .subtag{font-family:var(--label);font-size:11px;letter-spacing:.32em;color:var(--gold2);margin:8px 0 26px}
-  .hero h1{font-family:var(--disp);font-weight:700;color:var(--cream);font-size:clamp(40px,8vw,74px);line-height:1;margin:0 0 18px;letter-spacing:.5px}
-  .hero h1 .g{color:var(--gold);text-shadow:0 0 30px rgba(243,208,122,.35)}
-  .hero-sub{max-width:660px;margin:0 auto 30px;font-size:clamp(16px,2.1vw,19px);color:var(--body)}
+  /* HERO: the candlelit table from the Spilled Coffee film */
+  .hero{min-height:min(92vh,860px);display:flex;align-items:flex-end;text-align:center;padding:120px 0 56px;
+    background:linear-gradient(180deg,rgba(14,10,8,.15) 0%,rgba(14,10,8,.35) 38%,rgba(14,10,8,.88) 74%,var(--bg) 100%),
+               radial-gradient(70% 55% at 50% 35%,rgba(255,190,110,.10),transparent 70%),
+               url(./about/hero-table.jpg) center 30%/cover no-repeat,var(--bg)}
+  .hero .wrap{width:100%}
+  .appicon{width:78px;height:78px;border-radius:18px;margin:0 auto 14px;box-shadow:0 0 0 1px rgba(243,208,122,.4),0 14px 44px rgba(0,0,0,.7),0 0 70px rgba(230,170,80,.35)}
+  .brand{font-family:var(--disp);font-weight:700;font-size:clamp(44px,8vw,76px);line-height:1;letter-spacing:.5px;margin:0;text-shadow:0 3px 14px rgba(0,0,0,.8)}
+  .brand .a{color:var(--cream)} .brand .b{color:var(--gold);text-shadow:0 0 30px rgba(243,208,122,.45),0 3px 14px rgba(0,0,0,.8)}
+  .subtag{font-family:var(--label);font-size:11.5px;letter-spacing:.32em;color:var(--goldlite);margin:12px 0 0}
+  .hero h1{font-family:var(--voice);font-style:italic;font-weight:400;color:var(--cream);font-size:clamp(22px,3.4vw,30px);margin:18px 0 12px;text-shadow:0 2px 10px rgba(0,0,0,.8)}
+  .hero-sub{max-width:640px;margin:0 auto 28px;font-size:clamp(15.5px,2vw,18px);color:var(--body);text-shadow:0 1px 8px rgba(0,0,0,.9)}
   .hero-sub b{color:var(--cream);font-weight:600}
-  .trust{font-family:var(--label);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin:22px 0 0}
-  .trust b{color:var(--gold)}
+  .once{font-family:var(--label);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin:18px 0 0}
 
-  /* store buttons */
   .cta{display:flex;gap:14px;flex-wrap:wrap;justify-content:center}
-  .sbtn{display:inline-flex;align-items:center;gap:11px;background:#000;color:#fff;text-decoration:none;border-radius:12px;padding:11px 20px 11px 16px;border:1px solid rgba(243,208,122,.4);transition:transform .15s ease,box-shadow .2s ease,border-color .2s}
-  .sbtn:hover{transform:translateY(-2px);box-shadow:0 10px 30px rgba(0,0,0,.5),0 0 24px rgba(212,168,67,.3);border-color:var(--gold)}
-  .sbtn .txt{display:flex;flex-direction:column;line-height:1.12;text-align:left;font-family:var(--sans)}
-  .sbtn .txt small{font-size:11px;opacity:.92}
-  .sbtn .txt b{font-size:20px;font-weight:600}
+  .sbtn{display:inline-flex;align-items:center;gap:11px;background:#000;color:#fff;text-decoration:none;border-radius:12px;padding:11px 20px 11px 16px;border:1px solid rgba(243,208,122,.45);transition:transform .15s ease,box-shadow .2s ease,border-color .2s;min-height:52px}
+  .sbtn:hover{transform:translateY(-2px);box-shadow:0 10px 30px rgba(0,0,0,.5),0 0 24px rgba(214,168,82,.35);border-color:var(--gold)}
+  .sbtn .txt{display:flex;flex-direction:column;line-height:1.12;text-align:left;font-family:var(--sans)} .sbtn .txt small{font-size:11px;opacity:.92} .sbtn .txt b{font-size:20px;font-weight:600}
 
-  /* feature-graphic banner */
-  .banner{padding:34px 0 4px}
-  .banner .frame{max-width:940px;margin:0 auto;border-radius:16px;overflow:hidden;border:1px solid var(--line2);box-shadow:0 24px 70px rgba(0,0,0,.55)}
+  /* TOUR */
+  .tour{background:linear-gradient(180deg,var(--bg) 0%,var(--bg2) 100%)}
+  .gallery{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+  .gallery button{padding:0;border:0;background:none;cursor:zoom-in;border-radius:14px;overflow:hidden;line-height:0;display:block}
+  .gallery img{width:100%;height:auto;border-radius:14px;border:1px solid var(--line);box-shadow:0 16px 44px rgba(0,0,0,.55);transition:transform .25s ease,box-shadow .25s ease,border-color .2s}
+  .gallery button:hover img,.gallery button:focus-visible img{transform:scale(1.025);border-color:var(--line2);box-shadow:0 22px 56px rgba(0,0,0,.65),0 0 34px rgba(214,168,82,.22)}
+  .swipe{display:none;font-family:var(--label);font-size:10.5px;letter-spacing:.24em;text-transform:uppercase;color:var(--muted);text-align:center;margin:14px 0 0}
 
-  /* generic section spacing */
-  .band{padding:64px 0}
-  .band.center{text-align:center}
-  .head{max-width:660px;margin:0 auto 34px;text-align:center}
+  /* WHAT YOU GET: cream index cards, like the app's own pages */
+  .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:0 0 34px}
+  .card{background:var(--paper);border-left:3px solid var(--rubric);border-radius:3px 8px 8px 3px;padding:14px 16px 13px;box-shadow:0 10px 24px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.6)}
+  .card b{display:block;font-family:var(--disp);font-weight:700;color:var(--ink);font-size:19px;line-height:1.15}
+  .card > span{display:block;font-size:13px;color:var(--inksoft);margin-top:3px;line-height:1.4}
+  .card b .nw{white-space:nowrap}
+  .pricebox{text-align:center} .terms{max-width:600px;margin:0 auto 22px;font-size:14px;color:var(--muted);line-height:1.55}
 
-  /* feature checklist buttons */
-  .featgrid{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;margin:0 0 30px}
-  .feat{width:calc((100% - 24px)/3);display:flex;align-items:flex-start;gap:11px;background:linear-gradient(180deg,var(--surface2),var(--surface));border:1px solid var(--line);border-radius:12px;padding:15px 16px;transition:transform .16s ease,border-color .2s,box-shadow .2s}
-  .feat:hover{transform:translateY(-3px);border-color:var(--line2);box-shadow:0 14px 34px rgba(0,0,0,.42)}
-  .feat .ck{flex:0 0 auto;width:22px;height:22px;color:var(--gold);margin-top:2px}
-  .feat .lbl b{display:block;font-family:var(--disp);font-weight:700;color:var(--cream);font-size:18.5px;letter-spacing:.2px;line-height:1.16}
-  .feat .lbl span{display:block;font-size:12.5px;color:var(--muted);margin-top:3px;line-height:1.42}
+  /* THE FILM */
+  .film{background:linear-gradient(90deg,rgba(14,10,8,.96) 0%,rgba(14,10,8,.78) 50%,rgba(14,10,8,.96) 100%),url(./about/film-band.jpg) center/cover no-repeat,var(--bg);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+  .filmgrid{display:grid;grid-template-columns:minmax(260px,380px) 1fr;gap:56px;align-items:center;max-width:920px;margin:0 auto}
+  .screen{border-radius:20px;overflow:hidden;border:1px solid var(--line2);background:#000;box-shadow:0 30px 80px rgba(0,0,0,.7),0 0 70px rgba(230,170,80,.18)}
+  .screen video{display:block;width:100%;height:auto;aspect-ratio:9/16;background:#000}
+  .filmtext h2{margin-bottom:12px} .filmtext p{font-size:16.5px;margin:0 0 22px}
+  .filmtext .cta{justify-content:flex-start}
 
-  /* closing pricing detail + cta */
-  .pricebox{text-align:center}
-  .terms{max-width:600px;margin:6px auto 24px;font-size:13.5px;color:var(--muted);line-height:1.55}
-
-  /* footer */
+  .guide{padding:44px 0;text-align:center}
   footer{border-top:1px solid var(--line);padding:34px 0 40px;text-align:center;color:var(--muted);font-size:13px}
   .fbrand{font-family:var(--disp);font-weight:700;color:var(--cream);font-size:20px;letter-spacing:.5px}
-  .ftag{font-family:var(--voice);font-style:italic;color:var(--gold2);font-size:14px;margin:2px 0 14px}
-  .flinks a{color:var(--body);text-decoration:none;margin:0 9px;font-size:13px;white-space:nowrap}
-  .flinks a:hover{color:var(--gold)}
-  .social{margin:14px 0 10px}
-  .social a{color:var(--gold);text-decoration:none;font-family:var(--label);font-size:11px;letter-spacing:.14em;text-transform:uppercase;margin:0 8px;display:inline-block;padding:6px 0}
-  .divider{width:64px;height:1px;background:linear-gradient(90deg,transparent,var(--gold2),transparent);margin:14px auto}
+  .ftag{font-family:var(--voice);font-style:italic;color:var(--gold);font-size:14px;margin:2px 0 14px}
+  .flinks a{color:var(--body);text-decoration:none;margin:0 9px;font-size:13px;white-space:nowrap;display:inline-block;padding:6px 0} .flinks a:hover{color:var(--gold)}
+  .social{margin:14px 0 10px} .social a{color:var(--gold);text-decoration:none;font-family:var(--label);font-size:11px;letter-spacing:.14em;text-transform:uppercase;margin:0 8px;display:inline-block;padding:8px 0}
+  .divider{width:64px;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);margin:14px auto}
 
-  /* screenshot gallery + lightbox */
-  .gallery{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
-  .gallery button{padding:0;border:0;background:none;cursor:zoom-in;border-radius:14px;overflow:hidden;line-height:0;display:block}
-  .gallery img{width:100%;height:auto;border-radius:14px;border:1px solid var(--line);box-shadow:0 14px 40px rgba(0,0,0,.5);transition:transform .25s ease,box-shadow .25s ease,border-color .2s}
-  .gallery button:hover img,.gallery button:focus-visible img{transform:scale(1.03);border-color:var(--line2);box-shadow:0 20px 52px rgba(0,0,0,.6),0 0 30px rgba(212,168,67,.2)}
-  .lb{position:fixed;inset:0;background:rgba(7,5,3,.93);display:none;align-items:center;justify-content:center;z-index:200;padding:24px}
+  .lb{position:fixed;inset:0;background:rgba(7,5,3,.94);display:none;align-items:center;justify-content:center;z-index:200;padding:24px}
   .lb.open{display:flex}
   .lb img{max-width:96vw;max-height:92vh;width:auto;height:auto;border-radius:12px;border:1px solid var(--line2);box-shadow:0 30px 90px rgba(0,0,0,.75)}
-  .lb .x,.lb .nav{position:absolute;background:rgba(26,19,14,.9);border:1px solid var(--line2);color:var(--gold);cursor:pointer;display:flex;align-items:center;justify-content:center;user-select:none;line-height:1}
+  .lb .x,.lb .nav{position:absolute;background:rgba(26,19,14,.92);border:1px solid var(--line2);color:var(--gold);cursor:pointer;display:flex;align-items:center;justify-content:center;user-select:none;line-height:1}
   .lb .x{top:16px;right:18px;width:44px;height:44px;border-radius:50%;font-size:26px}
   .lb .nav{top:50%;transform:translateY(-50%);width:48px;height:48px;border-radius:50%;font-size:30px}
   .lb .prev{left:16px} .lb .next{right:16px}
-  .lb .x:hover,.lb .nav:hover{border-color:var(--gold);background:rgba(42,30,20,.96)}
 
-  /* demo video */
-  .demo{max-width:-moz-fit-content;max-width:fit-content;margin:0 auto;background:#000;border:1px solid var(--line2);border-radius:22px;overflow:hidden;box-shadow:0 26px 70px rgba(0,0,0,.6),0 0 60px rgba(212,168,67,.12)}
-  .demo video{display:block;max-width:100%;max-height:640px;width:auto;height:auto}
-
-  /* reveal */
-  .reveal{opacity:0;transform:translateY(20px);transition:opacity .7s ease,transform .7s ease}
-  .reveal.in{opacity:1;transform:none}
-
-  @media(max-width:820px){ .feat{width:calc((100% - 12px)/2)} .gallery{grid-template-columns:repeat(2,1fr)} }
-  @media(max-width:520px){
-    .feat{width:100%}
-    .hero{padding:44px 0 12px}
-    .band{padding:48px 0}
-    .sbtn{padding:10px 18px 10px 14px}
+  .reveal{opacity:0;transform:translateY(20px);transition:opacity .7s ease,transform .7s ease} .reveal.in{opacity:1;transform:none}
+  @media(max-width:820px){
+    .cards{grid-template-columns:repeat(2,1fr)}
+    .filmgrid{grid-template-columns:1fr;gap:28px;text-align:center;max-width:420px}
+    .filmtext .cta{justify-content:center}
   }
-  .scrollcue{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:150;display:flex;flex-direction:column;align-items:center;gap:4px;padding:0;border:0;background:none;color:var(--gold);cursor:pointer;opacity:.82;transition:opacity .45s ease;font-family:var(--label);font-size:9px;letter-spacing:.24em;text-transform:uppercase}
-  .scrollcue.hide{opacity:0;pointer-events:none}
-  .scrollcue .chev{width:32px;height:32px;border:1px solid var(--line2);border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(11,8,6,.6);box-shadow:0 4px 16px rgba(0,0,0,.4);animation:cuebob 1.9s ease-in-out infinite}
-  .scrollcue:hover .chev{border-color:var(--gold);background:rgba(30,21,14,.85)}
-  @keyframes cuebob{0%,100%{transform:translateY(0)}50%{transform:translateY(6px)}}
-  @media(prefers-reduced-motion:reduce){.scrollcue .chev{animation:none}}
+  @media(max-width:620px){
+    .band{padding:52px 0}
+    .hero{min-height:auto;padding:150px 0 40px;background-position:center 20%,center,center 18%}
+    .gallery{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:14px;margin:0 -20px;padding:4px 20px 10px;scrollbar-width:none}
+    .gallery::-webkit-scrollbar{display:none}
+    .gallery button{flex:0 0 74%;scroll-snap-align:center}
+    .swipe{display:block}
+    .cards{grid-template-columns:1fr 1fr;gap:9px}
+    .card{padding:11px 11px 10px}
+    .card b{font-size:16px}
+    .card > span{font-size:12px}
+  }
+  @media(prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}}
 </style>
 <noscript><style>.reveal{opacity:1;transform:none}</style></noscript>
 </head>
@@ -185,48 +173,43 @@
 
 <header class="hero">
   <div class="wrap">
-    <img class="appicon" src="./icon-512.png" alt="Sheetmancer app icon" width="84" height="84">
+    <img class="appicon" src="./icon-512.png" alt="Sheetmancer app icon" width="78" height="78">
     <p class="brand"><span class="a">Sheet</span><span class="b">mancer</span></p>
     <div class="subtag">ANY TABLETOP RPG&nbsp;&nbsp;&middot;&nbsp;&nbsp;ANY SYSTEM</div>
-    <h1>From paper to <span class="g">pocket.</span></h1>
-    <p class="hero-sub"><b>Not just the character sheet.</b> Scan your character's whole stack, the sheet plus spells, charts, backstory and notes (typed or handwritten, up to ten pages per scan), into one accurate, editable <b>Character Hub</b> that syncs across all your devices. Plus so much more.</p>
+    <h1>From paper to pocket.</h1>
+    <p class="hero-sub"><b>Not just the character sheet.</b> Scan your character's whole stack, the sheet plus spells, charts, backstory and notes (typed or handwritten, up to ten pages per scan), into one editable <b>Character Hub</b> that syncs across all your devices.</p>
     <div class="cta">
-      <a class="sbtn" data-goatcounter-click="store-apple-hero" data-goatcounter-title="Sheetmancer site: App Store (top)" href="https://apps.apple.com/app/sheetmancer-character-sheets/id6793684089?pt=128989957&amp;ct=sheetmancer-site&amp;mt=8">
-        <svg width="24" height="24" viewBox="0 0 384 512" fill="#fff" aria-hidden="true"><path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/></svg>
-        <span class="txt"><small>Download on the</small><b>App Store</b></span>
-      </a>
-      <a class="sbtn" data-goatcounter-click="store-google-hero" data-goatcounter-title="Sheetmancer site: Google Play (top)" href="https://play.google.com/store/apps/details?id=com.digirunestudios.sheetmancer&amp;referrer=utm_source%3Dsheetmancer-site%26utm_medium%3Dweb">
-        <svg width="23" height="25" viewBox="0 0 512 512" aria-hidden="true">
+      <a class="sbtn" data-goatcounter-click="store-apple-hero" data-goatcounter-title="Sheetmancer site: App Store (hero)" href="https://apps.apple.com/app/sheetmancer-character-sheets/id6793684089?pt=128989957&amp;ct=sheetmancer-site&amp;mt=8"><svg width="24" height="24" viewBox="0 0 384 512" fill="#fff" aria-hidden="true"><path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/></svg><span class="txt"><small>Download on the</small><b>App Store</b></span></a>
+      <a class="sbtn" data-goatcounter-click="store-google-hero" data-goatcounter-title="Sheetmancer site: Google Play (hero)" href="https://play.google.com/store/apps/details?id=com.digirunestudios.sheetmancer&amp;referrer=utm_source%3Dsheetmancer-site%26utm_medium%3Dweb"><svg width="23" height="25" viewBox="0 0 512 512" aria-hidden="true">
           <path fill="#00D2FF" d="M20.5 12.5c-3.2 3.4-5 8.6-5 15.4v456.2c0 6.8 1.8 12 5 15.4l1.5 1.5 255.5-255.5v-6L22 11z"/>
           <path fill="#00E676" d="M22 11c4.7-5 12.4-5.4 21.1-.5l309 175.6-72.6 72.6z"/>
           <path fill="#FF3A44" d="M279.5 262.7 22 501c8.7 4.9 16.4 4.5 21.1-.5l309-175.6z"/>
           <path fill="#FFCE00" d="M352.1 186.1 424.7 227c19.9 11.3 19.9 29.9 0 41.2l-72.6 40.9-75.6-75.6z"/>
-        </svg>
-        <span class="txt"><small>Get it on</small><b>Google Play</b></span>
-      </a>
+        </svg><span class="txt"><small>Get it on</small><b>Google Play</b></span></a>
     </div>
   </div>
 </header>
 
-<section class="banner">
-  <div class="wrap reveal"><div class="frame"><img src="./about/feature.jpg" alt="Sheetmancer: your character sheets, from paper to pocket. Any tabletop RPG, any system." loading="lazy"></div></div>
-</section>
-
-<section class="band center">
+<section class="band tour">
   <div class="wrap">
     <div class="head reveal">
-      <p class="kick">See it work</p>
-      <h2>Watch paper become playable.</h2>
-      <p class="lede">Your character's pages, the scan, and the finished digital character.</p>
+      <p class="kick">Take the tour</p>
+      <h2>A look inside.</h2>
+      <p class="lede">Real screens from the app. Tap any to enlarge.</p>
+      <div class="rule"><i></i></div>
     </div>
-    <div class="reveal">
-      <div class="demo">
-        <video controls playsinline preload="metadata" poster="./press-demo-poster.jpg">
-          <source src="./press-demo.mp4" type="video/mp4">
-          Your browser can't play this video. <a href="./press-demo.mp4" download="Sheetmancer Demo.mp4">Download it here</a>.
-        </video>
-      </div>
+    <div class="gallery reveal">
+      <button type="button"><img src="./about/shots/01_core.jpg" alt="Scan up to ten pages of character info per scan" loading="lazy" width="900" height="1200"></button>
+      <button type="button"><img src="./about/shots/02_grows.jpg" alt="Level up, raise a stat, swap your gear: tap anything to change it" loading="lazy" width="900" height="1200"></button>
+      <button type="button"><img src="./about/shots/03_make_yours.jpg" alt="Nine custom themes, make the character yours" loading="lazy" width="900" height="1200"></button>
+      <button type="button"><img src="./about/shots/07_dice.jpg" alt="Built-in Dice Library and calculator" loading="lazy" width="900" height="1200"></button>
+      <button type="button"><img src="./about/shots/05_journal.jpg" alt="Session Journal" loading="lazy" width="900" height="1200"></button>
+      <button type="button"><img src="./about/shots/06_album.jpg" alt="Photo Album for table photos, dice and character art" loading="lazy" width="900" height="1200"></button>
+      <button type="button"><img src="./about/shots/04_pdf.jpg" alt="Export a print-ready PDF" loading="lazy" width="900" height="1200"></button>
+      <button type="button"><img src="./about/shots/08_backup.jpg" alt="Back up and sync across your devices" loading="lazy" width="900" height="1200"></button>
+      <button type="button"><img src="./about/shots/09_fallen.jpg" alt="Fallen Heroes archive" loading="lazy" width="900" height="1200"></button>
     </div>
+    <p class="swipe">Swipe for more &rsaquo;</p>
   </div>
 </section>
 
@@ -236,67 +219,69 @@
       <p class="kick">What you get</p>
       <h2>All of your character info pages, off the page.</h2>
       <p class="lede">Everything about your character, on all your devices.</p>
+      <div class="rule"><i></i></div>
     </div>
-    <div class="featgrid reveal">
-      <div class="feat"><svg class="ck" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.4l2.6 2.6L16 9.6"/></svg><span class="lbl"><b>Any tabletop RPG, any edition</b></span></div>
-      <div class="feat"><svg class="ck" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.4l2.6 2.6L16 9.6"/></svg><span class="lbl"><b>Up to 10 pages a scan</b></span></div>
-      <div class="feat"><svg class="ck" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.4l2.6 2.6L16 9.6"/></svg><span class="lbl"><b>Typed, handwritten, or a mix</b><span>Charts &amp; tables too.</span></span></div>
-      <div class="feat"><svg class="ck" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.4l2.6 2.6L16 9.6"/></svg><span class="lbl"><b>New character, or add to an <span class="nw">existing one</span></b></span></div>
-      <div class="feat"><svg class="ck" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.4l2.6 2.6L16 9.6"/></svg><span class="lbl"><b>Yours to edit</b><span>Edit almost any field.</span></span></div>
-      <div class="feat"><svg class="ck" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.4l2.6 2.6L16 9.6"/></svg><span class="lbl"><b>Choose your theme</b></span></div>
-      <div class="feat"><svg class="ck" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.4l2.6 2.6L16 9.6"/></svg><span class="lbl"><b>Upload your own character <span class="nw">profile image</span></b></span></div>
-      <div class="feat"><svg class="ck" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.4l2.6 2.6L16 9.6"/></svg><span class="lbl"><b>Synced everywhere</b></span></div>
-      <div class="feat"><svg class="ck" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.4l2.6 2.6L16 9.6"/></svg><span class="lbl"><b>Search any character</b></span></div>
-      <div class="feat"><svg class="ck" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.4l2.6 2.6L16 9.6"/></svg><span class="lbl"><b>Session Journal</b></span></div>
-      <div class="feat"><svg class="ck" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.4l2.6 2.6L16 9.6"/></svg><span class="lbl"><b>Photo Album</b><span>For minis, maps, terrain, character art <span class="nw">and more.</span></span></span></div>
-      <div class="feat"><svg class="ck" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.4l2.6 2.6L16 9.6"/></svg><span class="lbl"><b>Print-ready PDF export</b></span></div>
-      <div class="feat"><svg class="ck" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.4l2.6 2.6L16 9.6"/></svg><span class="lbl"><b>Dice Library + Calculator</b><span>Over 30 randomizers for almost any tabletop RPG.</span></span></div>
-      <div class="feat"><svg class="ck" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.4l2.6 2.6L16 9.6"/></svg><span class="lbl"><b>Fallen Heroes archive</b></span></div>
-      <div class="feat"><svg class="ck" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.4l2.6 2.6L16 9.6"/></svg><span class="lbl"><b>$9.99, one-time price</b><span>No ads, no subscriptions.</span></span></div>
+    <div class="cards reveal">
+      <div class="card"><b>Any tabletop RPG, any edition</b></div>
+      <div class="card"><b>Up to 10 pages a scan</b></div>
+      <div class="card"><b>Typed, handwritten, or a mix</b><span>Charts &amp; tables too.</span></div>
+      <div class="card"><b>New character, or add to an <span class="nw">existing one</span></b></div>
+      <div class="card"><b>Yours to edit</b><span>Edit almost any field.</span></div>
+      <div class="card"><b>Choose your theme</b></div>
+      <div class="card"><b>Upload your own character <span class="nw">profile image</span></b></div>
+      <div class="card"><b>Synced everywhere</b></div>
+      <div class="card"><b>Search any character</b></div>
+      <div class="card"><b>Session Journal</b></div>
+      <div class="card"><b>Photo Album</b><span>For minis, maps, terrain, character art <span class="nw">and more.</span></span></div>
+      <div class="card"><b>Print-ready PDF export</b></div>
+      <div class="card"><b>Dice Library + Calculator</b><span>Over 30 randomizers for almost any tabletop RPG.</span></div>
+      <div class="card"><b>Fallen Heroes archive</b></div>
+      <div class="card"><b>$9.99, one-time price</b><span>No ads, no subscriptions.</span></div>
     </div>
     <div class="pricebox reveal">
       <p class="terms">Your purchase comes with three full Character Scans of up to ten pages each. Need more? Extra scans are a one-time buy too, singly or in <span class="nw">a five-pack.</span></p>
       <div class="cta">
-        <a class="sbtn" data-goatcounter-click="store-apple-price" data-goatcounter-title="Sheetmancer site: App Store (price box)" href="https://apps.apple.com/app/sheetmancer-character-sheets/id6793684089?pt=128989957&amp;ct=sheetmancer-site&amp;mt=8">
-          <svg width="24" height="24" viewBox="0 0 384 512" fill="#fff" aria-hidden="true"><path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/></svg>
-          <span class="txt"><small>Download on the</small><b>App Store</b></span>
-        </a>
-        <a class="sbtn" data-goatcounter-click="store-google-price" data-goatcounter-title="Sheetmancer site: Google Play (price box)" href="https://play.google.com/store/apps/details?id=com.digirunestudios.sheetmancer&amp;referrer=utm_source%3Dsheetmancer-site%26utm_medium%3Dweb">
-          <svg width="23" height="25" viewBox="0 0 512 512" aria-hidden="true">
-            <path fill="#00D2FF" d="M20.5 12.5c-3.2 3.4-5 8.6-5 15.4v456.2c0 6.8 1.8 12 5 15.4l1.5 1.5 255.5-255.5v-6L22 11z"/>
-            <path fill="#00E676" d="M22 11c4.7-5 12.4-5.4 21.1-.5l309 175.6-72.6 72.6z"/>
-            <path fill="#FF3A44" d="M279.5 262.7 22 501c8.7 4.9 16.4 4.5 21.1-.5l309-175.6z"/>
-            <path fill="#FFCE00" d="M352.1 186.1 424.7 227c19.9 11.3 19.9 29.9 0 41.2l-72.6 40.9-75.6-75.6z"/>
-          </svg>
-          <span class="txt"><small>Get it on</small><b>Google Play</b></span>
-        </a>
+      <a class="sbtn" data-goatcounter-click="store-apple-price" data-goatcounter-title="Sheetmancer site: App Store (price)" href="https://apps.apple.com/app/sheetmancer-character-sheets/id6793684089?pt=128989957&amp;ct=sheetmancer-site&amp;mt=8"><svg width="24" height="24" viewBox="0 0 384 512" fill="#fff" aria-hidden="true"><path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/></svg><span class="txt"><small>Download on the</small><b>App Store</b></span></a>
+      <a class="sbtn" data-goatcounter-click="store-google-price" data-goatcounter-title="Sheetmancer site: Google Play (price)" href="https://play.google.com/store/apps/details?id=com.digirunestudios.sheetmancer&amp;referrer=utm_source%3Dsheetmancer-site%26utm_medium%3Dweb"><svg width="23" height="25" viewBox="0 0 512 512" aria-hidden="true">
+          <path fill="#00D2FF" d="M20.5 12.5c-3.2 3.4-5 8.6-5 15.4v456.2c0 6.8 1.8 12 5 15.4l1.5 1.5 255.5-255.5v-6L22 11z"/>
+          <path fill="#00E676" d="M22 11c4.7-5 12.4-5.4 21.1-.5l309 175.6-72.6 72.6z"/>
+          <path fill="#FF3A44" d="M279.5 262.7 22 501c8.7 4.9 16.4 4.5 21.1-.5l309-175.6z"/>
+          <path fill="#FFCE00" d="M352.1 186.1 424.7 227c19.9 11.3 19.9 29.9 0 41.2l-72.6 40.9-75.6-75.6z"/>
+        </svg><span class="txt"><small>Get it on</small><b>Google Play</b></span></a>
+    </div>
+    </div>
+  </div>
+</section>
+
+<section class="band film">
+  <div class="wrap">
+    <div class="filmgrid reveal">
+      <div class="screen">
+        <video controls playsinline preload="none" poster="./about/film-poster.jpg">
+          <source src="./about/spilled-coffee.mp4" type="video/mp4">
+          Your browser can't play this video. <a href="./about/spilled-coffee.mp4">Download it here</a>.
+        </video>
+      </div>
+      <div class="filmtext">
+        <p class="kick">The film</p>
+        <h2>Your character goes where you go.</h2>
+        <p class="lede" style="margin-bottom:16px">Your sheets stay at the table. Your phone comes with you.</p>
+        <p>Waiting in line, on your lunch break, the night before game day: open your character and plan your next move. And when the coffee spills, nothing is lost.</p>
+        <div class="cta">
+      <a class="sbtn" data-goatcounter-click="store-apple-film" data-goatcounter-title="Sheetmancer site: App Store (film)" href="https://apps.apple.com/app/sheetmancer-character-sheets/id6793684089?pt=128989957&amp;ct=sheetmancer-site&amp;mt=8"><svg width="24" height="24" viewBox="0 0 384 512" fill="#fff" aria-hidden="true"><path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/></svg><span class="txt"><small>Download on the</small><b>App Store</b></span></a>
+      <a class="sbtn" data-goatcounter-click="store-google-film" data-goatcounter-title="Sheetmancer site: Google Play (film)" href="https://play.google.com/store/apps/details?id=com.digirunestudios.sheetmancer&amp;referrer=utm_source%3Dsheetmancer-site%26utm_medium%3Dweb"><svg width="23" height="25" viewBox="0 0 512 512" aria-hidden="true">
+          <path fill="#00D2FF" d="M20.5 12.5c-3.2 3.4-5 8.6-5 15.4v456.2c0 6.8 1.8 12 5 15.4l1.5 1.5 255.5-255.5v-6L22 11z"/>
+          <path fill="#00E676" d="M22 11c4.7-5 12.4-5.4 21.1-.5l309 175.6-72.6 72.6z"/>
+          <path fill="#FF3A44" d="M279.5 262.7 22 501c8.7 4.9 16.4 4.5 21.1-.5l309-175.6z"/>
+          <path fill="#FFCE00" d="M352.1 186.1 424.7 227c19.9 11.3 19.9 29.9 0 41.2l-72.6 40.9-75.6-75.6z"/>
+        </svg><span class="txt"><small>Get it on</small><b>Google Play</b></span></a>
+    </div>
       </div>
     </div>
   </div>
 </section>
 
-<section class="band center" style="background:linear-gradient(180deg,var(--bg2),var(--bg))">
-  <div class="wrap">
-    <div class="head reveal">
-      <p class="kick">Take the tour</p>
-      <h2>A look inside.</h2>
-      <p class="lede">Real screens from the app. Tap any to enlarge.</p>
-    </div>
-    <div class="gallery reveal">
-      <button type="button"><img src="./about/shots/01_core.jpg" alt="Scan up to ten pages of character info per scan" loading="lazy"></button>
-      <button type="button"><img src="./about/shots/02_grows.jpg" alt="Level up, raise a stat, swap your gear: tap anything to change it" loading="lazy"></button>
-      <button type="button"><img src="./about/shots/03_make_yours.jpg" alt="Nine custom themes, make the character yours" loading="lazy"></button>
-      <button type="button"><img src="./about/shots/07_dice.jpg" alt="Built-in Dice Library and calculator" loading="lazy"></button>
-      <button type="button"><img src="./about/shots/05_journal.jpg" alt="Session Journal" loading="lazy"></button>
-      <button type="button"><img src="./about/shots/06_album.jpg" alt="Photo Album for table photos, dice and character art" loading="lazy"></button>
-      <button type="button"><img src="./about/shots/04_pdf.jpg" alt="Export a print-ready PDF" loading="lazy"></button>
-      <button type="button"><img src="./about/shots/08_backup.jpg" alt="Back up and sync across your devices" loading="lazy"></button>
-      <button type="button"><img src="./about/shots/09_fallen.jpg" alt="Fallen Heroes archive" loading="lazy"></button>
-    </div>
-  </div>
-</section>
-
-<section class="band center" style="padding:40px 0">
+<section class="guide">
   <div class="wrap">
     <p class="kick">Guide</p>
     <p class="lede"><a href="./how-to-digitize-your-character-sheet.html" data-goatcounter-click="about-to-guide" data-goatcounter-title="About: link to the guide" style="color:var(--goldlite)">How to turn your paper character sheet into a digital one, for any tabletop RPG <span class="nw">system <span aria-hidden="true">&rarr;</span></span></a></p>
@@ -330,11 +315,6 @@
   </div>
 </footer>
 
-<button class="scrollcue" id="scrollcue" aria-label="Scroll down for more">
-  <span>More</span>
-  <span class="chev"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
-</button>
-
 <script>
 (function(){
   var els = Array.prototype.slice.call(document.querySelectorAll('.reveal'));
@@ -360,18 +340,7 @@
   lb.addEventListener('click',function(e){ if(e.target===lb) close(); });
   document.addEventListener('keydown',function(e){ if(!lb.classList.contains('open'))return; if(e.key==='Escape')close(); else if(e.key==='ArrowLeft')go(-1); else if(e.key==='ArrowRight')go(1); });
 })();
-(function(){
-  var cue=document.getElementById('scrollcue');
-  if(!cue) return;
-  cue.addEventListener('click',function(){ window.scrollBy({top:Math.round(window.innerHeight*0.85),behavior:'smooth'}); });
-  function upd(){
-    var atBottom=(window.innerHeight+window.scrollY)>=(document.documentElement.scrollHeight-90);
-    cue.classList.toggle('hide', atBottom);
-  }
-  window.addEventListener('scroll',upd,{passive:true});
-  window.addEventListener('resize',upd);
-  upd();
-})();
+
 </script>
 <script>window.goatcounter={path:function(p){return location.host+p}}</script>
 <!-- GoatCounter analytics (privacy-friendly, no cookies) -->
