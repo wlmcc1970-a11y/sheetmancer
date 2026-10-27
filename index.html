@@ -3160,13 +3160,13 @@ function SsNoticeSheet({ T, title, body, primary, onPrimary, secondary, onSecond
   children,
   btn(primary, onPrimary, "primary", "p"), btn(secondary, onSecondary, "s", "s"), btn(tertiary, onTertiary, "t", "t"))), document.body);
 }
-/* ST-01 (Apple 5.1.2(i)) - Will's approved wording, 2026-10-26 (v81: states the outside AI service, per the Apple reviewer gate). Shown once before the first scan. */
+/* ST-01 (Apple 5.1.2(i)) - Will's approved wording, 2026-10-26; v83 (Will 2026-10-27): names the service (Anthropic), per Apple reviewer finding R2-4. Shown once before the first scan. */
 function AiDisclosureSheet({ T, onOk, onNotNow }) {
   useSsBack(true, onNotNow);
   const [page, setPage] = useState(null);
   return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(SsNoticeSheet, {
     T: T, title: "AI Disclosure", busyKey: "ai",
-    body: "To read your pages, Sheetmancer sends the photos or PDFs you submit to an outside AI service. It copies your character's information into the app, does not generate content, and your pages are not used to train AI.",
+    body: "To read your pages, Sheetmancer sends the photos or PDFs you submit to an outside AI service (Anthropic). It copies your character's information into the app, does not generate content, and your pages are not used to train AI.",
     primary: "OK", onPrimary: onOk, secondary: "Not now", onSecondary: onNotNow
   }, /*#__PURE__*/React.createElement("button", {
     onClick: () => setPage("privacy"), className: "ss-press",
