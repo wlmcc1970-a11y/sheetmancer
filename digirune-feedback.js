@@ -1,4 +1,6 @@
-/* DigiRune Studios: "Report a problem or suggest an idea" form. Version 1.1.1 (2026-10-14)
+/* DigiRune Studios: "Report a problem or suggest an idea" form. Version 1.2.0 (2026-10-28)
+   1.2.0: optional aiNotice: '<text>' in DIGIRUNE_FEEDBACK shows a checkbox with that text; Send waits for it
+   (Apple 5.1.2(i)). Apps that do not set it see no change. The form now sets its own color-scheme.
    1.1.1: the form owns one history step (Android Back closes the form, not the panel under it) and
    Escape no longer reaches the app's own key handlers.
    Forge App Standard item 21 (F-231). Drop-in, no libraries, works in every DigiRune app and site.
@@ -12,6 +14,7 @@
          endpoint: 'https://digirune-feedback.<account>.workers.dev/report',
          siteKey: '<Turnstile site key>',
          fallbackEmail: 'will@digirunestudios.com'
+         // optional: aiNotice: 'I understand my note may be read with help from an AI service (Anthropic).'
        };
      </script>
    Optional: platform ('ios' | 'android' | 'web'), and theme colours through CSS variables on
@@ -29,13 +32,13 @@
     '.drfb-back{position:fixed;inset:0;z-index:2147483000;background:rgba(10,12,16,.55);display:flex;align-items:flex-end;justify-content:center;opacity:0;transition:opacity .2s ease}',
     '.drfb-back.on{opacity:1}',
     '.drfb{--a:var(--fb-accent,#2f6fdd);--ai:var(--fb-accent-ink,#fff);--bg:var(--fb-bg,#fff);--ink:var(--fb-ink,#1b1e24);--mu:var(--fb-muted,#5d6470);--ln:var(--fb-line,#d6dae1);--r:var(--fb-radius,14px);',
-    'box-sizing:border-box;width:100%;max-width:520px;max-height:92vh;overflow:auto;background:var(--bg);color:var(--ink);border-radius:var(--r) var(--r) 0 0;padding:20px 18px calc(18px + env(safe-area-inset-bottom));',
+    'color-scheme:light;box-sizing:border-box;width:100%;max-width:520px;max-height:92vh;overflow:auto;background:var(--bg);color:var(--ink);border-radius:var(--r) var(--r) 0 0;padding:20px 18px calc(18px + env(safe-area-inset-bottom));',
     'font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;transform:translateY(24px);transition:transform .22s ease;box-shadow:0 -8px 30px rgba(0,0,0,.25)}',
     '.drfb-back.on .drfb{transform:none}',
     '@media (min-width:600px){.drfb-back{align-items:center}.drfb{border-radius:var(--r)}}',
     '@media (prefers-reduced-motion:reduce){.drfb-back,.drfb{transition:none}.drfb{transform:none}}',
     '.drfb *{box-sizing:border-box}',
-    '@media (prefers-color-scheme:dark){.drfb{--bg:var(--fb-bg,#1d2026);--ink:var(--fb-ink,#eef0f3);--mu:var(--fb-muted,#a8afba);--ln:var(--fb-line,#3a404a);--a:var(--fb-accent,#6e9cf0);--ai:var(--fb-accent-ink,#0d1117)}}',
+    '@media (prefers-color-scheme:dark){.drfb{color-scheme:dark;--bg:var(--fb-bg,#1d2026);--ink:var(--fb-ink,#eef0f3);--mu:var(--fb-muted,#a8afba);--ln:var(--fb-line,#3a404a);--a:var(--fb-accent,#6e9cf0);--ai:var(--fb-accent-ink,#0d1117)}}',
     '.drfb h2{margin:0 0 4px;font-size:20px;line-height:1.25;text-wrap:balance}',
     '.drfb .sub{margin:0 0 14px;color:var(--mu);font-size:14px;text-wrap:pretty}',
     '.drfb .nw{white-space:nowrap}',
@@ -62,7 +65,10 @@
     '.drfb .done{text-align:center;padding:10px 0}',
     '.drfb .done .big{font-size:40px;line-height:1;color:var(--a)}',
     '.drfb .done p{text-wrap:balance;margin:10px 0 18px}',
-    '.drfb .done .send{width:100%;max-width:320px}'
+    '.drfb .done .send{width:100%;max-width:320px}',
+    '.drfb .ai{display:flex;gap:10px;align-items:flex-start;margin:12px 0 2px;font-size:15px;line-height:1.4;cursor:pointer}',
+    '.drfb .aihint{margin:6px 0 0;color:var(--mu);font-size:14px}',
+    '.drfb .ai input{width:22px;height:22px;min-width:22px;margin:1px 0 0;accent-color:var(--a);cursor:pointer}'
   ].join('\n');
 
   function cfg() { return window.DIGIRUNE_FEEDBACK || {}; }
@@ -97,7 +103,7 @@
     var c = cfg();
     var to = c.fallbackEmail || 'will@digirunestudios.com';
     var subj = (c.app || 'DigiRune app') + ': a problem or an idea';
-    var body = 'App: ' + (c.app || '') + ' ' + (c.version || '') + '\n\n' + (text || 'What happened or what would help:\n');
+    var body = 'App: ' + (c.app || '') + ' ' + (c.version || '') + '\n' + (c.aiNotice ? 'Note: emailed notes may also be read with help from an AI service (Anthropic).\n' : '') + '\n' + (text || 'What happened or what would help:\n');
     return 'mailto:' + to + '?subject=' + encodeURIComponent(subj) + '&body=' + encodeURIComponent(body);
   }
   function ready() { var c = cfg(); return !!(c.endpoint && c.siteKey && c.app); }
@@ -165,6 +171,8 @@
     var hp = el('input', { type: 'text', name: 'drfb_hp_x9', tabindex: '-1', autocomplete: 'off', 'aria-hidden': 'true' });
     var tsBox = el('div', { class: 'ts' });
     var msg = el('p', { class: 'msg', role: 'status', 'aria-live': 'polite' });
+    var aiBox = c.aiNotice ? el('input', { type: 'checkbox', id: 'drfb-ai', 'aria-describedby': 'drfb-aihint' }) : null;
+    var aiHint = aiBox ? el('p', { class: 'aihint', id: 'drfb-aihint', 'aria-live': 'polite' }) : null;
     var send = el('button', { type: 'submit', class: 'send', text: 'Send' });
     var cancel = el('button', { type: 'button', class: 'cancel', text: 'Cancel' });
     var title = el('h2', { id: 'drfb-title', text: 'Report a problem or suggest an idea' });
@@ -176,6 +184,8 @@
       el('label', { class: 'lab', for: 'drfb-email' }, [document.createTextNode('Your email '), el('span', { class: 'opt', text: '(optional, only if you want a reply)' })]),
       email,
       el('div', { class: 'hp' }, [hp]),
+      aiBox ? el('label', { class: 'ai', for: 'drfb-ai' }, [aiBox, el('span', { text: c.aiNotice })]) : null,
+      aiHint,
       tsBox, msg,
       el('div', { class: 'row' }, [cancel, send]),
       el('p', { class: 'fine', text: 'We only use your email to answer this note. No account needed.' })
@@ -198,9 +208,11 @@
     }
     function sync() {
       count.textContent = ta.value.length + ' / 2000';
-      send.disabled = ta.value.trim().length < 3 || !state.token;
+      send.disabled = ta.value.trim().length < 3 || !state.token || (aiBox && !aiBox.checked);
+      if (aiHint) { var h = (aiBox.checked || ta.value.trim().length < 3 || !state.token) ? '' : 'Tick the box above to send.'; if (aiHint.textContent !== h) aiHint.textContent = h; }
     }
     ta.addEventListener('input', sync);
+    if (aiBox) aiBox.addEventListener('change', sync);
 
     state.onKey = function (e) {
       if (e.key === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); close(); return; }
@@ -301,5 +313,5 @@
     show({ kind: t.getAttribute('data-feedback-kind') || undefined });
   });
 
-  window.DigiRuneFeedback = { open: show, close: close, mailto: mailtoHref, version: '1.1.1' };
+  window.DigiRuneFeedback = { open: show, close: close, mailto: mailtoHref, version: '1.2.0' };
 })();
