@@ -30,7 +30,7 @@
 <header>
   <div class="kicker">DigiRune Studios</div>
   <h1>Sheetmancer Privacy Policy</h1>
-  <div class="eff">Effective date: June 6, 2026 &middot; Last updated: October 14, 2026</div>
+  <div class="eff">Effective date: June 6, 2026 &middot; Last updated: October 27, 2026</div>
 </header>
 
 <div class="supp">
@@ -73,9 +73,16 @@ session journal entries) are stored in two places: <strong>securely in the cloud
 <strong>Google Firebase / Firestore</strong>, tied to your account so they sync across your devices, and as a
 <strong>local copy on each device</strong> so the app works offline. Your character data is private to your
 account; we do not browse, share, or sell it.</p>
+<p><strong>Portraits in larger accounts.</strong> When an account holds a lot of portrait pictures, each portrait is
+stored in your cloud account as its own picture, linked to your characters. When you replace a portrait or delete a
+character, the earlier portrait picture is not removed from the cloud right away: it stays in your account, private
+to you, until you delete your account.</p>
 <p><strong>Photo Album.</strong> Pictures you add to a character's Photo Album are stored in your cloud account
 (Google Firestore) so they appear on all your devices. They are deleted when you delete them, when you delete
-that character, or when you delete your account.</p>
+that character while signed in and online, or when you delete your account. If a character is deleted while the
+device is offline or signed out, its Photo Album pictures stay in your cloud account until you delete your account.
+When the app keeps two copies of one character (after a sync it could not settle on its own), the two copies either
+share one Photo Album (its pictures are deleted only when the last copy is deleted) or each keep their own.</p>
 <p><strong>Your settings.</strong> Your account also keeps a note that you accepted the in-app AI disclosure, so
 you are not asked again on every device.</p>
 

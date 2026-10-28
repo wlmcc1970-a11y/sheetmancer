@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <style>:root{--fb-accent:#8a6a2f;--fb-accent-ink:#ffffff}</style>
-<script>window.DIGIRUNE_FEEDBACK={app:'Sheetmancer',version:'build v78',endpoint:'https://digirune-feedback.will-6d6.workers.dev/report',siteKey:'0x4AAAAAAFW88K0K9FyRmEzA',fallbackEmail:'will@digirunestudios.com'};</script>
+<script>window.SS_BUILD='v86';window.DIGIRUNE_FEEDBACK={app:'Sheetmancer',version:'build '+window.SS_BUILD,endpoint:'https://digirune-feedback.will-6d6.workers.dev/report',siteKey:'0x4AAAAAAFW88K0K9FyRmEzA',fallbackEmail:'will@digirunestudios.com'};</script>
 <script src="digirune-feedback.js"></script>
 
 <!-- Sheetmancer (formerly SheetSnap) v1.1.0-chassis — DigiRune Studios. Self-contained PWA: precompiled React (no Babel/CDN), data-URI manifest + icons, offline service worker (sw-v1.js), install prompt, safe-area + back-button. Built 2026-06-06. -->
@@ -116,7 +116,7 @@ body input,body textarea,body select,body [contenteditable="true"]{-webkit-user-
 
 
 
-#ssToast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 18px);transform:translateX(-50%);z-index:9001;display:none;max-width:88%;padding:12px 18px;border:1px solid #D4A843;border-radius:14px;background:#15131a;color:#F2E8D4;font-family:'EB Garamond',Georgia,serif;font-size:14px;text-align:center;cursor:pointer;box-shadow:0 6px 22px rgba(0,0,0,.55)}
+#ssToast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 18px);transform:translateX(-50%);z-index:100800;width:max-content;box-sizing:border-box;display:none;max-width:88%;padding:12px 18px;border:1px solid #D4A843;border-radius:14px;background:#15131a;color:#F2E8D4;font-family:'EB Garamond',Georgia,serif;font-size:14px;text-align:center;cursor:pointer;box-shadow:0 6px 22px rgba(0,0,0,.55)}
 #ssToast.show{display:block;animation:ssRise .35s ease}
 #ssUpdate{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 10px);transform:translateX(-50%);z-index:9100;display:none;align-items:center;gap:8px;max-width:92%;padding:10px 16px;border:1px solid #D4A843;border-radius:14px;background:linear-gradient(135deg,#1a1620,#0A0A0C);color:#F2E8D4;font-family:'Cinzel',Georgia,serif;font-size:14px;font-weight:700;letter-spacing:.3px;cursor:pointer;box-shadow:0 6px 22px rgba(0,0,0,.55),0 0 16px rgba(212,168,67,.3)}
 #ssUpdate.show{display:flex;animation:ssRise .35s ease}
@@ -853,6 +853,9 @@ html.smx-drag-on,html.smx-drag-on *{cursor:grabbing!important;-webkit-user-selec
 #smxOffline::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--smx-accent);flex:none}
 html.smx-offline #smxOffline{transform:translate(-50%,0);opacity:1;visibility:visible;transition:transform .35s var(--smx-ease),opacity .35s ease}
 html.smx-offline #ssToast{bottom:calc(env(safe-area-inset-bottom,0px) + 64px)}
+html:has([data-ss-busy]:not([data-ss-busy="field"])) #ssToast,html:has([aria-modal="true"]) #ssToast,html:has(.smx-modal) #ssToast{top:calc(env(safe-area-inset-top,0px) + 12px);bottom:auto}
+html:has([data-ss-busy="field"]) #ssToast{top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 18px)}
+html.smx-offline:has([data-ss-busy="field"]) #ssToast{bottom:calc(env(safe-area-inset-bottom,0px) + 64px)}
 
 /* ---------- Tablet layout: use the room, do not stretch a phone ---------- */
 @media (min-width:700px){
@@ -1652,7 +1655,34 @@ const store = {
   _full: false
 };
 /* v78: tell the app the moment a save fails because the device is full (DS-06). */
-(function () { const _set = store.set; store.set = (k, v) => { const ok = _set(k, v); if (!ok && store._full && (k === "ss-chars" || k === "ss-fallen")) { try { window.dispatchEvent(new CustomEvent("ss-storage-full")); } catch (_) {} } else if (ok && store._full && (k === "ss-chars" || k === "ss-fallen")) { store._full = false; try { window.dispatchEvent(new CustomEvent("ss-storage-ok")); } catch (_) {} } return ok; }; })();
+/* v86 (R3-01): "full" is tracked per list. It clears only when the list whose save failed has saved again
+   (a successful save of one list retries the other from the app's live copy), and saves of other keys never
+   raise or clear it. */
+(function () { const _set = store.set; const failed = Object.create(null); let retrying = false;
+  const live = k => (k === "ss-chars" ? window.__ssLiveChars : window.__ssLiveFallen);
+  store.set = (k, v) => { const ok = _set(k, v); const tracked = (k === "ss-chars" || k === "ss-fallen");
+    if (tracked && !ok && store._full) { failed[k] = 1; store._full = true; try { window.dispatchEvent(new CustomEvent("ss-storage-full")); } catch (_) {} return ok; }
+    if (tracked && ok && (failed[k] || Object.keys(failed).length)) { const was = Object.keys(failed).length > 0; delete failed[k];
+      if (!retrying) { retrying = true; try { Object.keys(failed).forEach(o => { const lv = live(o); if (Array.isArray(lv)) store.set(o, ssStamp(store.get(o), lv)); }); } catch (_) {} retrying = false; }   /* review D-3: room was freed by any list */
+      if (was && !Object.keys(failed).length) { store._full = false; try { window.dispatchEvent(new CustomEvent("ss-storage-ok")); } catch (_) {} }
+      store._full = Object.keys(failed).length > 0; return ok; }
+    store._full = Object.keys(failed).length > 0; return ok; };
+  store._failedKeys = () => Object.keys(failed);
+  store._markFailed = k => { failed[k] = 1; store._full = true; }; })();
+/* v86 (R3-01): moving a character between Your Characters and Fallen Heroes writes BOTH lists or neither
+   (the list that shrinks goes first so the other has room; if the second write fails the first is put back).
+   Refused outright while an earlier save is still failing. */
+function ssSaveLists(nc, nf) {
+  const tell = () => { try { window.dispatchEvent(new CustomEvent("ss-move-full")); } catch (_) {} return false; };
+  if (store._full) return tell();
+  let oc = null, of = null; try { oc = localStorage.getItem("ss-chars"); of = localStorage.getItem("ss-fallen"); } catch (_) { return tell(); }
+  const jc = JSON.stringify(ssStamp(store.get("ss-chars"), nc)), jf = JSON.stringify(ssStamp(store.get("ss-fallen"), nf));
+  const cFirst = ((oc ? oc.length : 0) - jc.length) >= ((of ? of.length : 0) - jf.length);
+  const W = cFirst ? [["ss-chars", jc, oc], ["ss-fallen", jf, of]] : [["ss-fallen", jf, of], ["ss-chars", jc, oc]];
+  try { localStorage.setItem(W[0][0], W[0][1]); } catch (_) { return tell(); }
+  try { localStorage.setItem(W[1][0], W[1][1]); } catch (_) { try { if (W[0][2] == null) localStorage.removeItem(W[0][0]); else localStorage.setItem(W[0][0], W[0][2]); } catch (_e) { try { store._markFailed("ss-chars"); store._markFailed("ss-fallen"); } catch (_m) { store._full = true; } try { if (Array.isArray(window.__ssLiveChars)) store.set("ss-chars", ssStamp(store.get("ss-chars"), window.__ssLiveChars)); if (Array.isArray(window.__ssLiveFallen)) store.set("ss-fallen", ssStamp(store.get("ss-fallen"), window.__ssLiveFallen)); } catch (_r) {} try { window.dispatchEvent(new CustomEvent(store._full ? "ss-storage-full" : "ss-storage-ok")); } catch (_x) {} } return tell(); }   /* review r4 D4 */   /* review D-8, r2 D2-5 */
+  return true;
+}
 try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(function () {}); } catch (_) {}
 
 /* ━━━━ v78: Android Back closes the open sheet first (SM-STD-05) ━━━━
@@ -1668,7 +1698,12 @@ function useSsBack(open, onClose) {
     try { window.history.pushState({ ssSheet: true }, ""); entry.pushed = true; } catch (_) {}
     return () => {
       const i = ssSheetStack.indexOf(entry); if (i >= 0) ssSheetStack.splice(i, 1);
-      if (entry.pushed && !entry.popped) { window.__ssIgnorePops = (window.__ssIgnorePops || 0) + 1; try { window.history.back(); } catch (_) { window.__ssIgnorePops--; } }
+      if (entry.pushed && !entry.popped) {
+        /* v86 (R4-02): when a sheet closes INTO a new screen in the same moment, the new screen takes over this
+           sheet's history entry (see the view effect) instead of the entry being removed after the screen added its own. */
+        window.__ssSheetBack = (window.__ssSheetBack || 0) + 1;
+        Promise.resolve().then(() => { if (!(window.__ssSheetBack > 0)) return; window.__ssSheetBack--; window.__ssIgnorePops = (window.__ssIgnorePops || 0) + 1; try { window.history.back(); } catch (_) { window.__ssIgnorePops--; } });
+      }
     };
   }, [open]);
 }
@@ -1782,9 +1817,12 @@ async function ssBackupAll(opts) {
   const chars = (Array.isArray(window.__ssLiveChars) && window.__ssLiveChars) || store.get("ss-chars") || [], fallen = (Array.isArray(window.__ssLiveFallen) && window.__ssLiveFallen) || store.get("ss-fallen") || [];
   const out = { sheetmancerBackup: 2, exportedAt: new Date().toISOString(), characters: chars, fallen: fallen, theme: store.get("ss-theme") || null, album: [] };
   if (!(opts && opts.skipAlbum) && window.ssAuth && window.ssAuth.signedIn && window.ssAlbumList) {
+    const seenAlb = Object.create(null);   /* review r2 D2-1: a shared album is backed up once, under its owner */
     for (const c of chars.concat(fallen)) {
       if (!c || !c.cid) continue;
-      try { const r = await window.ssAlbumList(c.cid); const ph = (r && (r.photos || r.items || (Array.isArray(r) ? r : null))) || []; ph.forEach(function (x) { if (x && x.img) out.album.push({ charId: c.cid, img: x.img, w: x.w || 0, h: x.h || 0, ts: x.ts || 0 }); }); } catch (_) {}
+      const ak = (typeof c.albumOf === "string" && c.albumOf) || c.cid;   /* review r3 D-1: keyed by album, not by character */
+      if (seenAlb[ak]) continue; seenAlb[ak] = 1;
+      try { const r = await window.ssAlbumList(ak); const ph = (r && (r.photos || r.items || (Array.isArray(r) ? r : null))) || []; ph.forEach(function (x) { if (x && x.img) out.album.push({ charId: ak, img: x.img, w: x.w || 0, h: x.h || 0, ts: x.ts || 0 }); }); } catch (_) {}
     }
   }
   const d = new Date(), pad = n => String(n).padStart(2, "0");
@@ -2998,6 +3036,13 @@ function useSsBalance() {
   }, []);
   return b;
 }
+/* v86 (R1-01): true while the scans included with the app are being claimed, so no screen shows a stale 0 meanwhile. Display only. */
+function ssSetGrantBusy(v) { try { window.__ssGrantBusy = !!v; window.dispatchEvent(new Event("ss-grant")); } catch (_) {} }
+function useSsGrantBusy() {
+  const [g, setG] = useState(() => !!(typeof window !== "undefined" && window.__ssGrantBusy));
+  useEffect(() => { const h = () => setG(!!window.__ssGrantBusy); window.addEventListener("ss-grant", h); h(); return () => window.removeEventListener("ss-grant", h); }, []);
+  return g;
+}
 function SignInSheet({ T, onClose }) {
   useSsBack(true, onClose);
   const [note, setNote] = useState(false);
@@ -3416,8 +3461,11 @@ function BuyScansSheet({ T, onClose, onBought, reason }) {
   const [buying, setBuying] = useState(false);
   const [buyMsg, setBuyMsg] = useState(null);
   const ssBal = useSsBalance();
-  const slotsLeft = (ssBal && typeof ssBal.remaining === "number") ? ssBal.remaining : null;
-  const close = () => { if (buying) return; setBuyMsg(null); onClose(); };
+  const grantBusy = useSsGrantBusy();
+  const slotsLeft = (ssBal && typeof ssBal.remaining === "number" && !grantBusy) ? ssBal.remaining : null;   /* review r2 M-6 */
+  /* v86 (P2-06): the sheet can always be closed. A purchase still in progress carries on and reports with a toast. */
+  const live = useRef(true); useEffect(() => () => { live.current = false; }, []);
+  const close = () => { setBuyMsg(null); onClose(); };
   useSsBack(true, close);
   /* v78.1: "Restore my included scans" (iPhone app 1.0.2 and later only; older builds have no handler, so
      the button never shows there). Tap only, because Apple may show its own sign-in prompt. The shell
@@ -3427,6 +3475,7 @@ function BuyScansSheet({ T, onClose, onBought, reason }) {
   const signedInNow = () => !!(window.ssAuth && window.ssAuth.signedIn);
   const canRestore = !!(/PWAShell/.test(navigator.userAgent || "") && window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.refreshAppTransaction && window.ssGrantBase && signedInNow());
   const doRestore = async () => {
+    const say = m => { if (!live.current) { if (m && m.text) ssShowToast(m.text, 8000); return; } setBuyMsg(m); };   /* review r4 M8 */
     if (buying || restoreBusy.current || !signedInNow()) return;
     restoreBusy.current = true;
     setBuying(true); setBuyMsg(null);
@@ -3438,20 +3487,21 @@ function BuyScansSheet({ T, onClose, onBought, reason }) {
         catch (e) { window.__onNativeAppTransactionRefresh = null; resolve({ ok: false, error: "bridge" }); return; }
         setTimeout(function () { if (window.__onNativeAppTransactionRefresh) { window.__onNativeAppTransactionRefresh = null; resolve({ ok: false, error: "timeout" }); } }, 120000);
       });
-      if (rr && rr.error === "cancelled") { setBuyMsg(null); return; }
-      if (!rr || !rr.ok) { setBuyMsg({ ok: false, text: "Apple couldn't confirm your purchase just now. Please try again in a moment." }); return; }
+      if (rr && rr.error === "cancelled") { say(null); return; }
+      if (rr && rr.error === "busy") { say({ ok: false, text: "Your earlier restore is still running. Close this sheet and you'll see its result in a moment." }); return; }
+      if (!rr || !rr.ok) { say({ ok: false, text: "Apple couldn't confirm your purchase just now. Please try again in a moment." }); return; }
       /* The launch-time claim may still be running, or Apple may need a beat after the refresh:
          "no-apptxn" means nothing reached the server yet, so wait and ask once more. */
       let g = await window.ssGrantBase();
       if (g && !g.ok && g.error === "no-apptxn") { await new Promise(function (r) { setTimeout(r, 1500); }); g = await window.ssGrantBase(); }
       try { if (window.ssGetBalance) await window.ssGetBalance(); } catch (_) {}
-      setBuyMsg(g && g.ok
-        ? { ok: true, text: "Your included scans are on your account." }
+      say(g && g.ok
+        ? { ok: true, text: g.alreadyGranted ? "Your " + INCLUDED_SLOTS + " included scans were already claimed earlier, so there was nothing new to restore." : "Your included scans are on your account." }
         : (g && g.error === "no-apptxn")
           ? { ok: false, text: "Apple couldn't confirm your purchase just now. Please try again in a moment." }
           : { ok: false, text: "We couldn't add them just now. If you signed in a different way before, they may be on that account. Otherwise, please try again in a moment." });
     } catch (_) {
-      setBuyMsg({ ok: false, text: "We couldn't add them just now. Please try again in a moment." });
+      say({ ok: false, text: "We couldn't add them just now. Please try again in a moment." });
     } finally { restoreBusy.current = false; setBuying(false); }
   };
   const doBuy = async (pid) => {
@@ -3464,15 +3514,31 @@ function BuyScansSheet({ T, onClose, onBought, reason }) {
         try { store.set("ss-purchasedSlots", (store.get("ss-purchasedSlots") || 0) + add); } catch (_) {}
         /* Server just credited the scans - pull the authoritative balance so the count updates now. */
         try { if (window.ssGetBalance) window.ssGetBalance(); } catch (_) {}
-        setBuyMsg({ ok: true, text: add + (add === 1 ? " scan added. Thank you!" : " scans added. Thank you!") });
+        const okText = add + (add === 1 ? " scan added. Thank you!" : " scans added. Thank you!");
+        if (!live.current) { ssShowToast(okText, 6000); return; }
+        setBuyMsg({ ok: true, text: okText });
         try { onBought && onBought(add); } catch (_) {}
       } else if (r && r.error === "cancelled") {
         setBuyMsg(null);
+      } else if (r && r.permanent) {
+        const pt = ((r.error && !/^purchase \d/.test(r.error) && !/^bad request$/i.test(r.error)) ? r.error : "That didn't go through.") + " If you were charged, email Will@DigiRuneStudios.com and we'll put it right.";   /* review r5 S6 */
+        if (!live.current) { ssShowToast(pt, 12000); return; }
+        setBuyMsg({ ok: false, text: pt });   /* review r2 M-7: e.g. already linked to another account */
+      } else if (r && r.error === "signed-out") {
+        const st = "Please sign in first, so your scans are saved to your account. You have not been charged.";   /* review r7 M1 */
+        if (!live.current) { ssShowToast(st, 8000); return; }
+        setBuyMsg({ ok: false, text: st });
+      } else if (r && r.error === "busy") {
+        const bt = "Your last purchase is still finishing. Please give it a moment.";
+        if (!live.current) { ssShowToast(bt, 6000); return; }
+        setBuyMsg({ ok: false, text: bt });
       } else {
-        setBuyMsg({ ok: false, text: "That didn't go through. If you were charged, your scans will appear shortly. We'll sort it out automatically." });
+        if (!live.current) { ssShowToast(SS_BUY_FAIL, 9000); return; }
+        setBuyMsg({ ok: false, text: SS_BUY_FAIL });
       }
     } catch (_) {
-      setBuyMsg({ ok: false, text: "That didn't go through. If you were charged, your scans will appear shortly. We'll sort it out automatically." });
+      if (!live.current) { ssShowToast(SS_BUY_FAIL, 9000); return; }
+      setBuyMsg({ ok: false, text: SS_BUY_FAIL });
     } finally { setBuying(false); }
   };
   const pill = { display: "block", width: "100%", minHeight: 48, padding: "12px 18px", background: T.accent, border: "none", borderRadius: 12, cursor: buying ? "default" : "pointer", opacity: buying ? 0.6 : 1, fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, color: T.bg, fontSize: 15, letterSpacing: 0.4 };
@@ -3496,14 +3562,15 @@ function BuyScansSheet({ T, onClose, onBought, reason }) {
     style: { display: "block", width: "100%", minHeight: 44, padding: "10px 12px", margin: "2px 0 10px", background: "transparent", border: "none", cursor: buying ? "default" : "pointer", fontFamily: "Georgia,serif", fontSize: 14, color: T.accent, textDecoration: "underline", textUnderlineOffset: 3 }
   }, "Restore my included scans"), buyMsg && /*#__PURE__*/React.createElement("div", { role: "status", style: { fontSize: 13.5, lineHeight: 1.5, textWrap: "balance", color: buyMsg.ok ? (T.success || "#3a7d44") : "#a3402a", margin: "4px 0 12px" } }, buyMsg.text), /*#__PURE__*/React.createElement("button", {
     onClick: close, className: "ss-press",
-    style: { minHeight: 44, minWidth: 120, padding: "10px 24px", background: "transparent", border: `1.5px solid ${T.borderLight}`, borderRadius: 22, cursor: buying ? "default" : "pointer", fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, color: T.textMuted, fontSize: 14, letterSpacing: 0.5 }
-  }, buying ? "Working\u2026" : (buyMsg && buyMsg.ok ? "Done" : "Not now"))) : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("p", {
+    style: { minHeight: 44, minWidth: 120, padding: "10px 24px", background: "transparent", border: `1.5px solid ${T.borderLight}`, borderRadius: 22, cursor: "pointer", whiteSpace: "nowrap", maxWidth: "100%", fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, color: T.textMuted, fontSize: 14, letterSpacing: 0.5 }
+  }, buying ? (restoreBusy.current ? "Close" : "Close, still buying") : (buyMsg && buyMsg.ok ? "Done" : "Not now"))) : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("p", {
     className: "smx-pretty", style: { fontSize: 14, lineHeight: 1.6, color: T.textSoft, margin: "0 0 18px" }
   }, "Each new character, or Add pages on one you have, uses one Character Scan, and your purchase includes ", INCLUDED_SLOTS, ". Deleting a character doesn't give a scan back. To buy more scans, open ", /*#__PURE__*/React.createElement("span", { translate: "no" }, "Sheetmancer"), (/PWAShell/.test(navigator.userAgent || "") ? " from the App Store." : (window.ssWrapped ? " from Google Play." : " from the App Store or Google Play."))), /*#__PURE__*/React.createElement("button", {
     onClick: close, className: "ss-press",
     style: { minHeight: 44, padding: "11px 24px", background: T.accent, border: "none", borderRadius: 22, cursor: "pointer", fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, color: T.bg, fontSize: 14, letterSpacing: 0.5 }
   }, "Got it")))), document.body);
 }
+const SS_BUY_FAIL = "That didn't go through. If you were charged, your scans will be added automatically, usually within a minute. If they're not there by then, close and reopen Sheetmancer.";
 function HomeScreen({
   T,
   characters,
@@ -3519,7 +3586,16 @@ function HomeScreen({
   onAddScan,
   onOpenSample
 }) {
-  const [showFallen, setShowFallen] = useState(false);
+  const [showFallen, setShowFallen] = useState(() => !characters.length && fallenHeroes.length > 0);
+  useEffect(() => { if (!characters.length && fallenHeroes.length) setShowFallen(true); }, [characters.length, fallenHeroes.length]);
+  /* v86 (P2-02, P2-11): a second tap that lands just after the list changed hits a different card. Ignore it. */
+  const listSig = characters.length + ":" + fallenHeroes.length;
+  const listAt = useRef({ sig: listSig, t: 0 });
+  if (listAt.current.sig !== listSig) listAt.current = { sig: listSig, t: Date.now() };
+  const ssSettled = fn => function () { if (Date.now() - listAt.current.t < 500) return; return fn.apply(null, arguments); };
+  onOpenChar = ssSettled(onOpenChar); onOpenFallen = ssSettled(onOpenFallen); onDeleteChar = ssSettled(onDeleteChar);
+  onArchiveChar = ssSettled(onArchiveChar); onRestoreChar = ssSettled(onRestoreChar); onDeleteFallen = ssSettled(onDeleteFallen);
+  if (onAddScan) onAddScan = ssSettled(onAddScan);
   const [showHelp, setShowHelp] = useState(false);
   useSsBack(!!showHelp, () => setShowHelp(false));
   const [helpPage, setHelpPage] = useState(null);
@@ -3540,7 +3616,8 @@ function HomeScreen({
   const slotsLeft = (ssBal && typeof ssBal.remaining === "number") ? ssBal.remaining : Math.max(0, INCLUDED_SLOTS + slotsBought - slotsUsed);
   const ssauth = useSsAuth();
   const [signInSheet, setSignInSheet] = useState(false);
-  const pillKnown = !!(ssauth.signedIn && ssBal && typeof ssBal.remaining === "number" && !window.__ssWelcomeBusy);
+  const grantBusy = useSsGrantBusy();
+  const pillKnown = !!(ssauth.signedIn && ssBal && typeof ssBal.remaining === "number" && !window.__ssWelcomeBusy && !grantBusy);
   /* UX-07: a sign-in started from "Add a character" continues straight on to the camera. */
   const pendingAdd = useRef(false);
   useEffect(() => { if (ssauth.signedIn && pendingAdd.current) { pendingAdd.current = false; onStartCapture(); } }, [ssauth.signedIn]);
@@ -3561,7 +3638,21 @@ function HomeScreen({
   useEffect(() => {
     if (ssauth.signedIn && window.ssPurchaseAvailable && !window.__ssBaseGrantTried) {
       window.__ssBaseGrantTried = true;
-      try { if (window.ssGrantBase) window.ssGrantBase().then(function () { try { if (window.ssGetBalance) window.ssGetBalance(); } catch (_) {} }).catch(function () { try { if (window.ssGetBalance) window.ssGetBalance(); } catch (_) {} }); } catch (_) {}
+      /* v86 (R1-01): screens say "Checking your Character Scans..." until the claim AND the balance read after it are
+         done (never longer than 75 s). A claim that failed only because the store proof was late is tried once more,
+         quietly, 10 s later. The claim itself is unchanged. */
+      try { if (window.ssGrantBase) {
+        const runGrant = again => {
+          let cap = null; if (!again) { ssSetGrantBusy(true); cap = setTimeout(() => ssSetGrantBusy(false), 75000); }
+          let p; try { p = window.ssGrantBase(); } catch (_) { p = null; }
+          Promise.resolve(p).catch(() => null).then(function (g) {
+            const bal = window.ssGetBalance ? Promise.resolve(window.ssGetBalance()).catch(() => null) : Promise.resolve(null);
+            bal.then(function () { if (!again) { clearTimeout(cap); ssSetGrantBusy(false); } });
+            if (!again && g && !g.ok && (g.error === "no-apptxn" || /try again in a moment/i.test(String(g.error || "")))) setTimeout(function () { try { if (window.ssAuth && window.ssAuth.signedIn) runGrant(true); } catch (_) {} }, 10000);
+          });
+        };
+        runGrant(false);
+      } } catch (_) { ssSetGrantBusy(false); }
     }
     /* Pull the authoritative scan balance whenever signed in (any platform) so the displayed
        "scans left" reflects server truth, not a per-device local estimate. */
@@ -3690,7 +3781,7 @@ function HomeScreen({
       /*#__PURE__*/React.createElement("div", { style: { display: "flex", gap: 9 } },
         /*#__PURE__*/React.createElement("button", { onClick: () => setHelpPage("privacy"), className: "ss-press", style: { flex: 1, minHeight: 44, padding: "10px 8px", borderRadius: 12, border: "1px solid " + T.borderLight, background: "none", color: T.textSoft, fontSize: 14, cursor: "pointer" } }, "Privacy policy"),
         /*#__PURE__*/React.createElement("button", { onClick: () => setHelpPage("delete"), className: "ss-press", style: { flex: 1, minHeight: 44, padding: "10px 8px", borderRadius: 12, border: "1px solid " + T.borderLight, background: "none", color: T.textSoft, fontSize: 14, cursor: "pointer" } }, "Account deletion")),
-        /*#__PURE__*/React.createElement("button", { onClick: () => { try { if (window.DigiRuneFeedback) window.DigiRuneFeedback.open(); else window.location.href = "mailto:will@digirunestudios.com?subject=" + encodeURIComponent("Sheetmancer: report a problem or idea") + "&body=" + encodeURIComponent("App: Sheetmancer build v78\n\nWhat happened:\n"); } catch (_) {} }, className: "ss-press", style: { minHeight: 44, width: "100%", padding: "8px 14px", border: "none", background: "none", color: T.textSoft, fontSize: 14, textDecoration: "underline", cursor: "pointer" } }, "Report a problem or suggest an idea")),/*#__PURE__*/React.createElement("div", {
+        /*#__PURE__*/React.createElement("button", { onClick: () => { try { if (window.DigiRuneFeedback) window.DigiRuneFeedback.open(); else window.location.href = "mailto:will@digirunestudios.com?subject=" + encodeURIComponent("Sheetmancer: report a problem or idea") + "&body=" + encodeURIComponent("App: Sheetmancer build " + (window.SS_BUILD || "") + "\n\nWhat happened:\n"); } catch (_) {} }, className: "ss-press", style: { minHeight: 44, width: "100%", padding: "8px 14px", border: "none", background: "none", color: T.textSoft, fontSize: 14, textDecoration: "underline", cursor: "pointer" } }, "Report a problem or suggest an idea")),/*#__PURE__*/React.createElement("div", {
     style: {
       textAlign: "center",
       fontSize: 12,
@@ -3699,7 +3790,7 @@ function HomeScreen({
       marginTop: 4,
       letterSpacing: 1
     }
-  }, "Sheetmancer \u00b7 build v78"))), /*#__PURE__*/React.createElement("button", {
+  }, "Sheetmancer \u00b7 build " + (window.SS_BUILD || "")))), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowHelp(false),
     className: "ss-press",
     style: {
@@ -3863,7 +3954,7 @@ function HomeScreen({
     style: { fontSize: 15, fontWeight: 800, color: T.accent, fontFamily: "'Cinzel',Georgia,serif" }
   }, pillKnown ? slotsLeft : ""), /*#__PURE__*/React.createElement("span", {
     style: { fontSize: 13, fontWeight: 700, color: T.text, fontFamily: "'Cinzel',Georgia,serif", letterSpacing: 0.3 }
-  }, !ssauth.signedIn ? "Your Character Scans" : !pillKnown ? "Checking your Character Scans\u2026" : (slotsLeft === 1 ? "Character Scan left" : "Character Scans left")), /*#__PURE__*/React.createElement("span", {
+  }, !ssauth.signedIn ? "Your Character Scans" : !pillKnown ? "Checking scans\u2026" : (slotsLeft === 1 ? "Character Scan left" : "Character Scans left")), /*#__PURE__*/React.createElement("span", {
     style: { fontSize: 13, color: T.accent, fontWeight: 700, fontFamily: "'Cinzel',Georgia,serif", display: "inline-flex", alignItems: "center", gap: 3 }
   }, /*#__PURE__*/React.createElement("span", { "aria-hidden": "true", style: { fontSize: 15, lineHeight: 1 } }, "+"), ssauth.signedIn ? "Get more" : "Sign in")), characters.length > 0 && /*#__PURE__*/React.createElement("div", {
     className: "smx-charlist",
@@ -3961,8 +4052,8 @@ function HomeScreen({
       style: { background: "none", border: "none", color: T.accent }
     }, /*#__PURE__*/React.createElement("span", { "aria-hidden": "true", style: { fontSize: 16, lineHeight: 1, fontWeight: 700 } }, "＋"), "Add pages"), /*#__PURE__*/React.createElement("button", {
       onClick: () => onArchiveChar(i),
-      "aria-label": "Archive to Fallen Heroes",
-      title: "Archive to Fallen Heroes",
+      "aria-label": "Retire to Fallen Heroes",
+      title: "Retire to Fallen Heroes",
       className: "smx-cact",
       style: { background: "none", border: "none", borderLeft: `1px solid ${T.border}`, color: T.textMuted }
     }, /*#__PURE__*/React.createElement(CatIcon, { name: "tomb", size: 16, color: T.textMuted }), "Retire"), /*#__PURE__*/React.createElement("button", {
@@ -4161,7 +4252,7 @@ function HomeScreen({
       color: T.textMuted,
       marginTop: 2
     }
-  }, c.system, /*#__PURE__*/React.createElement("span", { className: "smx-nowrap" }, "\u00a0\xB7 Archived ", c.archivedAt ? new Date(c.archivedAt).toLocaleDateString() : "")))), /*#__PURE__*/React.createElement("div", {
+  }, c.system, /*#__PURE__*/React.createElement("span", { className: "smx-nowrap" }, "\u00a0\xB7 Retired ", c.archivedAt ? new Date(c.archivedAt).toLocaleDateString() : "")))), /*#__PURE__*/React.createElement("div", {
     style: { display: "flex", borderTop: `1px solid ${T.border}` }
   }, /*#__PURE__*/React.createElement("button", {
     onClick: () => onRestoreChar(i),
@@ -4202,7 +4293,8 @@ function CaptureScreen({
   const [buy, setBuy] = useState(false);
   const [restored, setRestored] = useState(0);
   const ssBal = useSsBalance();
-  const left = (ssBal && typeof ssBal.remaining === "number") ? ssBal.remaining : null;
+  const grantBusy = useSsGrantBusy();
+  const left = (ssBal && typeof ssBal.remaining === "number" && !grantBusy) ? ssBal.remaining : null;
   const toSend = pages.filter(p => !p.skip);
   const skipped = pages.length - toSend.length;
   const draftKey = "draft";
@@ -4220,7 +4312,9 @@ function CaptureScreen({
     if (!loaded.current) return;
     if (pages.length) ssIdb.put("capture", draftKey, { addCid: addCid || null, pages: pages, at: Date.now() }); else ssIdb.del("capture", draftKey);
   }, [pages]);
-  const cancel = () => { ssIdb.del("capture", draftKey); onBack(); };
+  /* v86 (P2-03): leaving this screen keeps the pages (exactly like Android Back); they come back next time. */
+  const cancel = () => { if (pages.length) ssShowToast("Your " + pages.length + (pages.length === 1 ? " page is" : " pages are") + " kept on this device. They come back next time you open this screen" + (addMode && targetName ? " for " + targetName : "") + ", unless you start pages for another character first.", 6000); onBack(); };
+  const [askClear, setAskClear] = useState(false);
   const flashCap = () => { setCapNotice(true); setTimeout(() => setCapNotice(false), 5000); };
   const flashHeic = () => { setHeicNotice(true); setTimeout(() => setHeicNotice(false), 9000); };
   const addPage = async (dataUrl, name) => {
@@ -4282,7 +4376,7 @@ function CaptureScreen({
     style: { minHeight: "100vh", display: "flex", flexDirection: "column", background: T.bg, padding: 8 }
   }, /*#__PURE__*/React.createElement(AtmoBg, {
     T: T
-  }), buy && /*#__PURE__*/React.createElement(BuyScansSheet, { T: T, onClose: () => setBuy(false), reason: "Your pages are kept here while you buy. We'll read them right after." }), confirmScan && (addMode ? /*#__PURE__*/React.createElement(ConfirmAdd, { T: T, count: toSend.length, targetName: targetName, slotsLeft: left == null ? undefined : left, onConfirm: startScan, onClose: () => setConfirmScan(false) }) : /*#__PURE__*/React.createElement(ConfirmCreate, { T: T, count: toSend.length, slotsLeft: left == null ? undefined : left, onConfirm: startScan, onClose: () => setConfirmScan(false) })), /*#__PURE__*/React.createElement("div", {
+  }), askClear && /*#__PURE__*/React.createElement(ConfirmDialog, { T: T, title: "Remove these pages?", message: "This removes " + (pages.length === 1 ? "the page" : "all " + pages.length + " pages") + " here so you can start over. Your characters are not affected.", confirmLabel: "Remove", onConfirm: () => { setAskClear(false); setPages([]); setRestored(0); }, onClose: () => setAskClear(false) }), buy && /*#__PURE__*/React.createElement(BuyScansSheet, { T: T, onClose: () => setBuy(false), reason: "Your pages are kept here while you buy. We'll read them right after." }), confirmScan && (addMode ? /*#__PURE__*/React.createElement(ConfirmAdd, { T: T, count: toSend.length, targetName: targetName, slotsLeft: left == null ? undefined : left, onConfirm: startScan, onClose: () => setConfirmScan(false) }) : /*#__PURE__*/React.createElement(ConfirmCreate, { T: T, count: toSend.length, slotsLeft: left == null ? undefined : left, onConfirm: startScan, onClose: () => setConfirmScan(false) })), /*#__PURE__*/React.createElement("div", {
     style: { flex: 1, border: T.frame || `2px solid ${T.borderLight}`, outline: T.frameInset, outlineOffset: "-6px", borderRadius: 14, background: T.surface, boxShadow: T.surfaceShadow, overflow: "hidden", display: "flex", flexDirection: "column", position: "relative", zIndex: 1 }
   }, /*#__PURE__*/React.createElement("div", {
     style: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 10px", borderBottom: `1px solid ${T.border}`, background: T.headerBg || T.surface }
@@ -4293,7 +4387,7 @@ function CaptureScreen({
     T: { ...T, text: T.headerText || T.text }
   }), /*#__PURE__*/React.createElement("span", {
     style: { fontSize: 16, color: T.headerText || T.textMuted }
-  }, "Cancel")), /*#__PURE__*/React.createElement("span", {
+  }, "Back")), /*#__PURE__*/React.createElement("span", {
     style: { fontSize: 16.5, fontWeight: 600, color: T.headerText || T.text, fontFamily: "'Cinzel',Georgia,serif", whiteSpace: "nowrap" }
   }, addMode ? "Add Pages" : "New Character"), /*#__PURE__*/React.createElement("div", {
     style: { width: 74 }
@@ -4314,7 +4408,7 @@ function CaptureScreen({
   }, busyMsg, /*#__PURE__*/React.createElement("br", null), "Photos from a phone can take a few seconds each to convert. Please keep this screen open.")), restored > 0 && /*#__PURE__*/React.createElement("div", {
     role: "status", style: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "10px 12px", borderRadius: 12, border: "1px dashed " + T.accent, background: T.accentFaint, color: T.text, fontSize: 14, lineHeight: 1.45 }
   }, /*#__PURE__*/React.createElement("span", { className: "smx-pretty" }, "We kept the " + restored + (restored === 1 ? " page" : " pages") + " you added earlier."), /*#__PURE__*/React.createElement("button", {
-    onClick: () => { setPages([]); setRestored(0); }, className: "ss-press",
+    onClick: () => setAskClear(true), className: "ss-press",
     style: { minHeight: 44, padding: "6px 12px", borderRadius: 10, border: "1px solid " + T.borderLight, background: "none", color: T.text, fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, fontSize: 13, cursor: "pointer", whiteSpace: "nowrap" }
   }, "Start over")), outOfScans && !ready && /*#__PURE__*/React.createElement("div", {
     role: "status", className: "smx-pretty",
@@ -4385,7 +4479,12 @@ function ProcessingScreen({
   const [buy, setBuy] = useState(false);
   const [step, setStep] = useState(0);
   const [error, setError] = useState(null);
+  useEffect(() => { window.__ssProcDone = !!error; return () => { window.__ssProcDone = false; }; }, [error]);   /* review r2 S2 */
   const ran = useRef(false);
+  const stopped = useRef(false);   /* v86 (P2-06): the player chose "Stop and keep my pages" */
+  const ctlRef = useRef(null);   /* review r2 M-1: the request in flight, aborted on Stop */
+  const runSeen = useRef(false);   /* review r3 M3: the server answered "working" or got the pages twice */
+  const hashRef = useRef(null);
   const [elapsed, setElapsed] = useState(0);
   useEffect(() => { const t0 = Date.now(); const id = setInterval(() => setElapsed(Math.floor((Date.now() - t0) / 1000)), 1000); return () => clearInterval(id); }, []);
   const STAGES = [{ t: 0, label: "Uploading your pages…" }, { t: 6, label: "Reading your pages…" }, { t: 22, label: "Extracting stats, gear & abilities…" }, { t: 65, label: "Assembling your character…" }];
@@ -4409,16 +4508,19 @@ function ProcessingScreen({
            so a closed app or a retry never runs (or charges) the same pages twice; a finished result is
            kept until the character is safely saved. */
         const pagesHash = await ssPagesHash(imgs);
+        hashRef.current = pagesHash;
         const prior = await ssIdb.get("scans", pagesHash);
-        if (prior && prior.result && Date.now() - (prior.at || 0) < 7 * 86400000) { setStep(3); setTimeout(() => { buzz([30, 60, 40]); onComplete(prior.result, pagesHash); }, 400); return; }
+        if (prior && prior.result && Date.now() - (prior.at || 0) < 7 * 86400000) { setStep(3); setTimeout(() => { if (stopped.current) return; buzz([30, 60, 40]); onComplete(prior.result, pagesHash); }, 400); return; }
         /* Stable scan ticket: the worker keys the whole job on this, so a dropped
            connection can neither lose the finished scan nor bill for it twice. */
-        const scanId = (prior && prior.scanId && Date.now() - (prior.at || 0) < 3600000) ? prior.scanId : (function () { try { return crypto.randomUUID(); } catch (_) { return "sc-" + Date.now() + "-" + Math.random().toString(36).slice(2); } })();
-        await ssIdb.put("scans", pagesHash, { scanId: scanId, at: Date.now(), addCid: addCid || null, status: "sent" });
+        const reused = !!(prior && prior.scanId && Date.now() - (prior.at || 0) < 3600000);
+        let scanId = reused ? prior.scanId : (function () { try { return crypto.randomUUID(); } catch (_) { return "sc-" + Date.now() + "-" + Math.random().toString(36).slice(2); } })();
+        await ssIdb.put("scans", pagesHash, { scanId: scanId, at: Date.now(), addCid: addCid || null, status: "sent" });   /* review r6 M1: every reuse dates the ticket now (v85) */
         const sleep = ms => new Promise(r => setTimeout(r, ms));
-        const POLL_MS = 3000, MAX_WAIT_MS = 6 * 60 * 1000, startedAt = Date.now();
+        const POLL_MS = 3000, MAX_WAIT_MS = 6 * 60 * 1000; let startedAt = Date.now();
         const stepTimer = setTimeout(() => setStep(3), 15000);
         let token = null;
+        const signedAtStart = !!(window.ssAuth && window.ssAuth.signedIn);
         try {
           token = await (window.ssGetIdToken ? window.ssGetIdToken() : Promise.reject(new Error("auth unavailable")));
         } catch (_) {
@@ -4431,18 +4533,29 @@ function ProcessingScreen({
           const payload = withImages ? { scanId, images: imgs } : { scanId, poll: true };
           let attempt = 0;
           for (;;) {
+            try { if (window.ssGetIdToken && !!(window.ssAuth && window.ssAuth.signedIn) === signedAtStart) token = await window.ssGetIdToken(); } catch (_) {}   /* review r4 M2, r5 M-2/M-3 */
+            /* v86 (P2-06): one request never waits forever (2 min with the pages, 45 s for a status check); a request that
+               gives up is asked again with the SAME scan ticket, so it is never run or charged twice. */
+            const ctl = (typeof AbortController === "function") ? new AbortController() : null; ctlRef.current = ctl;
+            const reqBody = JSON.stringify(payload);
+            const tmo = setTimeout(() => { try { if (ctl) ctl.abort(); } catch (_) {} }, withImages ? 120000 + 30000 * Math.ceil(reqBody.length / 1000000) : 45000);   /* review M-1: about 30 s more per MB of pages */
             try {
+              if (stopped.current) throw new Error("stopped");
               const resp = await fetch(API_URL, {
                 method: "POST",
                 headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
-                body: JSON.stringify(payload)
-              });
+                body: reqBody,
+                signal: ctl ? ctl.signal : undefined
+              }).finally(() => clearTimeout(tmo));
               let d = null, broken = false; try { d = await resp.json(); } catch (_) { d = {}; broken = true; }
               /* v78: a 200 whose body arrives broken (an iPhone connection that dropped mid-reply) is a
                  network failure: ask again with the SAME scan id, which returns the finished result. */
               if (broken && resp.status === 200) throw new Error("broken-reply");
               return { status: resp.status, data: d || {} };
             } catch (_) {
+              clearTimeout(tmo);
+              if (stopped.current) throw new Error("stopped");
+              if (withImages) runSeen.current = true;   /* review r3 M3: the pages go up again */
               if (++attempt > netRetries) throw new Error("Couldn't reach the scanner. Check your connection and try again.");
               await sleep(1500);
             }
@@ -4451,18 +4564,27 @@ function ProcessingScreen({
         /* Start the job (idempotent), then poll until a terminal result. A legacy
            worker answers the start with 200 + the result directly — handled too. */
         let r = await send(true, 4);
+        /* review r4 M1: a reused ticket whose earlier run ended without a result (cached 410): start once more, fresh. */
+        if (reused && r.status === 410 && !stopped.current) {
+          scanId = (function () { try { return crypto.randomUUID(); } catch (_) { return "sc-" + Date.now() + "-" + Math.random().toString(36).slice(2); } })();
+          await ssIdb.put("scans", pagesHash, { scanId: scanId, at: Date.now(), addCid: addCid || null, status: "sent" });
+          startedAt = Date.now();
+          r = await send(true, 4);
+        }
         for (;;) {
           const d0 = r.data;
           if (r.status === 200 && d0 && (d0.sheetsnap === 2 || Array.isArray(d0.content))) break;
           if (r.status === 202) {
+            runSeen.current = true;
             if (Date.now() - startedAt > MAX_WAIT_MS) { clearTimeout(stepTimer); throw new Error("This scan is taking longer than expected. Please try again."); }
             await sleep(POLL_MS);
+            if (stopped.current) return;
             r = await send(false, 6);
             continue;
           }
           clearTimeout(stepTimer);
           if (r.status === 402) { try { window.__ssOutOfScans = true; } catch (_) {} }
-          else { try { await ssIdb.del("scans", pagesHash); } catch (_) {} }   /* auditor fix: not charged; a retry gets a fresh scanId */
+          else if (r.status !== 503 && !((r.status === 401 || r.status === 403) && runSeen.current)) { try { await ssIdb.del("scans", pagesHash); } catch (_) {} }   /* auditor fix: not charged; a retry gets a fresh scanId. Review r2 S8 / r3 M1: only a maintenance pause keeps the ticket */
           throw new Error((d0 && d0.error && d0.error.message) || ("API " + r.status));
         }
         clearTimeout(stepTimer);
@@ -4553,10 +4675,10 @@ function ProcessingScreen({
         })();
         if (!parsed.sections.length) throw new Error("No readable sections found");
         parsed._verification = verification;
-        try { await ssIdb.put("scans", pagesHash, { scanId: scanId, at: Date.now(), addCid: addCid || null, status: "got", result: parsed }); } catch (_) {}
-        setTimeout(() => { buzz([30, 60, 40]); onComplete(parsed, pagesHash); }, 800);
+        try { await ssIdb.put("scans", pagesHash, { scanId: scanId, at: Date.now(), addCid: addCid || null, status: "got", result: parsed, stopped: !!stopped.current }); } catch (_) {}   /* review r2 M-1: kept even after Stop, so the same pages never pay twice */
+        setTimeout(() => { if (stopped.current) return; buzz([30, 60, 40]); onComplete(parsed, pagesHash); }, 800);
       } catch (err) {
-        setError(err.message);
+        if (!stopped.current) setError(err.message);
       }
     })();
   }, []);
@@ -4570,7 +4692,7 @@ function ProcessingScreen({
     label: "Putting your character together...",
     done: false
   }];
-  if (error) { const es = String(error); const eNet = /failed to fetch|network|load failed|couldn't reach the scanner|couldn't verify this device/i.test(es); const eSrv = /^API \d|overloaded|rate.?limit/i.test(es); const eClosed = /closed testing/i.test(es); const eBusy = /lot of scanning/i.test(es); const eAuth = /sign.?in required/i.test(es); const eOut = /out of (character )?scans/i.test(es) || (function () { try { return !!window.__ssOutOfScans; } catch (_) { return false; } })(); const eGone = /did not finish/i.test(es); const eGate = eClosed || eBusy || eAuth || eOut || eGone; const eTech = /^API \d|invalid extraction|unexpected response|no readable sections|broken-reply/i.test(es); return /*#__PURE__*/React.createElement("div", {
+  if (error) { const es = String(error); const eNet = /failed to fetch|network|load failed|couldn't reach the scanner|couldn't verify this device/i.test(es); const eSrv = /^API \d|overloaded|rate.?limit/i.test(es); const eClosed = /closed testing/i.test(es); const eBusy = /lot of scanning/i.test(es); const eAuth = /sign.?in required/i.test(es); const eOut = /out of (character )?scans/i.test(es) || (function () { try { return !!window.__ssOutOfScans; } catch (_) { return false; } })(); const eGone = /did not finish/i.test(es); const eGate = eClosed || eBusy || eAuth || eOut || eGone; const eTech = /^API \d|invalid extraction|unexpected response|no readable sections|broken-reply/i.test(es); const eMaint = /paused for maintenance/i.test(es); const eNoCharge = !eOut && !eGone && !eMaint && /not charged/i.test(es); const eTooMuch = eNoCharge && /more detail than one scan/i.test(es); const eLead = "Your photos are fine, and you were not charged a scan."; const eRest = (es.match(/[^.!?]+[.!?]*/g) || []).map(x => x.trim()).filter(x => x && !/not charged|photos are fine|hit a snag/i.test(x)).join(" "); return /*#__PURE__*/React.createElement("div", {
     style: {
       minHeight: "100vh",
       display: "flex",
@@ -4603,14 +4725,14 @@ function ProcessingScreen({
       lineHeight: 1.4,
       marginBottom: 6
     }
-  }, eOut ? "You're out of Character Scans" : eGone ? "That scan didn't finish" : eNet ? "Couldn't reach the scanning service" : eSrv ? "Our scanner hit a snag" : eClosed ? "Scanning isn't open yet" : eBusy ? "Just a moment" : eAuth ? "Sign-in needed to scan" : "That scan didn't come through"), /*#__PURE__*/React.createElement("div", {
+  }, eOut ? "You're out of Character Scans" : eGone ? "That scan didn't finish" : eMaint ? "Scanning is paused for a moment" : eTooMuch ? "Too much for one scan" : eNoCharge ? "Our scanner hit a snag" : eNet ? "Couldn't reach the scanning service" : eSrv ? "Our scanner hit a snag" : eClosed ? "Scanning isn't open yet" : eBusy ? "Just a moment" : eAuth ? "Sign-in needed to scan" : "That scan didn't come through"), /*#__PURE__*/React.createElement("div", {
     className: "smx-pretty",
     style: {
       fontSize: 15,
       color: "#E8D9BE",
       lineHeight: 1.55
     }
-  }, eOut ? "Your pages are still here. Get more Character Scans and we'll read them right away." : eGone ? "Something went wrong on our side, and you were not charged a scan. Your pages are still here. Please try again." : eNet ? "Your photos are fine. This looks like a connection hiccup, not a bad shot. Check your signal and give it another try in a moment." : eSrv ? "Your photos are fine. Our reader is just catching its breath. Give it another try in a minute." : eClosed ? "Your photos look fine. This device just isn't on the tester list yet. Scanning is in closed testing right now, and opens to everyone at launch." : eBusy ? "You've run several scans in a row. Take a short breather and give it another go in a minute." : eAuth ? "You'll need to sign in first. Tap Sign in at the top of the Home screen, then try the scan again." : "If the pages were dim or shot at an angle, more light and a flat, straight-on photo usually does the trick. If they already look clear, it may just be a long or dense scan. Try again, or split it into a couple of shorter scans."), /*#__PURE__*/React.createElement("div", {
+  }, eOut ? "Your pages are still here. Get more Character Scans and we'll read them right away." : eGone ? "Something went wrong on our side, and you were not charged a scan. Your pages are still here. Please try again." : eMaint ? "Scanning is briefly paused for maintenance. Your pages are still here. Please try again soon." : eTooMuch ? "You were not charged a scan. This character has more detail than one scan can capture at once. Try fewer pages, then add the rest with Add pages." : eNoCharge ? eLead + (eRest ? " " + eRest : " Please try again in a moment.") : eNet ? "Your photos are fine. This looks like a connection hiccup, not a bad shot. Check your signal and give it another try in a moment." : eSrv ? "Your photos are fine. Our reader is just catching its breath. Give it another try in a minute." : eClosed ? "Your photos look fine. This device just isn't on the tester list yet. Scanning is in closed testing right now, and opens to everyone at launch." : eBusy ? "You've run several scans in a row. Take a short breather and give it another go in a minute." : eAuth ? "You'll need to sign in first. Tap Sign in at the top of the Home screen, then try the scan again." : "If the pages were dim or shot at an angle, more light and a flat, straight-on photo usually does the trick. If they already look clear, it may just be a long or dense scan. Try again, or split it into a couple of shorter scans."), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 12,
       color: "#9A8B76",
@@ -4618,12 +4740,12 @@ function ProcessingScreen({
       marginTop: 10,
       opacity: 0.85
     }
-  }, (eGate || eTech || eSrv || eNet) ? null : error)), eOut && /*#__PURE__*/React.createElement("button", {
+  }, (eGate || eTech || eSrv || eNet || eMaint || eNoCharge) ? null : error)), eOut && /*#__PURE__*/React.createElement("button", {
     onClick: () => { try { window.__ssOutOfScans = false; } catch (_) {} setBuy(true); }, className: "ss-press",
     style: { minHeight: 48, padding: "14px 28px", background: T.metalGrad, border: "none", borderRadius: 12, cursor: "pointer", fontSize: 16, color: T.bg, fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, position: "relative" }
   }, "Get more Character Scans"), buy && /*#__PURE__*/React.createElement(BuyScansSheet, { T: T, onClose: () => setBuy(false), onBought: () => { setBuy(false); onError(); }, reason: "Your pages are kept. After you buy, tap Create My Character again." }), /*#__PURE__*/React.createElement("button", {
     onClick: onError,
-    "aria-label": "Try scanning again",
+    "aria-label": "Back to my pages",
     style: {
       padding: "14px 28px",
       minHeight: 44,
@@ -4635,7 +4757,7 @@ function ProcessingScreen({
       color: T.text,
       position: "relative"
     }
-  }, eOut ? "Back to my pages" : "\u21BA Try again with these pages")); }
+  }, "Back to my pages")); }
   return /*#__PURE__*/React.createElement("div", {
     style: {
       position: "fixed",
@@ -4659,7 +4781,7 @@ function ProcessingScreen({
   }, /*#__PURE__*/React.createElement(Logo, {
     T: T,
     size: 30
-  }), images && images[0] && images[0].dataUrl ? /*#__PURE__*/React.createElement("div", {
+  }), images && images[0] && images[0].dataUrl && elapsed < 120 ? /*#__PURE__*/React.createElement("div", {
     style: {
       position: "relative",
       width: 200,
@@ -4699,9 +4821,13 @@ function ProcessingScreen({
     style: { border: `1px solid ${T.borderLight}`, background: T.accentFaint, borderRadius: 12, padding: "14px 16px", textAlign: "center", maxWidth: 320 }
   }, /*#__PURE__*/React.createElement("div", {
     style: { color: T.text, fontFamily: "'Cinzel',Georgia,serif", fontSize: 13.5, letterSpacing: 0.4, marginBottom: 4, fontWeight: 700 }
-  }, late ? "Almost there, hang tight" : "This can take several minutes"), /*#__PURE__*/React.createElement("div", {
+  }, elapsed >= 120 ? "Still waiting. Your pages are safe." : late ? "Almost there, hang tight" : "This can take several minutes"), /*#__PURE__*/React.createElement("div", {
+    role: "status",
     style: { color: T.textMuted, fontSize: 14, lineHeight: 1.55 }
-  }, late ? "Dense sheets can take a few minutes. We're putting the finishing touches on your character now." : "We read every line carefully so your character comes out right. The more pages, the longer it takes.")), /*#__PURE__*/React.createElement("div", {
+  }, elapsed >= 120 ? "This is taking longer than usual. You can keep waiting, or stop now and keep your pages. Trying the same pages again soon won't charge you twice." : late ? "Dense sheets can take a few minutes. We're putting the finishing touches on your character now." : "We read every line carefully so your character comes out right. The more pages, the longer it takes."), elapsed >= 120 && /*#__PURE__*/React.createElement("button", {
+    onClick: () => { if (stopped.current) return; stopped.current = true; try { if (ctlRef.current) ctlRef.current.abort(); } catch (_) {}  ssShowToast("Stopped. Your pages are kept.", 5000); onError(); }, className: "ss-press",
+    style: { display: "block", margin: "12px auto 0", minHeight: 44, padding: "10px 18px", borderRadius: 10, border: "1px solid " + T.borderLight, background: T.surface, color: T.text, fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, fontSize: 14, cursor: "pointer" }
+  }, "Stop and keep my pages")), /*#__PURE__*/React.createElement("div", {
     style: { color: T.accentBright || T.accent, fontFamily: "'Cinzel',Georgia,serif", fontSize: 13.5, fontWeight: 700, letterSpacing: 0.6, textAlign: "center", padding: "9px 20px", borderRadius: 999, border: `1px solid ${T.accent}66`, background: T.accentFaint, boxShadow: `0 0 16px ${T.accentFaint}` }
   }, "Please keep this screen open")));
 }
@@ -5560,7 +5686,7 @@ function ScanCheck({
       color: T.green,
       lineHeight: 1.3
     }
-  }, /*#__PURE__*/React.createElement("span", { className: "smx-nowrap" }, "Scan verified:"), " ", /*#__PURE__*/React.createElement("span", { className: "smx-nowrap" }, "all " + totalFields + " fields look good"))));
+  }, /*#__PURE__*/React.createElement("span", null, "All flagged fields checked."), /*#__PURE__*/React.createElement("span", { style: { display: "block", fontFamily: "Georgia,serif", fontWeight: 400, fontSize: 13.5, color: T.textSoft, marginTop: 2 } }, "Give the rest a quick look against your pages."))));
 }
 function VerifyModal({
   T,
@@ -6202,7 +6328,8 @@ function ConfirmDialog({
       fontWeight: 700,
       fontSize: 17,
       color: T.accent,
-      marginBottom: 8
+      marginBottom: 8,
+      overflowWrap: "anywhere"
     }
   }, title), /*#__PURE__*/React.createElement("div", {
     style: {
@@ -6221,6 +6348,7 @@ function ConfirmDialog({
     className: "ss-press",
     style: {
       flex: 1,
+      minHeight: 44,
       padding: 11,
       background: "none",
       border: `1px solid ${T.borderLight}`,
@@ -6236,6 +6364,7 @@ function ConfirmDialog({
     className: "ss-press",
     style: {
       flex: 1,
+      minHeight: 44,
       padding: 11,
       background: "#a3402a",
       border: "none",
@@ -6921,13 +7050,29 @@ function HeaderAwareBody({ T, sec, si, hlField, menuKey, setMenuKey, updateField
 }
 
 function FieldEditModal({ T, data, si, fi0, updateBoth, moveField, moveToSection, onClose, isHeader }) {
-  useSsBack(true, onClose);
   const secFields = (data.sections[si] && data.sections[si].fields) || [];
   const [curFi, setCurFi] = useState(fi0);
   const cur = secFields[curFi] || secFields[fi0] || { label: "", value: "" };
-  const [label, setLabel] = useState(cur.label || "");
-  const [val, setVal] = useState(cur.value == null ? "" : cur.value);
+  /* v86 (P2-04): what is typed is kept as a draft on this device while typing. Back (or the app closing) keeps it for
+     next time; Cancel asks before throwing it away; Save clears it. One draft at a time, never synced. */
+  const SS_FD = "ss-field-draft";
+  const fdId = useRef(null); if (!fdId.current) fdId.current = { cid: data && data.cid, sid: data.sections[si] && data.sections[si].id, fid: cur && cur.id };
+  const orig = useRef(null); if (!orig.current) orig.current = { label: cur.label || "", val: cur.value == null ? "" : String(cur.value) };
+  const fdOk = !(data && data.isSample) && !!(fdId.current.cid && fdId.current.fid);   /* review r3 S-7, S-8 */
+  const draft0 = useRef(undefined);
+  if (draft0.current === undefined) { let d = null; try { d = JSON.parse(localStorage.getItem(SS_FD) || "null"); } catch (_) {} const id = fdId.current; draft0.current = (fdOk && d && d.cid === id.cid && d.sid === id.sid && d.fid === id.fid && Date.now() - (d.at || 0) < 7 * 86400000 && String(d.bl) === orig.current.label && String(d.bv) === orig.current.val && (String(d.label) !== orig.current.label || String(d.val) !== orig.current.val)) ? d : null; }   /* review S-2: the field changed since (another device, quick edit): the old draft is not offered */
+  const [label, setLabel] = useState(draft0.current ? String(draft0.current.label) : (cur.label || ""));
+  const [val, setVal] = useState(draft0.current ? String(draft0.current.val) : (cur.value == null ? "" : cur.value));
+  const changed = label !== orig.current.label || String(val) !== orig.current.val;
+  const writeDraft = (l, v) => { if (!fdOk) return; try { const id = fdId.current; localStorage.setItem(SS_FD, JSON.stringify({ cid: id.cid, sid: id.sid, fid: id.fid, label: l, val: String(v), bl: orig.current.label, bv: orig.current.val, at: Date.now() })); } catch (_) {} };
+  const dropDraft = () => { try { const id = fdId.current, d = JSON.parse(localStorage.getItem(SS_FD) || "null"); if (d && d.cid === id.cid && d.sid === id.sid && d.fid === id.fid) localStorage.removeItem(SS_FD); } catch (_) {} };
+  useEffect(() => { if (!fdOk) return; const t = setTimeout(() => { if (changed) writeDraft(label, val); else dropDraft(); }, 400); return () => clearTimeout(t); }, [label, val]);
+  const [askDiscard, setAskDiscard] = useState(false);
+  const closeKeep = () => { if (changed && fdOk) { writeDraft(label, val); ssShowToast("Not saved yet. Open this field next to pick up where you left off.", 6000); } onClose(); };
+  const closeKeepRef = useRef(closeKeep); closeKeepRef.current = closeKeep;
+  useSsBack(true, closeKeep);
   const ta = useRef(null);
+  const lb = useRef(null);   /* review r6 S3 */
   const uStack = useRef([]);
   const uLast = useRef(0);
   const [, forceU] = useState(0);
@@ -6948,14 +7093,14 @@ function FieldEditModal({ T, data, si, fi0, updateBoth, moveField, moveToSection
     setVal(prev);
   };
   useEffect(() => {
-    const h = e => { if (e.key === "Escape") onClose(); };
+    const h = e => { if (e.key === "Escape") closeKeepRef.current(); };
     window.addEventListener("keydown", h);
     return () => window.removeEventListener("keydown", h);
   }, []);
   const nFields = secFields.length;
   const canUp = curFi > 0;
   const canDown = curFi < nFields - 1;
-  const save = () => { updateBoth(si, curFi, label, val); onClose(); };
+  const save = () => { dropDraft(); updateBoth(si, curFi, label, val); onClose(); };
   const nudge = dir => {
     const ni = curFi + dir;
     if (ni < 0 || ni >= nFields) return;
@@ -6963,17 +7108,27 @@ function FieldEditModal({ T, data, si, fi0, updateBoth, moveField, moveToSection
     setCurFi(ni);
     try { buzz(14); } catch (_) {}
   };
-  const toSection = () => { updateBoth(si, curFi, label, val); moveToSection(si, curFi); onClose(); };
+  const toSection = () => { dropDraft(); updateBoth(si, curFi, label, val); moveToSection(si, curFi); onClose(); };
   const moveBtn = (enabled, txt, fn) => /*#__PURE__*/React.createElement("button", {
     onClick: () => { if (enabled) fn(); }, className: "ss-press", disabled: !enabled,
     style: { flex: 1, minHeight: 44, padding: "10px 8px", background: "none", border: "1px solid " + T.borderLight, borderRadius: 10, cursor: enabled ? "pointer" : "default", opacity: enabled ? 1 : 0.4, color: T.textSoft, fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, fontSize: 13 }
   }, txt);
   return /*#__PURE__*/React.createElement("div", {
+    "data-ss-busy": "field",
     style: { position: "fixed", top: 0, left: 0, right: 0, bottom: "var(--ss-kb, 0px)", zIndex: 100450, background: T.bg, display: "flex", flexDirection: "column", paddingTop: "calc(env(safe-area-inset-top, 0px) + 10px)", paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 10px)" }
   }, /*#__PURE__*/React.createElement("div", {
     style: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "4px 14px 10px", borderBottom: "1px solid " + T.borderLight, flex: "none" }
-  }, /*#__PURE__*/React.createElement("button", {
-    onClick: onClose, className: "ss-press",
+  }, askDiscard && /*#__PURE__*/React.createElement("div", {
+    role: "alertdialog", "aria-modal": "true", "aria-label": "Discard your changes?",
+    style: { position: "absolute", left: 12, right: 12, top: "calc(env(safe-area-inset-top, 0px) + 64px)", zIndex: 5, background: T.surface, border: T.frame || ("2px solid " + T.borderLight), borderRadius: 14, padding: "16px 16px 14px", boxShadow: "0 10px 30px rgba(0,0,0,0.45)" }
+  }, /*#__PURE__*/React.createElement("div", { style: { fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, fontSize: 16, color: T.accent, marginBottom: 6 } }, "Discard your changes?"), /*#__PURE__*/React.createElement("div", { style: { fontSize: 14, color: T.textSoft, lineHeight: 1.5, marginBottom: 14 } }, "What you typed here hasn't been saved."), /*#__PURE__*/React.createElement("div", { style: { display: "flex", gap: 10 } }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => { setAskDiscard(false); setTimeout(() => { try { (ta.current || lb.current) && (ta.current || lb.current).focus(); } catch (_) {} }, 0); }, className: "ss-press", autoFocus: true,
+    style: { flex: 1, minHeight: 44, padding: 10, background: T.metalGrad, border: "none", borderRadius: 10, cursor: "pointer", color: T.bg, fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, fontSize: 14 }
+  }, "Keep editing"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => { setAskDiscard(false); dropDraft(); onClose(); }, className: "ss-press",
+    style: { flex: 1, minHeight: 44, padding: 10, background: "none", border: "1px solid " + T.borderLight, borderRadius: 10, cursor: "pointer", color: T.textSoft, fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, fontSize: 14 }
+  }, "Discard"))), /*#__PURE__*/React.createElement("button", {
+    onClick: () => { if (changed) setAskDiscard(true); else { dropDraft(); onClose(); } }, className: "ss-press",
     style: { minHeight: 44, padding: "8px 15px", background: "none", border: "1px solid " + T.borderLight, borderRadius: 10, cursor: "pointer", fontSize: 14, color: T.textSoft, fontFamily: "'Cinzel',Georgia,serif", flexShrink: 0 }
   }, "Cancel"), /*#__PURE__*/React.createElement("div", {
     style: { display: "flex", flexDirection: "column", alignItems: "center", lineHeight: 1.2, minWidth: 0 }
@@ -6989,10 +7144,13 @@ function FieldEditModal({ T, data, si, fi0, updateBoth, moveField, moveToSection
     style: { minHeight: 44, padding: "8px 20px", background: T.metalGrad, border: "none", borderRadius: 10, cursor: "pointer", fontSize: 14, fontWeight: 700, color: T.bg, fontFamily: "'Cinzel',Georgia,serif", flexShrink: 0 }
   }, "✓ Save"))), /*#__PURE__*/React.createElement("div", {
     style: { flex: 1, overflowY: "auto", overscrollBehavior: "contain", display: "flex", flexDirection: "column", padding: "14px 16px 4px", minHeight: 0 }
-  }, /*#__PURE__*/React.createElement("div", {
+  }, draft0.current && changed && /*#__PURE__*/React.createElement("div", {
+    role: "status", className: "smx-pretty",
+    style: { fontSize: 14, color: T.text, lineHeight: 1.45, background: T.accentFaint, border: "1px dashed " + T.accent, borderRadius: 10, padding: "9px 12px", margin: "0 0 14px" }
+  }, "We kept what you were typing earlier. \u2713 Save keeps it; Cancel lets you discard it."), /*#__PURE__*/React.createElement("div", {
     style: { fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", color: T.label, fontFamily: "'Cinzel',Georgia,serif", margin: "0 0 6px 2px" }
   }, "Label"), /*#__PURE__*/React.createElement("input", {
-    value: label, onChange: e => setLabel(e.target.value),
+    ref: lb, value: label, onChange: e => setLabel(e.target.value),
     onKeyDown: e => { if (e.key === "Enter" && ta.current) ta.current.focus(); },
     "aria-label": "Field label",
     style: { colorScheme: kbScheme(T), width: "100%", boxSizing: "border-box", fontSize: 16, fontFamily: "'EB Garamond',Georgia,serif", color: T.text, background: T.accentFaint, border: "1px solid " + T.borderLight, borderRadius: 10, padding: "11px 13px", outline: "none", marginBottom: 16 }
@@ -7149,7 +7307,8 @@ function AddRow({
 function Toast({
   T,
   msg,
-  onUndo
+  onUndo,
+  undoLabel
 }) {
   if (!msg) return null;
   return /*#__PURE__*/React.createElement("div", {
@@ -7175,11 +7334,13 @@ function Toast({
     }
   }, /*#__PURE__*/React.createElement("span", {
     style: {
-      fontSize: 13
+      fontSize: 13,
+      minWidth: 0,
+      overflowWrap: "anywhere"
     }
   }, msg), !onUndo ? null : /*#__PURE__*/React.createElement("button", {
     onClick: onUndo,
-    "aria-label": "Undo delete",
+    "aria-label": undoLabel || "Undo delete",
     style: {
       background: "none",
       border: "none",
@@ -7190,7 +7351,10 @@ function Toast({
       fontSize: 13,
       display: "flex",
       alignItems: "center",
-      gap: 5
+      gap: 5,
+      minHeight: 44,
+      padding: "0 10px",
+      flexShrink: 0
     }
   }, "↶ Undo"));
 }
@@ -7388,7 +7552,7 @@ function CharacterScreen({
      index). Minted lazily, persisted into the character (syncs via ss-chars), reused thereafter. */
   const cidRef = useRef(null);
   if (cidRef.current == null) cidRef.current = (character && character.cid) || (function () { try { return crypto.randomUUID(); } catch (_) { return "cid_" + Date.now() + "_" + Math.random().toString(36).slice(2); } })();
-  const charId = (data && data.cid) || cidRef.current;
+  const charId = (data && ((typeof data.albumOf === "string" && data.albumOf) || data.cid)) || cidRef.current;   /* review r2 D2-1 */
   useEffect(function () { if (!data.cid) setData(function (p) { return p.cid ? p : Object.assign({}, p, { cid: cidRef.current }); }); }, []);
   const _ssAlbumAuth = useSsAuth();
   const signedIn = !!(_ssAlbumAuth && _ssAlbumAuth.signedIn);
@@ -8127,7 +8291,7 @@ function CharacterScreen({
       color: T.textSoft,
       lineHeight: 1.6
     }
-  }, /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", null, hb(T, "Double-check card"), ": Tap it if it appears, then \u2713 Looks right or \u270e Edit each flagged value. If we couldn't read a value, Fill it in or Leave blank."), /*#__PURE__*/React.createElement("div", null, hb(T, "Search this character\u2026"), ": Find any field, value, note or dice tool. Tap a result to jump there."), /*#__PURE__*/React.createElement("div", null, hb(T, "Category cards"), ": Tap Combat, Skills or any card to open it. Back returns; swipe to change groups."), /*#__PURE__*/React.createElement("div", null, hb(T, "Tap to edit"), ": Tap a field to open its writing view. \u2713 Save keeps it; \u21b6 Undo steps back."), /*#__PURE__*/React.createElement("div", null, hb(T, "The \u22ee menu"), ": On any field, header, section or category: \u270e Edit, \u2191 Move up, \u2193 Move down. Edit renames titles."), /*#__PURE__*/React.createElement("div", null, hb(T, "Drag to reorder"), ": Press and hold a field or header, then drag it up or down within its section. Move up and Move down in the \u22ee menu still work."), /*#__PURE__*/React.createElement("div", null, hb(T, "Move or merge"), ": Fields use Move to section\u2026, sections Move to group\u2026, categories Merge into\u2026. Delete always offers \u21b6 Undo."), /*#__PURE__*/React.createElement("div", null, hb(T, "Add fields and headers"), ": At a section's bottom, + Add Field or + Add Header (a titled divider)."), /*#__PURE__*/React.createElement("div", null, hb(T, "Add sections and groups"), ": On the hub, + Add Section adds a section; + Add Group makes your own category."), /*#__PURE__*/React.createElement("div", null, hb(T, "Tables"), ": Open a table's \u22ee \u2192 \u270e Edit, then + Add row or + Add column."), /*#__PURE__*/React.createElement("div", null, hb(T, "Portrait"), ": Tap Add a portrait, or Adjust/Replace Photo to drag, zoom or swap. \u2713 Done locks it."), /*#__PURE__*/React.createElement("div", null, hb(T, "Journal"), ": Keep session notes here. Add one after each game."), /*#__PURE__*/React.createElement("div", null, hb(T, "Photo Album"), ": + Add Photo keeps maps, minis and art. Needs a signed-in account; syncs across devices."), /*#__PURE__*/React.createElement("div", null, hb(T, "Dice Library & Calculator"), ": Rollers, cards, oracles, calculator. Tap one; \u2039 All Dice returns."), /*#__PURE__*/React.createElement("div", null, hb(T, "+ Scan more pages"), ": New pages arrive as fresh sections. Uses one Character Scan, up to 10 pages."), /*#__PURE__*/React.createElement("div", null, hb(T, "Export / Share"), ": \u2913 builds a polished PDF. \u2b07 Backup file (.json) saves a re-importable copy."), /*#__PURE__*/React.createElement("div", null, hb(T, "Archive to Fallen Heroes"), ": In the Journal, \u2694 Archive to Fallen Heroes retires this character. Restore from Home."))), /*#__PURE__*/React.createElement("button", {
+  }, /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", null, hb(T, "Double-check card"), ": Tap it if it appears, then \u2713 Looks right or \u270e Edit each flagged value. If we couldn't read a value, Fill it in or Leave blank."), /*#__PURE__*/React.createElement("div", null, hb(T, "Search this character\u2026"), ": Find any field, value, note or dice tool. Tap a result to jump there."), /*#__PURE__*/React.createElement("div", null, hb(T, "Category cards"), ": Tap Combat, Skills or any card to open it. Back returns; swipe to change groups."), /*#__PURE__*/React.createElement("div", null, hb(T, "Tap to edit"), ": Tap a field to open its writing view. \u2713 Save keeps it; \u21b6 Undo steps back."), /*#__PURE__*/React.createElement("div", null, hb(T, "The \u22ee menu"), ": On any field, header, section or category: \u270e Edit, \u2191 Move up, \u2193 Move down. Edit renames titles."), /*#__PURE__*/React.createElement("div", null, hb(T, "Drag to reorder"), ": Press and hold a field or header, then drag it up or down within its section. Move up and Move down in the \u22ee menu still work."), /*#__PURE__*/React.createElement("div", null, hb(T, "Move or merge"), ": Fields use Move to section\u2026, sections Move to group\u2026, categories Merge into\u2026. Delete always offers \u21b6 Undo."), /*#__PURE__*/React.createElement("div", null, hb(T, "Add fields and headers"), ": At a section's bottom, + Add Field or + Add Header (a titled divider)."), /*#__PURE__*/React.createElement("div", null, hb(T, "Add sections and groups"), ": On the hub, + Add Section adds a section; + Add Group makes your own category."), /*#__PURE__*/React.createElement("div", null, hb(T, "Tables"), ": Open a table's \u22ee \u2192 \u270e Edit, then + Add row or + Add column."), /*#__PURE__*/React.createElement("div", null, hb(T, "Portrait"), ": Tap Add a portrait, or Adjust/Replace Photo to drag, zoom or swap. \u2713 Done locks it."), /*#__PURE__*/React.createElement("div", null, hb(T, "Journal"), ": Keep session notes here. Add one after each game."), /*#__PURE__*/React.createElement("div", null, hb(T, "Photo Album"), ": + Add Photo keeps maps, minis and art. Needs a signed-in account; syncs across devices."), /*#__PURE__*/React.createElement("div", null, hb(T, "Dice Library & Calculator"), ": Rollers, cards, oracles, calculator. Tap one; \u2039 All Dice returns."), /*#__PURE__*/React.createElement("div", null, hb(T, "+ Scan more pages"), ": New pages arrive as fresh sections. Uses one Character Scan, up to 10 pages."), /*#__PURE__*/React.createElement("div", null, hb(T, "Export / Share"), ": \u2913 builds a polished PDF. \u2b07 Backup file (.json) saves a re-importable copy."), /*#__PURE__*/React.createElement("div", null, hb(T, "Retire"), ": On Home, Retire moves a character to Fallen Heroes. Nothing is deleted; Restore brings it back."))), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowHelp(false),
     className: "ss-press",
     style: {
@@ -8648,9 +8812,9 @@ function CharacterScreen({
   }, "Report a scan problem")), reportOpen && /*#__PURE__*/React.createElement(SsNoticeSheet, {
     T: T, title: "Report a scan problem", busyKey: "report",
     body: "Tell us what the scan got wrong and we'll look into it. Email Will@DigiRuneStudios.com with the details below. Please don't send passwords or payment details.",
-    primary: "Email us", onPrimary: () => { try { const d = new Date(); const body = "Character: " + (data.name || "") + "\nGame: " + (data.system || "") + "\nApp build: v78\nDate: " + d.toISOString().slice(0, 10) + "\n\nWhat was wrong:\n"; window.open("mailto:Will@DigiRuneStudios.com?subject=" + encodeURIComponent("Sheetmancer scan problem") + "&body=" + encodeURIComponent(body), "_blank"); } catch (_) {} },
+    primary: "Email us", onPrimary: () => { try { const d = new Date(); const body = "Character: " + (data.name || "") + "\nGame: " + (data.system || "") + "\nApp build: " + (window.SS_BUILD || "") + "\nDate: " + d.toISOString().slice(0, 10) + "\n\nWhat was wrong:\n"; window.open("mailto:Will@DigiRuneStudios.com?subject=" + encodeURIComponent("Sheetmancer scan problem") + "&body=" + encodeURIComponent(body), "_blank"); } catch (_) {} },
     secondary: "Close", onSecondary: () => setReportOpen(false), onBack: () => setReportOpen(false)
-  }, /*#__PURE__*/React.createElement("div", { style: { margin: "12px 0 0", padding: "10px 12px", borderRadius: 10, border: "1px dashed " + T.borderLight, textAlign: "left", fontSize: 13.5, lineHeight: 1.5, color: T.textSoft, userSelect: "text", WebkitUserSelect: "text" } }, "Send to: Will@DigiRuneStudios.com", /*#__PURE__*/React.createElement("br", null), "Character: " + (data.name || "") , /*#__PURE__*/React.createElement("br", null), "Game: " + (data.system || ""), /*#__PURE__*/React.createElement("br", null), "App build: v78")), data.sections.map((sec, si) => {
+  }, /*#__PURE__*/React.createElement("div", { style: { margin: "12px 0 0", padding: "10px 12px", borderRadius: 10, border: "1px dashed " + T.borderLight, textAlign: "left", fontSize: 13.5, lineHeight: 1.5, color: T.textSoft, userSelect: "text", WebkitUserSelect: "text" } }, "Send to: Will@DigiRuneStudios.com", /*#__PURE__*/React.createElement("br", null), "Character: " + (data.name || "") , /*#__PURE__*/React.createElement("br", null), "Game: " + (data.system || ""), /*#__PURE__*/React.createElement("br", null), "App build: " + (window.SS_BUILD || ""))), data.sections.map((sec, si) => {
     if (activeCat === null || group.catOf[si] !== activeCat) return null;
     if (verifyOnly && !sec.fields.some(f => f.confidence === "low")) return /*#__PURE__*/React.createElement("div", {
       key: sec.id,
@@ -9081,29 +9245,7 @@ function CharacterScreen({
       color: T.textMuted,
       fontStyle: "italic"
     }
-  }, "⚔ This character rests in the Fallen Heroes archive")) : onArchive && /*#__PURE__*/React.createElement("button", {
-    onClick: () => {
-      onSave(data);
-      onArchive();
-    },
-    style: {
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: 8,
-      padding: "14px",
-      background: "none",
-      border: "1px solid rgba(196,90,90,0.2)",
-      borderRadius: 12,
-      cursor: "pointer",
-      width: "100%"
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      fontSize: 15,
-      color: T.danger || "rgba(224,116,116,0.95)"
-    }
-  }, "⚔ Archive to Fallen Heroes")), /*#__PURE__*/React.createElement(Footer, {
+  }, "⚔ This character rests in Fallen Heroes")) : null, /*#__PURE__*/React.createElement(Footer, {
     T: T
   })))));
 }
@@ -9126,7 +9268,14 @@ function Sheetmancer() {
   const [characters, setCharacters] = useState([]);
   const [fallenHeroes, setFallenHeroes] = useState([]);
   const [appConfirm, setAppConfirm] = useState(null);
-  const askAppConfirm = (title, message, run) => setAppConfirm({ title: title, message: message, run: () => { run(); setAppConfirm(null); } });
+  /* v86 (P2-01): the box closes first and its action can run only once, however many taps land. */
+  const askAppConfirm = (title, message, run, confirmLabel) => { let ran = false; setAppConfirm({ title: title, message: message, confirmLabel: confirmLabel, run: () => { if (ran) return; ran = true; setAppConfirm(null); run(); } }); };
+  /* v86 (P2-01/02): list actions find the character by id in the CURRENT lists, never "whoever is at position N". */
+  const charsRef = useRef([]); charsRef.current = characters;
+  const fallenRef = useRef([]); fallenRef.current = fallenHeroes;
+  const [undoNote, setUndoNote] = useState(null);
+  useEffect(() => { if (!undoNote) return; const t = setTimeout(() => setUndoNote(u => (u === undoNote ? null : u)), 10000); return () => clearTimeout(t); }, [undoNote]);
+  useEffect(() => { if (view !== "home") setUndoNote(null); }, [view]);   /* review S-1: Undo shifts the list, so it exists only on Home */
   const [activeCharIdx, setActiveCharIdx] = useState(null);
   const [activeIsFallen, setActiveIsFallen] = useState(false);
   const [introPending, setIntroPending] = useState(false);
@@ -9138,7 +9287,7 @@ function Sheetmancer() {
   const [aiAsk, setAiAsk] = useState(null);   /* ST-01: pending capture start until the player says OK */
   const T = THEMES[themeKey];
   const [storageFull, setStorageFull] = useState(false);
-  useEffect(() => { const on = () => setStorageFull(true), off = () => setStorageFull(false); window.addEventListener("ss-storage-full", on); window.addEventListener("ss-storage-ok", off); return () => { window.removeEventListener("ss-storage-full", on); window.removeEventListener("ss-storage-ok", off); }; }, []);
+  useEffect(() => { const on = () => setStorageFull(true), off = () => setStorageFull(false); window.addEventListener("ss-storage-full", on); window.addEventListener("ss-storage-ok", off); window.addEventListener("ss-move-full", on); return () => { window.removeEventListener("ss-storage-full", on); window.removeEventListener("ss-storage-ok", off); window.removeEventListener("ss-move-full", on); }; }, []);
   const ssAuthNow = useSsAuth();
   useEffect(() => {
     const _used = Object.create(null);
@@ -9149,11 +9298,13 @@ function Sheetmancer() {
     const t = store.get("ss-theme");
     if (t && THEMES[t]) setThemeKey(t);
     store.set("ss-auth", true);
+    try { const kn = store.get("ss-sync-kept"); if (Array.isArray(kn) && kn.length) { const nm = kn.length === 1 ? kn[0] : kn.slice(0, -1).join(", ") + " and " + kn[kn.length - 1]; const showKept = tries => { try { if (document.querySelector('[aria-modal="true"]') && tries < 30) { setTimeout(() => showKept(tries + 1), 2000); return; } } catch (_) {} ssShowToast("We found two versions" + (kn.length === 1 ? " of " : " each of ") + nm + (kn.length >= 6 ? " (and maybe more)" : "") + (kn.length === 1 ? " and kept both." : " and kept both copies of each.") + " The one marked (second copy) is the version this device had. Delete whichever one you don't need.", 14000); setTimeout(() => { try { const t = document.getElementById("ssToast"); if (t && /two versions/.test(t.textContent || "")) localStorage.removeItem("ss-sync-kept"); } catch (_) {} }, 13500);   /* review r7 S2 */ }; setTimeout(() => showKept(0), 1500);   /* review r5 S2, S3 */ } } catch (_) {}
     const nav = store.get("ss-nav");
     if (nav && nav.view === "character" && nav.idx != null) {
       const list = nav.fallen ? f : c || [];
-      if (list && nav.idx < list.length) {
-        setActiveCharIdx(nav.idx);
+      const at = nav.cid ? list.findIndex(x => x && x.cid === nav.cid) : nav.idx;   /* v86 (R3-07): the same character, wherever it now sits; gone = Home */
+      if (list && at >= 0 && at < list.length) {
+        setActiveCharIdx(at);
         setActiveIsFallen(!!nav.fallen);
         setView("character");
         return;
@@ -9171,7 +9322,7 @@ function Sheetmancer() {
         const all = await ssIdb.all("scans"); const now = Date.now();
         for (const [k, v] of all) {
           if (!v || now - (v.at || 0) > 7 * 86400000) { ssIdb.del("scans", k); continue; }
-          if (v.result) { setRecovered({ hash: k, rec: v }); return; }
+          if (v.result && !v.stopped) { setRecovered({ hash: k, rec: v }); return; }   /* review r2 M-1: a stopped scan waits for the same pages */
           if (v.status === "sent" && now - (v.at || 0) >= 2 * 3600000) ssIdb.del("scans", k);   /* a scan that never finished: its pages are still in the capture draft, and the same pages reuse the same scan ticket */
         }
       } catch (_) {}
@@ -9188,12 +9339,14 @@ function Sheetmancer() {
     if (view !== "loading") store.set("ss-nav", {
       view,
       idx: activeCharIdx,
-      fallen: activeIsFallen
+      fallen: activeIsFallen,
+      cid: (function () { try { const l = activeIsFallen ? fallenRef.current : charsRef.current; return activeCharIdx != null && l[activeCharIdx] ? (l[activeCharIdx].cid || null) : null; } catch (_) { return null; } })()   /* v86 (R3-07) */
     });
   }, [view, activeCharIdx, activeIsFallen]);
   useEffect(() => {
     const onPop = () => {
       if (window.ssHandleSheetPop && window.ssHandleSheetPop()) return;
+      if (viewRef.current === "processing" && window.__ssProcDone) { setView("capture"); try { window.history.pushState({ ssInApp: true }, ""); } catch (_) {} return; }   /* review r2 S2: the scan already ended: Back = Back to my pages */
       if (viewRef.current === "processing") { try { window.history.pushState({ ssInApp: true }, ""); } catch (_) {} ssShowToast("Still reading your pages. Please keep this screen open.", 4000); return; }
       if (catBackRef.current && catBackRef.current.open) {
         catBackRef.current.open = false;
@@ -9207,8 +9360,14 @@ function Sheetmancer() {
     return () => window.removeEventListener("popstate", onPop);
   }, []);
   viewRef.current = view;
+  const prevViewRef = useRef("loading");
   useEffect(() => {
-    if (view === "home" || view === "loading") return;
+    if (view === "home" || view === "loading") { prevViewRef.current = view; return; }
+    const prevView = prevViewRef.current; prevViewRef.current = view;
+    if (window.__ssSheetBack > 0 && window.history.state && window.history.state.ssSheet) {
+      if (prevView === "home" || prevView === "loading") { window.__ssSheetBack--; try { window.history.replaceState({ ssInApp: true }, ""); } catch (_) {} }   /* v86 (R4-02): the sheet's entry becomes this screen's */
+      return;   /* review S-5: an in-app entry already sits under the sheet; its pending back() lands there */
+    }
     if (!(window.history.state && window.history.state.ssInApp)) window.history.pushState({
       ssInApp: true
     }, "");
@@ -9279,25 +9438,43 @@ function Sheetmancer() {
   const handleSaveChar = d => {
     if (activeIsFallen) setFallenHeroes(p => p.map((c, i) => i === activeCharIdx ? d : c));else setCharacters(p => p.map((c, i) => i === activeCharIdx ? d : c));
   };
-  const ssDropAlbum = c => { try { if (c && c.cid && window.ssAuth && window.ssAuth.signedIn && window.ssAlbumList && window.ssAlbumDelete) window.ssAlbumList(c.cid).then(r => { const ph = (r && (r.photos || r.items || (Array.isArray(r) ? r : null))) || []; ph.forEach(x => { try { if (x && x.id) window.ssAlbumDelete(x.id); } catch (_) {} }); }).catch(() => {}); } catch (_) {} };
-  const handleDeleteChar = idx => { const c = characters[idx]; const nm = c ? (c.name || "this character") : "this character"; askAppConfirm("Delete character?", "Are you sure? All content for “" + nm + "”, including its Photo Album pictures, will be permanently deleted.", () => { ssDropAlbum(c); setCharacters(p => p.filter((_, i) => i !== idx)); }); };
-  const handleArchiveChar = idx => {
-    const c = characters[idx];
-    setFallenHeroes(p => [...p, {
-      ...c,
-      archivedAt: new Date().toISOString()
-    }]);
-    setCharacters(p => p.filter((_, i) => i !== idx));
+  /* review r2 D2-1: never delete a Photo Album another remaining character still shows (a kept-both copy shares it). */
+  const ssAlbumKey = c => c && ((typeof c.albumOf === "string" && c.albumOf) || c.cid);
+  const ssAlbumShared = c => { const k = ssAlbumKey(c); return !!k && charsRef.current.concat(fallenRef.current).some(x => x && x !== c && !(x.cid && c.cid && x.cid === c.cid) && ssAlbumKey(x) === k); };
+  const ssDropAlbum = c => { if (ssAlbumShared(c)) return; c = c && Object.assign({}, c, { cid: ssAlbumKey(c) }); try { if (c && c.cid && window.ssAuth && window.ssAuth.signedIn && window.ssAlbumList && window.ssAlbumDelete) window.ssAlbumList(c.cid).then(r => { const ph = (r && (r.photos || r.items || (Array.isArray(r) ? r : null))) || []; ph.forEach(x => { try { if (x && x.id) window.ssAlbumDelete(x.id); } catch (_) {} }); }).catch(() => {}); } catch (_) {} };
+  const ssSame = (a, b) => a === b || !!(a && b && a.cid && a.cid === b.cid);
+  const handleDeleteChar = idx => { const c = charsRef.current[idx]; if (!c) return; const nm = c.name || "this character"; askAppConfirm("Delete character?", "Are you sure? All content for “" + nm + "”" + (ssAlbumShared(c) ? " will be permanently deleted. Its Photo Album pictures stay with the other copy." : ", including its Photo Album pictures, will be permanently deleted."), () => { if (!charsRef.current.some(x => ssSame(x, c))) return; ssDropAlbum(c); setCharacters(p => p.filter(x => !ssSame(x, c))); }); };
+  /* v86 (P1-01, R3-01): move one character between the lists. Both lists are saved together first; nothing
+     changes on screen unless both saved. Returns the moved character, or null. */
+  const ssMoveChar = (c, toFallen, at) => {
+    const C0 = charsRef.current, F0 = fallenRef.current;
+    const src = toFallen ? C0 : F0, dst = toFallen ? F0 : C0;
+    const k = src.findIndex(x => ssSame(x, c)); if (k < 0) return null;
+    const live = src[k];
+    let moved; if (toFallen) moved = { ...live, archivedAt: new Date().toISOString() }; else { const { archivedAt, ...rest } = live; moved = rest; }
+    const ns = src.filter((_, i) => i !== k);
+    let nd = dst; if (!dst.some(x => ssSame(x, live))) { nd = dst.slice(); nd.splice(at == null ? nd.length : Math.max(0, Math.min(at, nd.length)), 0, moved); }
+    const nc = toFallen ? ns : nd, nf = toFallen ? nd : ns;
+    if (!ssSaveLists(nc, nf)) { ssShowToast("Nothing was moved. This device is out of space.", 6000); return null; }
+    charsRef.current = nc; fallenRef.current = nf;
+    setCharacters(nc); setFallenHeroes(nf);
+    return { moved: moved, from: k };
+  };
+  const handleArchiveChar = (idx, after) => {
+    const c = charsRef.current[idx]; if (!c) return;
+    const nm = c.name || "this character";
+    askAppConfirm("Retire " + nm + "?", "It moves to Fallen Heroes at the bottom of Home. Nothing is deleted, and Restore brings it back any time.", () => {
+      const r = ssMoveChar(c, true); if (!r) return;
+      setUndoNote({ msg: nm + " moved to Fallen Heroes.", undo: () => { ssMoveChar(r.moved, false, r.from); } });
+      if (after) after();
+    }, "Retire");
   };
   const handleRestoreChar = idx => {
-    const {
-      archivedAt,
-      ...c
-    } = fallenHeroes[idx];
-    setCharacters(p => [...p, c]);
-    setFallenHeroes(p => p.filter((_, i) => i !== idx));
+    const c = fallenRef.current[idx]; if (!c) return;
+    const r = ssMoveChar(c, false); if (!r) return;
+    setUndoNote({ msg: (c.name || "Your character") + " is back in Your Characters.", undo: null });
   };
-  const handleDeleteFallen = idx => { const c = fallenHeroes[idx]; const nm = c ? (c.name || "this character") : "this character"; askAppConfirm("Delete character?", "Are you sure? “" + nm + "” and its Photo Album pictures will be permanently deleted from Fallen Heroes.", () => { ssDropAlbum(c); setFallenHeroes(p => p.filter((_, i) => i !== idx)); }); };
+  const handleDeleteFallen = idx => { const c = fallenRef.current[idx]; if (!c) return; const nm = c.name || "this character"; askAppConfirm("Delete character?", "Are you sure? “" + nm + "”" + (ssAlbumShared(c) ? " will be permanently deleted from Fallen Heroes. Its Photo Album pictures stay with the other copy." : " and its Photo Album pictures will be permanently deleted from Fallen Heroes."), () => { if (!fallenRef.current.some(x => ssSame(x, c))) return; ssDropAlbum(c); setFallenHeroes(p => p.filter(x => !ssSame(x, c))); }); };
   const handleImport = charData => {
     const used = Object.create(null);
     characters.concat(fallenHeroes).forEach(c => { if (c && c.cid) used[c.cid] = 1; });
@@ -9305,7 +9482,9 @@ function Sheetmancer() {
     if (charData && charData.sheetmancerBackup) {
       const cidMap = {};
       const take = list => (Array.isArray(list) ? list : []).map(c => { const old = c && c.cid; const s = ssSanitizeChar(c, used, (old && used[old]) ? { freshCid: true } : null); if (s && old) cidMap[old] = s.cid; return s; }).filter(Boolean);
-      const nc = take(charData.characters), nf = take(charData.fallen).map(c => c.archivedAt ? c : Object.assign({}, c, { archivedAt: new Date().toISOString() }));
+      const nc0 = take(charData.characters), nf0 = take(charData.fallen).map(c => c.archivedAt ? c : Object.assign({}, c, { archivedAt: new Date().toISOString() }));
+      const reAlb = c => (c && typeof c.albumOf === "string" && cidMap[c.albumOf] && cidMap[c.albumOf] !== c.albumOf) ? Object.assign({}, c, { albumOf: cidMap[c.albumOf] }) : c;   /* review r2 D2-1 */
+      const nc = nc0.map(reAlb), nf = nf0.map(reAlb);
       if (!nc.length && !nf.length) { ssShowToast("That backup has no characters in it."); return; }
       setCharacters(p => [...p, ...nc]);
       if (nf.length) setFallenHeroes(p => [...p, ...nf]);
@@ -9366,7 +9545,9 @@ function Sheetmancer() {
     T: T, character: Object.assign({}, SS_SAMPLE, { sections: ssStampCats(SS_SAMPLE.sections) }), isFallen: false, isSample: true, onBack: () => setView("home"), onSave: () => {}, onAddScan: null, onArchive: null,
     themeKey: themeKey, setThemeKey: setThemeKey, catBackRef: catBackRef, showArrangeIntro: false
   })), appConfirm && /*#__PURE__*/React.createElement(ConfirmDialog, {
-    T: T, title: appConfirm.title, message: appConfirm.message, onConfirm: appConfirm.run, onClose: () => setAppConfirm(null)
+    T: T, title: appConfirm.title, message: appConfirm.message, confirmLabel: appConfirm.confirmLabel, onConfirm: appConfirm.run, onClose: () => setAppConfirm(null)
+  }), undoNote && view === "home" && !appConfirm && /*#__PURE__*/React.createElement(Toast, {
+    T: T, msg: undoNote.msg, undoLabel: "Undo retire", onUndo: undoNote.undo ? () => { const u = undoNote; setUndoNote(null); if (viewRef.current === "home") u.undo(); } : null
   }), storageFull && /*#__PURE__*/React.createElement(SsNoticeSheet, {
     T: T, title: "This device is out of space", busyKey: "storage",
     body: "Sheetmancer couldn't save your latest change on this device because its storage is full. Back up all your characters now so nothing is lost, then free some space (remove a few Photo Album pictures or portraits).",
@@ -9430,10 +9611,7 @@ function Sheetmancer() {
     onBack: handleBack,
     onSave: handleSaveChar,
     onAddScan: activeIsFallen ? null : () => handleStartAddScan(activeCharIdx),
-    onArchive: activeIsFallen ? null : () => {
-      handleArchiveChar(activeCharIdx);
-      setView("home");
-    },
+    onArchive: null,
     themeKey: themeKey,
     setThemeKey: setThemeKey,
     catBackRef: catBackRef,
@@ -9463,7 +9641,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
     t.onclick=function(){t.classList.remove('show');if(onTap)onTap();};
     setTimeout(function(){t.classList.remove('show');},8000);}
   var ssRefreshing=false;
-  function ssReload(){if(ssRefreshing)return;var ae=document.activeElement;var nv="";try{nv=(JSON.parse(localStorage.getItem('ss-nav')||'null')||{}).view||"";}catch(_){}if((ae&&(ae.tagName==="INPUT"||ae.tagName==="TEXTAREA"))||nv==="capture"||nv==="processing"||document.querySelector('[data-ss-busy]')){setTimeout(ssReload,5000);return;}ssRefreshing=true;window.location.reload();}
+  function ssReload(){if(ssRefreshing)return;if(window.__ssBuying){setTimeout(ssReload,5000);return;}var ae=document.activeElement;var nv="";try{nv=(JSON.parse(localStorage.getItem('ss-nav')||'null')||{}).view||"";}catch(_){}if((ae&&(ae.tagName==="INPUT"||ae.tagName==="TEXTAREA"))||nv==="capture"||nv==="processing"||document.querySelector('[data-ss-busy]')){setTimeout(ssReload,5000);return;}ssRefreshing=true;window.location.reload();}
   function ssActivate(worker){if(!worker){ssReload();return;}try{worker.addEventListener('statechange',function(){if(worker.state==='activated')ssReload();});}catch(_){}try{worker.postMessage({type:'SKIP_WAITING'});}catch(_){}setTimeout(ssReload,3000);}
   if('serviceWorker' in navigator){
     window.addEventListener('load',function(){
@@ -9545,19 +9723,32 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
   };
 
   async function postJson(path, body){
+    if ((path === '/purchase' || path === '/grant-base') && !(window.ssAuth && window.ssAuth.signedIn)) throw new Error('signed-out');   /* review r4 M5 */
     var tok = await (window.ssGetIdToken ? window.ssGetIdToken() : Promise.reject(new Error('auth')));
-    var r = await fetch(API + path, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + tok }, body: JSON.stringify(body) });
-    var d = null; try { d = await r.json(); } catch (_) { d = {}; }
-    return { status: r.status, data: d || {} };
+    /* v86 (P2-06): give up after 45 s (counts as a network failure, so callers retry exactly as for a dropped connection). */
+    var ctl = (typeof AbortController === 'function') ? new AbortController() : null;
+    var tmo = setTimeout(function(){ try { if (ctl) ctl.abort(); } catch (_) {} }, 45000);
+    try {
+      var r = await fetch(API + path, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + tok }, body: JSON.stringify(body), signal: ctl ? ctl.signal : undefined });
+      var d = null; try { d = await r.json(); } catch (_) { d = {}; }
+      return { status: r.status, data: d || {} };
+    } finally { clearTimeout(tmo); }
   }
 
   /* iOS: postMessage -> shell runs StoreKit 2 -> __onNativePurchase({productId,transactionId,ok,error}) */
-  var pendingBuy = null;
-  window.__onNativePurchase = function(res){ var p = pendingBuy; pendingBuy = null; if (p) p(res || {}); };
+  var pendingBuy = null, pendingProduct = null;
+  window.__onNativePurchase = function(res){ var p = pendingBuy;
+    var other = !!(p && res && res.ok && res.productId && pendingProduct && res.productId !== pendingProduct);   /* review M-6: an answer for a different product is not this purchase */
+    if (p && !other) { pendingBuy = null; pendingProduct = null; p(res || {}); return; }
+    /* v86 (R1-05): StoreKit answered after the 120 s wait (or for another product): hand it to recovery (server is idempotent). */
+    try { if (res && res.ok && res.productId && res.transactionId && window.__ssRecoverPush) { window.__ssRecoverPush({ productId: res.productId, transactionId: res.transactionId }); ssRecoverSoon(); } } catch (_) {} };
+  /* v86 (R1-05): retry recovery a few times after an interrupted purchase, not only at the next launch. */
+  function ssRecoverSoon(late){ (late ? [50000, 90000, 180000] : [5000, 20000, 60000]).forEach(function(ms){   /* review M-8: a timed-out request may still be running on the server */ setTimeout(function(){ try { if (window.__ssDrainRecover) window.__ssDrainRecover(); } catch (_) {} try { if (window.__ssAndroidRecover) window.__ssAndroidRecover(); } catch (_) {} }, ms); }); }
+  function ssTransient(st){ return !(st === 200 || st === 400 || st === 404 || st === 409 || st === 422); }
   function iosStartPurchase(productId){
     return new Promise(function(resolve){
       if (pendingBuy) { resolve({ ok:false, error:'busy' }); return; }
-      pendingBuy = resolve;
+      pendingBuy = resolve; pendingProduct = productId;
       try { window.webkit.messageHandlers.startPurchase.postMessage({ productId: productId }); }
       catch (e) { pendingBuy = null; resolve({ ok:false, error:'bridge' }); return; }
       setTimeout(function(){ if (pendingBuy === resolve) { pendingBuy = null; resolve({ ok:false, error:'timeout' }); } }, 120000);
@@ -9582,21 +9773,41 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
   /* Buy one product end to end: native purchase -> server verify+grant -> { ok, budget }. */
   window.ssBuyScans = async function(productId){
     if (!window.ssProducts[productId]) return { ok:false, error:'unknown-product' };
+    if (!(window.ssAuth && window.ssAuth.signedIn)) return { ok:false, error:'signed-out' };   /* review r7 M1: before any payment */
+    /* v86: recovery waits while a purchase is in progress, so one purchase is never reported twice. Review r2 M-3: the flag
+       belongs to this purchase only, and a 5-minute watchdog clears it if a store sheet never answers. */
+    if (window.__ssBuying) return { ok:false, error:'busy' };   /* review M-3: one purchase at a time */
+    var mine = {}; window.__ssBuying = mine;
+    var dog = setTimeout(function(){ if (window.__ssBuying === mine) window.__ssBuying = false; }, 300000);
+    var pushesBefore = window.__ssRecoverPushes || 0;
+    try {
     if (iosBuy) {
       var ir = await iosStartPurchase(productId);
       if (!ir.ok) return { ok:false, error: ir.error || 'ios-failed' };
-      var a = await postJson('/purchase', { platform:'apple', productId: productId, token: ir.transactionId });
+      var pid = ir.productId || productId;   /* review r2 M-4: credit the product StoreKit actually sold */
+      var a; try { a = await postJson('/purchase', { platform:'apple', productId: pid, token: ir.transactionId }); }
+      catch (e) { var late = !!(e && e.name === 'AbortError'); try { window.__ssRecoverPush({ productId: pid, transactionId: ir.transactionId, notBefore: late ? Date.now() + 50000 : 0 }); } catch (_) {} ssRecoverSoon(late); throw e; }   /* v86 (R1-05): paid, but the server never heard: recovery finishes it */
       if (a.status === 200) { try { window.webkit.messageHandlers.finishTransaction.postMessage({ transactionId: ir.transactionId }); } catch (_) {} return { ok:true, budget: a.data.budget }; }
-      return { ok:false, error: (a.data.error && a.data.error.message) || ('purchase ' + a.status) };
+      if (ssTransient(a.status)) { try { window.__ssRecoverPush({ productId: pid, transactionId: ir.transactionId }); } catch (_) {} ssRecoverSoon(); }
+      return { ok:false, error: (a.data.error && a.data.error.message) || ('purchase ' + a.status), permanent: !ssTransient(a.status) };
     }
     if (androidBuy) {
       var ar = await androidStartPurchase(productId);
       if (!ar.ok) return { ok:false, error: ar.error || 'android-failed' };
-      var b = await postJson('/purchase', { platform:'android', productId: productId, token: ar.token });
+      if (window.__ssBuying !== mine) { ssRecoverSoon(); return { ok:false, error:'late' }; }   /* review r4 M3: recovery owns it now */
+      var b; try { b = await postJson('/purchase', { platform:'android', productId: productId, token: ar.token }); }
+      catch (e) { if (e && e.name === 'AbortError') window.__ssAndroidNotBefore = Date.now() + 50000; ssRecoverSoon(!!(e && e.name === 'AbortError')); throw e; }   /* v86 (R1-05): still owned on Play, so recovery settles it */
       if (b.status === 200) { try { if (ar.svc && ar.svc.consume) await ar.svc.consume(ar.token); } catch (_) {} return { ok:true, budget: b.data.budget }; }
-      return { ok:false, error: (b.data.error && b.data.error.message) || ('purchase ' + b.status) };
+      if (ssTransient(b.status)) ssRecoverSoon();
+      return { ok:false, error: (b.data.error && b.data.error.message) || ('purchase ' + b.status), permanent: !ssTransient(b.status) };
     }
     return { ok:false, error:'unavailable' };
+    } finally {
+      clearTimeout(dog); if (window.__ssBuying === mine) window.__ssBuying = false;
+      /* review r2 M-2: answers that arrived for OTHER purchases while this one was open are drained soon after */
+      if ((window.__ssRecoverPushes || 0) > pushesBefore || (window.__ssRecoverQueue || []).some(function(x){ return !x.__done; }) || androidBuy) setTimeout(function(){ try { if (window.__ssAndroidRecover) window.__ssAndroidRecover(); } catch (_) {} }, 6000);
+      if ((window.__ssRecoverPushes || 0) > pushesBefore || (window.__ssRecoverQueue || []).some(function(x){ return !x.__done; })) setTimeout(function(){ try { if (window.__ssDrainRecover) window.__ssDrainRecover(); } catch (_) {} }, 5000);
+    }
   };
 
   /* Base-app included scans: claim once per signed-in owner (store builds). iOS gets the
@@ -9630,7 +9841,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
       });
       if (!at.appTransactionId) return { ok:false, error:'no-apptxn' };
       var g = await postJson('/grant-base', { platform:'apple', appTransactionId: at.appTransactionId });
-      return { ok: g.status === 200, budget: g.data.budget };
+      return { ok: g.status === 200, budget: g.data.budget, alreadyGranted: !!(g.data && g.data.alreadyGranted) };   /* v86 (P4-2): the screen says "already added" honestly */
     }
     /* Android billing wrapper: send the launch nonce captured at startup so the Worker credits the
        included base scans (it matched a background Play Integrity report to this nonce). That report
@@ -9659,33 +9870,40 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
   window.__ssRecoverPush = function(r){
     if (!r || !r.productId || !r.transactionId) return;
     for (var j = 0; j < window.__ssRecoverQueue.length; j++) {
-      if (window.__ssRecoverQueue[j].transactionId === r.transactionId) return;   /* de-dupe */
+      if (window.__ssRecoverQueue[j].transactionId === r.transactionId) { if (+r.notBefore > (window.__ssRecoverQueue[j].notBefore || 0)) window.__ssRecoverQueue[j].notBefore = +r.notBefore; return; }   /* de-dupe; review r3 M4: a wait only grows */
     }
-    window.__ssRecoverQueue.push({ productId: r.productId, transactionId: r.transactionId });
+    window.__ssRecoverQueue.push({ productId: r.productId, transactionId: r.transactionId, notBefore: +r.notBefore || 0 });   /* review r2 M-5 */
+    window.__ssRecoverPushes = (window.__ssRecoverPushes || 0) + 1;
     if (window.__ssDrainRecover) window.__ssDrainRecover();
   };
+  /* v86 (P2-05): after a recovered purchase, re-read the balance (as Android does) and say what was added. */
+  function ssRecoveredNote(n){ try { if (window.ssGetBalance) window.ssGetBalance(); } catch (_) {} try { if (n > 0 && typeof ssShowToast === 'function') ssShowToast(n + (n === 1 ? ' scan added. Thank you!' : ' scans added. Thank you!'), 6000); } catch (_) {} }
   window.__ssDrainRecover = async function(){
     if (!iosBuy) return;                                            /* apple wrapper only */
     if (!(window.ssAuth && window.ssAuth.signedIn)) return;         /* real user only; else wait for sign-in */
-    if (window.__ssDraining) return;
+    if (window.__ssDraining || window.__ssBuying) return;           /* v86: never alongside a purchase in progress */
     window.__ssDraining = true;
+    var added = 0, anyGranted = false;
     try {
       var q = window.__ssRecoverQueue || [];
       for (var i = 0; i < q.length; i++) {
         var it = q[i];
         if (it.__done) continue;
+        if (it.notBefore && Date.now() < it.notBefore) continue;   /* review r2 M-5: its first request may still be running on the server */
         if (!(window.ssAuth && window.ssAuth.signedIn)) break;   /* signed out mid-drain -> stop; never POST under an anon fallback */
         if (!(window.ssProducts && window.ssProducts[it.productId])) { it.__done = true; }
         else {
-          var a = await postJson('/purchase', { platform:'apple', productId: it.productId, token: it.transactionId });
+          var a; try { a = await postJson('/purchase', { platform:'apple', productId: it.productId, token: it.transactionId }); } catch (_) { a = { status: 0, data: {} }; }   /* v86: a network failure stays queued (was: ended the drain) */
           var granted = a.status === 200;
           var permanent = a.status === 400 || a.status === 404 || a.status === 409 || a.status === 422;
           if (granted || permanent) it.__done = true;   /* transient (401/403/5xx/network) stays queued for retry */
+          else { it.tries = (it.tries || 0) + 1; it.notBefore = Math.max(it.notBefore || 0, Date.now() + Math.min(600000, 10000 * Math.pow(2, it.tries - 1))); }   /* review r4 M6 */
+          if (granted) { anyGranted = true; if (a.data && a.data.granted !== false) added += (window.ssProducts[it.productId].scans || 0); }
         }
         if (it.__done) { try { window.webkit.messageHandlers.finishTransaction.postMessage({ transactionId: it.transactionId }); } catch (_) {} }
       }
       window.__ssRecoverQueue = q.filter(function(x){ return !x.__done; });
-    } finally { window.__ssDraining = false; }
+    } finally { window.__ssDraining = false; if (anyGranted) ssRecoveredNote(added); }
   };
 
   /* Out-of-band ANDROID purchase recovery (mirrors the iOS __ssDrainRecover above). A TWA has no
@@ -9696,12 +9914,16 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
      charged with no scan, and re-purchase of the same pack is never blocked. Runs ONLY under a real
      (non-anon) sign-in and ONLY in the Android billing wrapper; a transient failure leaves the
      purchase owned for the next load to retry. */
+  (function(){ var lastAt = 0; function now(){ if (Date.now() - lastAt < 30000) return; lastAt = Date.now(); try { if (window.__ssDrainRecover) window.__ssDrainRecover(); } catch (_) {} try { if (window.__ssAndroidRecover) window.__ssAndroidRecover(); } catch (_) {} }
+    window.addEventListener('online', now); document.addEventListener('visibilitychange', function(){ if (document.visibilityState === 'visible') now(); }); })();
   window.__ssAndroidRecover = async function(){
     try {
       if (!androidBuy) return;                                     /* android billing wrapper only */
       if (!(window.ssAuth && window.ssAuth.signedIn)) return;      /* real user only; never POST under anon */
-      if (window.__ssAndroidRecovering) return;
+      if (window.__ssAndroidRecovering || window.__ssBuying) return;   /* v86: never alongside a purchase in progress */
+      if (Date.now() < (window.__ssAndroidNotBefore || 0)) return;   /* review r3 M4: a timed-out request may still be running */
       window.__ssAndroidRecovering = true;
+      var added = 0;
       try {
         var svc = window.__ssGDS ? await window.__ssGDS('https://play.google.com/billing') : null;
         if (!svc || !svc.listPurchases) return;
@@ -9717,11 +9939,12 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
           var permanent = r.status === 400 || r.status === 404 || r.status === 409 || r.status === 422;
           if (granted || permanent) {                              /* settle: consume so Play won't refund a delivered scan */
             try { if (svc.consume) await svc.consume(p.purchaseToken); } catch (_) {}
-            if (granted) recovered = true;
+            if (granted) { recovered = true; if (r.data && r.data.granted !== false) added += (window.ssProducts[p.itemId].scans || 0); }
           }
           /* transient (401/403/5xx/network) -> leave owned; retry on next load */
         }
         if (recovered && window.ssGetBalance) { try { await window.ssGetBalance(); } catch (_) {} }
+        if (added > 0) { try { if (typeof ssShowToast === 'function') ssShowToast(added + (added === 1 ? ' scan added. Thank you!' : ' scans added. Thank you!'), 6000); } catch (_) {} }
       } finally { window.__ssAndroidRecovering = false; }
     } catch (_) {}
   };
@@ -9780,13 +10003,14 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
       start). The refresh never happens during a scan, the capture or confirm screens, an
       open text box or a dialog; after the player has touched the app it waits for the Home
       screen idle 4 s or the app going to the background. Until then nothing is uploaded. */
- var DIRTY_KEY="ss-sync-dirty",UID_KEY="ss-sync-uid",RELOADS_KEY="ss-sync-reloads",RETRY_S=[2,5,10,20,30],MAX_RELOADS=4;
+ var DIRTY_KEY="ss-sync-dirty",UID_KEY="ss-sync-uid",RELOADS_KEY="ss-sync-reloads",RETRY_S=[2,5,10,20,30],MAX_RELOADS=4,RELOAD_WIN=120000;   /* v86 (R3-02): at most 4 sync refreshes in any 2 minutes (a loop), not 4 per session */
  var loadedUid="",loadingUid="",cloudCount=-1,acked=null,baseSnap=null,retryT=null,retryN=0,refusedFor="",authKnown=false,notedS=null,deferred=null,reloading=false,acted=false,actedAt=0;
  var bootSnap=null;try{bootSnap=JSON.stringify(gather());}catch(e){}
  /* v78 (DS-04, SEC-07): which account the characters on this device belong to. */
  var OWNER_KEY="ss-owner-uid",bootUid=null;try{bootUid=localStorage.getItem(UID_KEY);}catch(e){}
  var foreign=null,foreignOk={},tooBig=false,pushing=false,deviceFull=false,authCalls=0;
  var ackedCloud=null,pushFails=0,pushHold=0;   /* v85: the acked copy in its cloud form; push back-off */
+ var stale=false,keptNames=null;   /* v86: stale = re-reading the cloud after the app came back (P3-1); keptNames = characters kept twice by a merge (P4-1) */
  window.addEventListener("ss-storage-full",function(){deviceFull=true;try{broadcast();}catch(e){}});
  window.addEventListener("ss-storage-ok",function(){deviceFull=false;try{broadcast();}catch(e){}});
  function ownerNow(){try{return localStorage.getItem(OWNER_KEY)||bootUid||"";}catch(e){return bootUid||"";}}
@@ -9806,7 +10030,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
   try{var o=gather(),s=JSON.stringify(o);if(s===base||s===notedS)return;notedS=s;
    var r=readDirty(),same=!!(r&&r.uid===uid);var n=countChars(o),emptied=false;
    if(n===0){emptied=!!(same&&r.emptied);try{if(countChars(JSON.parse(base))>0)emptied=true;}catch(e){}}
-   var m={uid:uid,at:same?r.at:Date.now(),pre:!!(pre||(same&&r.pre)),emptied:emptied,b:(same&&r.b)?r.b:baseHashes(base),c:(same&&r.c)?r.c:baseCids(base)};
+   var m={uid:uid,at:same?r.at:Date.now(),pre:!!(pre||(same&&r.pre)),emptied:emptied,b:(same&&r.b)?r.b:baseHashes(base),c:(same&&r.c)?r.c:baseCids(base)};if(same&&r.nb)m.nb=1;
    if(same&&r.pre===m.pre&&!!r.emptied===m.emptied&&r.b)return;
    localStorage.setItem(DIRTY_KEY,JSON.stringify(m));}catch(e){}}
  function noteLocal(){if(reloading)return;
@@ -9817,21 +10041,37 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
  function unionNotes(win,other){try{var a=Array.isArray(win&&win.sessionNotes)?win.sessionNotes:[],b=Array.isArray(other&&other.sessionNotes)?other.sessionNotes:[];if(!b.length)return win;
   var have={};a.forEach(function(n){if(n&&n.id!=null)have[n.id]=1;});var extra=b.filter(function(n){return n&&n.id!=null&&!have[n.id];});if(!extra.length)return win;
   return Object.assign({},win,{sessionNotes:a.concat(extra)});}catch(e){return win;}}
- function mergeList(L,C,B,anc,K){
+ /* v86 (P4-1): with no baseline, the journal is the only real record of which copy is newer: 1 = only the device
+    copy has entries the other lacks, -1 = only the cloud copy does, 0 = no way to tell. */
+ function journalSide(a,b){try{var na=Array.isArray(a&&a.sessionNotes)?a.sessionNotes:[],nc=Array.isArray(b&&b.sessionNotes)?b.sessionNotes:[],ia={},ib={};
+  na.forEach(function(n){if(n&&n.id!=null)ia[n.id]=1;});nc.forEach(function(n){if(n&&n.id!=null)ib[n.id]=1;});
+  var aOnly=na.some(function(n){return n&&n.id!=null&&!ib[n.id];}),bOnly=nc.some(function(n){return n&&n.id!=null&&!ia[n.id];});
+  return (aOnly&&!bOnly)?1:((bOnly&&!aOnly)?-1:0);}catch(e){return 0;}}
+ function sameExceptNotes(a,b){try{var x={},y={},k;for(k in (a||{}))if(k!=="cid"&&k!=="upd"&&k!=="sessionNotes")x[k]=a[k];for(k in (b||{}))if(k!=="cid"&&k!=="upd"&&k!=="sessionNotes")y[k]=b[k];return JSON.stringify(x)===JSON.stringify(y);}catch(e){return false;}}
+ function mergeList(L,C,B,anc,K,nb,kept,AC,AL){
   var out=L.slice(),used={},lh=L.map(charHash),add=[];
   C.forEach(function(c){var ch=charHash(c),m=-1,j;
    if(c&&c.cid){for(j=0;j<L.length;j++)if(!used[j]&&L[j]&&L[j].cid===c.cid){m=j;break;}}
-   if(m<0){for(j=0;j<L.length;j++)if(!used[j]&&lh[j]===ch){m=j;break;}}   /* v78: identical content is the same character even if two devices minted different ids */
+   if(m<0){for(j=0;j<L.length;j++)if(!used[j]&&lh[j]===ch){m=j;break;}}
+   if(m<0&&c&&c.cid){for(j=0;j<L.length;j++)if(!used[j]&&L[j]&&L[j].albumOf===c.cid&&typeof L[j].cid==="string"&&L[j].cid.indexOf(c.cid+"-")===0&&/^-\d+$/.test(L[j].cid.slice(c.cid.length))&&L[j].name===c.name&&sameExceptNotes(Object.assign({},L[j],{albumOf:c.albumOf}),c)&&!C.some(function(x){return x&&x.cid===L[j].cid;})){m=j;break;}}   /* review r8 D-1 */   /* review r6 D3, r7 D-1/D-3: re-suffixed twin only */   /* v78: identical content is the same character even if two devices minted different ids */
    var named=[];for(j=0;j<L.length;j++)if(!used[j]&&L[j]&&c&&L[j].name===c.name&&!(c.cid&&L[j].cid&&L[j].cid!==c.cid))named.push(j);
    if(m<0&&B[ch]&&named.length===1)m=named[0];
+   if(m<0&&nb&&c&&!(c.cid&&(L.some(function(x){return x&&x.cid===c.cid;})||(AL&&AL[c.cid])))){var nn=[];for(j=0;j<L.length;j++)if(!used[j]&&L[j]&&L[j].name===c.name&&!(L[j].cid&&(C.some(function(x){return x&&x.cid===L[j].cid;})||(AC&&AC[L[j].cid]))))nn.push(j);   /* review r5 D1: ids owned on either list */if(nn.length===1&&C.filter(function(x){return x&&x.name===c.name;}).length===1)m=nn[0];}   /* v86 (P4-1): no baseline: the one device character with this name is this cloud character's other copy */
    if(m<0&&c){var ln=[];for(j=0;j<L.length;j++)if(L[j]&&L[j].name===c.name)ln.push(j);
     if(ln.length===1&&!used[ln[0]]&&B[lh[ln[0]]]&&C.filter(function(x){return x&&x.name===c.name;}).length===1&&!(c.cid&&L.some(function(x){return x&&x.cid===c.cid;})))m=ln[0];}   /* auditor: the device copy, unchanged since the baseline, of the one cloud character with this name */   /* auditor: unchanged device copy of the same character */          /* cloud copy is this device's own last-synced version: the local one descends from it */
    if(m>=0){used[m]=1;
     if(lh[m]===ch){if(c&&c.cid&&L[m]&&L[m].cid!==c.cid)out[m]=Object.assign({},L[m],{cid:c.cid});return;}
     if(B[lh[m]])out[m]=(c&&!c.cid&&L[m]&&L[m].cid)?Object.assign({},c,{cid:L[m].cid}):c;   /* not edited here, changed elsewhere: take the cloud version */
+    else if(nb&&!B[ch]&&(!sameExceptNotes(L[m],c)||(c&&c.cid&&L[m]&&L[m].cid&&c.cid!==L[m].cid))){   /* review r3 D-2: different ids are always kept twice */   /* review D-2: any difference outside the journal: keep both */   /* v86 (P4-1): two different copies and no way to tell which is newer: keep BOTH */
+     var wk=(c&&!c.cid&&L[m]&&L[m].cid)?Object.assign({},c,{cid:L[m].cid}):c;out[m]=(c&&c.cid&&L[m]&&L[m].cid&&c.cid!==L[m].cid)?wk:unionNotes(wk,L[m]);   /* review r4 D5 */
+     var dup={},bn=String((L[m]&&L[m].name)||"Character"),SFX=" (second copy)";for(var q in L[m])if(Object.prototype.hasOwnProperty.call(L[m],q)&&q!=="cid"&&q!=="upd")dup[q]=L[m][q];
+     if(L[m].cid&&L[m].cid!==(out[m]&&out[m].cid))dup.cid=L[m].cid;   /* its own id keeps its Photo Album link */
+     else if(!dup.albumOf&&out[m]&&out[m].cid)dup.albumOf=out[m].cid;   /* review r2 D2-1: same id: the copy shows (and keeps) the same Photo Album */
+     dup.name=bn.slice(-SFX.length)===SFX?bn:bn+SFX;add.push(dup);if(kept)kept.push(bn);
+    }
     else if(!B[ch]){   /* edited on both devices: keep the newer one, and every journal entry from both */
      var lu=+((L[m]&&L[m].upd)||0),cu=+((c&&c.upd)||0);
-     if(cu>lu){var w=(c&&!c.cid&&L[m]&&L[m].cid)?Object.assign({},c,{cid:L[m].cid}):c;out[m]=unionNotes(w,L[m]);}
+     if(nb?journalSide(L[m],c)<0:cu>lu){   /* nb here means the copies differ only in their journals: every entry is kept either way */var w=(c&&!c.cid&&L[m]&&L[m].cid)?Object.assign({},c,{cid:L[m].cid}):c;out[m]=unionNotes(w,L[m]);}
      else{var w2=(c&&c.cid&&L[m]&&L[m].cid!==c.cid)?Object.assign({},L[m],{cid:c.cid}):L[m];out[m]=unionNotes(w2,c);}
     }
     else if(c&&c.cid&&L[m]&&!L[m].cid)out[m]=Object.assign({},L[m],{cid:c.cid});
@@ -9854,14 +10094,22 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
   ["ss-chars","ss-fallen"].forEach(function(k){if(typeof o[k]!=="string")return;var a=JSON.parse(o[k]);if(!Array.isArray(a))return;var s2=JSON.stringify(ssSanitizeList(a,used));if(s2!==o[k]){out=out||Object.assign({},o);out[k]=s2;}});
   return out||o;}catch(e){return o;}}
  function mergeInto(cObj,dr){
-  try{var lo=gather(),B={},out={},changed=false;(dr.b||[]).forEach(function(h){B[h]=1;});
+  try{var lo=gather(),B={},out={},changed=false,kept=[];(dr.b||[]).forEach(function(h){B[h]=1;});
    var Ms={},usedC={};
+   var LL={},CC={},AC={},AL={};
    ["ss-chars","ss-fallen"].forEach(function(k){
     var L=lo[k]!=null?JSON.parse(lo[k]):[],C=cObj[k]!=null?JSON.parse(cObj[k]):[];
     if(!Array.isArray(L)||!Array.isArray(C))throw 0;
-    C=cleanCloudList(C);   /* R6-1 */
+    LL[k]=L;CC[k]=cleanCloudList(C);});   /* R6-1 */
+   if(dr.nb){   /* review r5 D1: the cloud moved it to the other list: follow the cloud */
+    var cin={};["ss-chars","ss-fallen"].forEach(function(k){cin[k]={};CC[k].forEach(function(x){if(x&&x.cid)cin[k][x.cid]=1;});});
+    [["ss-chars","ss-fallen"],["ss-fallen","ss-chars"]].forEach(function(p){var a=p[0],o=p[1],stay=[];
+     LL[a].forEach(function(x){var hx=x?charHash(x):"";if(x&&x.cid&&!cin[a][x.cid]&&cin[o][x.cid]&&!CC[a].some(function(z){return z&&typeof z.cid==="string"&&z.cid.indexOf(x.cid+"-")===0&&/^-\d+$/.test(z.cid.slice(x.cid.length))&&charHash(z)===hx;})){var y=x;if(o==="ss-chars"&&y.archivedAt!=null){y=Object.assign({},y);delete y.archivedAt;}else if(o==="ss-fallen"&&y.archivedAt==null){var cc=null;CC[o].forEach(function(z){if(!cc&&z&&z.cid===x.cid)cc=z;});y=Object.assign({},y,{archivedAt:(cc&&cc.archivedAt!=null)?cc.archivedAt:new Date().toISOString()});}LL[o].push(y);}else stay.push(x);});   /* review r6 D1, D2 */
+     LL[a]=stay;});}
+   ["ss-chars","ss-fallen"].forEach(function(k){CC[k].forEach(function(x){if(x&&x.cid)AC[x.cid]=1;});LL[k].forEach(function(x){if(x&&x.cid)AL[x.cid]=1;});});
+   ["ss-chars","ss-fallen"].forEach(function(k){
     var K=null;if(Array.isArray(dr.c)){K={};dr.c.forEach(function(x){K[x]=1;});}
-    Ms[k]=mergeList(L,C,B,!dr.pre,K);});
+    Ms[k]=mergeList(LL[k],CC[k],B,!dr.pre,K,!!dr.nb,kept,AC,AL);});
    /* v85 (found on a live account 2026-10-27): the app keeps character ids unique across BOTH lists when it
       loads (ssSanitizeChar: active list first, then fallen; a repeated id gets "-2", "-3"...). The merge must
       hand back ids in that same final form, or the app re-suffixes them on reload, the next merge undoes it,
@@ -9870,13 +10118,16 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
       active then fallen, exactly as at app start), so the merge hands back what the loader would save and a
       reload rewrites nothing - ids, legacy shapes and blank entries alike. Hand-rolled fallback only if the
       loader is somehow absent. */
-   if(typeof ssSanitizeList==="function"){var usedL=Object.create(null);Ms["ss-chars"]=ssSanitizeList(Ms["ss-chars"],usedL);Ms["ss-fallen"]=ssSanitizeList(Ms["ss-fallen"],usedL);}
+   var preIds=null;if(dr.nb){preIds={};["ss-chars","ss-fallen"].forEach(function(k){preIds[k]=Ms[k].map(function(x){return x&&x.cid;});});}
+   if(typeof ssSanitizeList==="function"){var usedL=Object.create(null);Ms["ss-chars"]=ssSanitizeList(Ms["ss-chars"],usedL);Ms["ss-fallen"]=ssSanitizeList(Ms["ss-fallen"],usedL);
+    if(preIds&&Ms["ss-chars"].length===preIds["ss-chars"].length&&Ms["ss-fallen"].length===preIds["ss-fallen"].length)["ss-chars","ss-fallen"].forEach(function(k){Ms[k]=Ms[k].map(function(x,i){var was=preIds[k][i];if(x&&was&&x.cid!==was&&!x.albumOf)return Object.assign({},x,{albumOf:was});return x;});});}   /* review r5 D1: a re-suffixed id keeps its album */
    else{usedC=Object.create(null);["ss-chars","ss-fallen"].forEach(function(k){Ms[k]=Ms[k].map(function(c){
     if(!c||typeof c!=="object"||typeof c.cid!=="string"||!c.cid)return c;
     var cid=c.cid,q=2;while(usedC[cid])cid=c.cid+"-"+(q++);usedC[cid]=1;
     if(cid===c.cid)return c;var o={};for(var x in c)if(Object.prototype.hasOwnProperty.call(c,x))o[x]=(x==="cid")?cid:c[x];return o;});});}
    ["ss-chars","ss-fallen"].forEach(function(k){var M=Ms[k];if(lo[k]==null&&!M.length)return;
     var s=JSON.stringify(M);if(s!==lo[k]){out[k]=s;changed=true;}});
+   keptNames=kept.length?kept:null;
    return changed?out:null;
   }catch(e){syncLog("could not merge; keeping this device's copy");return false;}}
  function sameButIds(m){try{var lo=gather();if((m["ss-theme"]||null)!==(lo["ss-theme"]||null))return false;
@@ -9884,7 +10135,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
    for(var i=0;i<a.length;i++)if(charHash(a[i])!==charHash(b[i]))return false;return true;});}catch(e){return false;}}
  function wouldChange(m){return Object.keys(m||{}).some(function(k){return KEYS.indexOf(k)>=0&&typeof m[k]==="string"&&localStorage.getItem(k)!==m[k];});}
  function navView(){try{var n=JSON.parse(localStorage.getItem("ss-nav")||"null");return (n&&n.view)||"";}catch(e){return "";}}
- function busyNow(){var v=navView();if(v==="capture"||v==="processing")return true;
+ function busyNow(){var v=navView();if(v==="capture"||v==="processing")return true;if(window.__ssBuying)return true;   /* review M-4: never refresh during a purchase */
   try{if(document.querySelector('[data-ss-busy]'))return true;}catch(e){}   /* v78: buy panel, scan sheets and notices mark themselves busy */
   try{var a=document.activeElement;if(a&&(/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)||a.isContentEditable))return true;
    if(document.querySelector('[aria-modal="true"]'))return true;
@@ -9973,7 +10224,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
    return (appleCodeUid===uid)?appleCode:null;   /* same rule: never one account's grant for another */
  }
  function relTime(ts){if(!ts)return"just now";var s=Math.floor((Date.now()-ts)/1000);if(s<10)return"just now";if(s<60)return s+"s ago";var m=Math.floor(s/60);if(m<60)return m+"m ago";var h=Math.floor(m/60);if(h<24)return h+"h ago";return Math.floor(h/24)+"d ago";}
- function broadcast(){var status,detail;if(pending){status="Signing in…";detail="";}else if(!user){status="Sign in";detail="";}else if(!navigator.onLine){status="Offline";detail="will sync when online";}else if(syncing){status="Syncing…";detail="";}else if(deviceFull){status="Device full";detail="back up your characters";}else if(foreign){status="Waiting";detail="choose what to do with this device's characters";}else if(errState&&tooBig){status="Not backed up";detail="too large to sync";}else if(errState){status="Sync error";detail="tap to retry";}else if(!lastSyncedAt){status="Syncing…";detail="";}else{status="Synced";detail=relTime(lastSyncedAt);}window.ssAuth={signedIn:!!user,email:user?(user.email||""):"",syncing:syncing,err:errState||deviceFull,tooBig:tooBig,deviceFull:deviceFull,foreign:foreign?foreign.n:0,foreignUnknown:!!(foreign&&foreign.unknown),foreignLost:!!(foreign&&foreign.lost),offline:!navigator.onLine,pending:pending,lastSyncedAt:lastSyncedAt,status:status,detail:detail};try{window.dispatchEvent(new CustomEvent("ss-auth"));}catch(e){}}
+ function broadcast(){var status,detail;if(pending){status="Signing in…";detail="";}else if(!user){status="Sign in";detail="";}else if(!navigator.onLine){status="Offline";detail="will sync when online";}else if(syncing){status="Syncing…";detail="";}else if(deviceFull){status="Device full";detail="back up your characters";}else if(foreign){status="Waiting";detail="choose what to do with this device's characters";}else if(errState&&tooBig){status="Not backed up";detail="too large to sync";}else if(errState){status="Sync error";detail="tap to retry";}else if(!lastSyncedAt||stale){status="Syncing…";detail="";}else{status="Synced";detail=relTime(lastSyncedAt);}window.ssAuth={signedIn:!!user,email:user?(user.email||""):"",syncing:syncing,err:errState||deviceFull,tooBig:tooBig,deviceFull:deviceFull,foreign:foreign?foreign.n:0,foreignUnknown:!!(foreign&&foreign.unknown),foreignLost:!!(foreign&&foreign.lost),offline:!navigator.onLine,pending:pending,lastSyncedAt:lastSyncedAt,status:status,detail:detail};try{window.dispatchEvent(new CustomEvent("ss-auth"));}catch(e){}}
  window.ssAuth={signedIn:false,email:"",status:"Sign in",detail:""};
  Promise.all([import(FB+"firebase-app.js"),import(FB+"firebase-auth.js"),import(FB+"firebase-firestore.js")]).then(function(m){
   var appM=m[0];authM=m[1];var fsM=m[2];
@@ -10481,6 +10732,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
    if(deleting||deletedUids[user.uid]){if(!errState){errState=true;broadcast();}return;}
    var uu=user.uid;
    if(loadedUid!==uu)return;   /* DS-01: never upload before this uid's cloud copy has been read */
+   if(deviceFull)return;   /* v86 (R3-01): a save on this device is failing, so its storage may be half-written: upload nothing until it saves */
    var o=gather();var s=JSON.stringify(o);if(s===last)return;
    if(cloudCount!==0&&countChars(o)===0){var dr=readDirty();
     if(!(dr&&dr.uid===uu&&dr.emptied)){if(refusedFor!==uu){refusedFor=uu;syncLog("refused to replace a non-empty cloud copy with an empty one");}if(!errState){errState=true;broadcast();}return;}}
@@ -10509,7 +10761,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
      pushing=false;pushFails=0;pushHold=0;
      if(user&&user.uid===uu){acked=s;ackedCloud=dh.s;cloudCount=countChars(o);try{localStorage.setItem(OWNER_KEY,uu);}catch(e){}}
      try{if(JSON.stringify(gather())===s)clearDirty(uu);}catch(e){}
-     tooBig=false;lastSyncedAt=Date.now();syncing=false;errState=false;broadcast();});
+     tooBig=false;stale=false;lastSyncedAt=Date.now();syncing=false;errState=false;broadcast();});
     });
    }).catch(function(e){pushing=false;syncing=false;errState=true;var em=String((e&&(e.code||e.message))||"");
     pushFails++;pushHold=Date.now()+Math.min(60000,2000*Math.pow(2,Math.min(pushFails,6)-1));   /* back off: 2, 4, 8, 16, 32, 60 s */
@@ -10553,6 +10805,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
    else if(cObj){var mg=mergeInto(cObj,dr);if(mg)target=mg;}
    if(target){applyAndRefresh(u,target,cloudS);return;}
    deferred=null;cloudCount=cc;loadedUid=u.uid;retryN=0;if(retryT){clearTimeout(retryT);retryT=null;}
+   try{var tm0=JSON.parse(sessionStorage.getItem("ss-sync-reloads-total")||"{}");if(tm0&&tm0.__all){tm0.__all=0;sessionStorage.setItem("ss-sync-reloads-total",JSON.stringify(tm0));}}catch(e){}   /* review r4 D2 */
+   try{if(dirty&&dr&&dr.nb&&typeof cloudS==="string"){localStorage.setItem(DIRTY_KEY,JSON.stringify({uid:u.uid,at:dr.at||Date.now(),pre:false,emptied:false,b:baseHashes(cloudS),c:baseCids(cloudS)}));}}catch(e){}   /* review r4 D3 */
    ackedCloud=(cloudS==null)?null:(typeof cloudRaw==="string"?cloudRaw:null);pushFails=0;pushHold=0;
    try{localStorage.setItem(OWNER_KEY,u.uid);}catch(e){}
    if(dirty){
@@ -10560,18 +10814,30 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
     if(JSON.stringify(gather())===last)clearDirty(u.uid);
     else syncLog("uploading this device's unsynced changes (merged with the cloud copy)");
    } else { last=JSON.stringify(gather());acked=(cloudS!=null)?cloudS:"";if((cloudS==null&&countChars(gather())>0)||idsOnly||repaired)last=""; }   /* R6-2: send the repaired copy once */   /* v78: no cloud copy yet: upload this device's characters once */
-   lastSyncedAt=Date.now();syncing=false;errState=false;broadcast();push();
+   stale=false;lastSyncedAt=Date.now();syncing=false;errState=false;broadcast();push();
   }
   function applyAndRefresh(u,target,cloudS){
+   if(deviceFull){deferred={uid:u.uid,cloudS:cloudS};syncing=false;broadcast();return;}   /* review r3 D-3 */
    if(!safeToReload()){if(!deferred)syncLog("cloud copy ready; waiting for a safe moment to refresh");deferred={uid:u.uid,cloudS:cloudS};syncing=true;errState=false;broadcast();return;}
-   var n=0;try{n=+(sessionStorage.getItem(RELOADS_KEY)||0)||0;}catch(e){}
-   if(n>=MAX_RELOADS){deferred=null;syncLog("refresh limit reached; sync paused until the app is reopened");syncing=false;errState=true;broadcast();return;}
-   try{sessionStorage.setItem(RELOADS_KEY,String(n+1));}catch(e){}
+   /* review r2 D2-4: a loop re-applies the same copy over and over; a second device left open refreshes once per real change.
+      Pause when the same copy was applied 3 times in 2 minutes (resume after the window) or 4 times in this session, or on
+      any 12 refreshes in 2 minutes. */
+   var now=Date.now(),th="";try{th=hashStr(JSON.stringify(target));}catch(e){}
+   var rl=[];try{rl=JSON.parse(sessionStorage.getItem(RELOADS_KEY)||"[]");}catch(e){rl=[];}if(!Array.isArray(rl))rl=[];rl=rl.filter(function(x){return Array.isArray(x)&&typeof x[0]==="number"&&now-x[0]>=0&&now-x[0]<RELOAD_WIN;});
+   var tm={};try{tm=JSON.parse(sessionStorage.getItem("ss-sync-reloads-total")||"{}")||{};}catch(e){tm={};}if(typeof tm!=="object"||Array.isArray(tm))tm={};
+   var same=rl.filter(function(x){return x[1]===th;}).length,tot=+tm[th]||0;
+   var all=+tm.__all||0,firstSame=(rl.filter(function(x){return x[1]===th;})[0]||rl[0]||[now])[0];
+   if(same>=3||rl.length>=12||tot>=6||all>=30){deferred=null;syncLog("refresh limit reached; sync paused for a moment");syncing=false;errState=true;broadcast();if(tot<6&&all<30)setTimeout(function(){if(user&&user.uid===u.uid&&!reloading){retryN=0;retryLoad();}},Math.max(5000,RELOAD_WIN-(now-firstSame)+1000));return;}   /* review r3 D-4 */
+   tm.__all=all+1;
+   tm[th]=tot+1;try{sessionStorage.setItem("ss-sync-reloads-total",JSON.stringify(tm));}catch(e){}
+   rl.push([now,th]);try{sessionStorage.setItem(RELOADS_KEY,JSON.stringify(rl));}catch(e){}
    try{apply(target);}catch(e){deferred=null;syncLog("could not write the cloud copy on this device");syncing=false;errState=true;broadcast();return;}
+   if(keptNames){try{localStorage.setItem("ss-sync-kept",JSON.stringify(keptNames.slice(0,6)));}catch(e){}keptNames=null;}   /* v86: the app says so once after the refresh */
+   try{var dr0=readDirty();if(dr0&&dr0.uid===u.uid&&dr0.nb&&typeof cloudS==="string"){localStorage.setItem(DIRTY_KEY,JSON.stringify({uid:u.uid,at:dr0.at||Date.now(),pre:false,emptied:false,b:baseHashes(cloudS),c:baseCids(cloudS)}));}}catch(e){}   /* review r2 D2-3: the cloud copy just merged with is now the known baseline */
    try{baseSnap=JSON.stringify(gather());notedS=baseSnap;}catch(e){}   /* our own write is not a local edit */
    deferred=null;reloading=true;location.reload();
   }
-  function tryDeferred(){if(reloading)return;if(deferred&&user&&user.uid===deferred.uid&&!loadingUid&&loadedUid!==user.uid&&safeToReload()){deferred=null;retryN=0;retryLoad();}}   /* re-read; never settle on an old snapshot */
+  function tryDeferred(){if(reloading||deviceFull)return;if(deferred&&user&&user.uid===deferred.uid&&!loadingUid&&loadedUid!==user.uid&&safeToReload()){deferred=null;retryN=0;retryLoad();}}   /* re-read; never settle on an old snapshot */
   function loadCloud(u){
     loadingUid=u.uid;
     return raceOut(fsM.getDoc(ref(u.uid)),20000,new Error("read-timeout")).then(function(snap){
@@ -10591,7 +10857,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
    user=(u&&u.isAnonymous)?null:u;
    pending=false;
    /* v77b: every auth change starts a fresh "cloud not read yet" state */
-   loadedUid="";loadingUid="";cloudCount=-1;acked=null;ackedCloud=null;pushFails=0;pushHold=0;retryN=0;refusedFor="";deferred=null;notedS=null;if(retryT){clearTimeout(retryT);retryT=null;}
+   loadedUid="";loadingUid="";cloudCount=-1;acked=null;ackedCloud=null;pushFails=0;pushHold=0;retryN=0;refusedFor="";deferred=null;notedS=null;stale=false;if(retryT){clearTimeout(retryT);retryT=null;}
    if(!u||!u.isAnonymous)authKnown=true;
    if(u&&!u.isAnonymous){
     var markUid="";try{var mk0=readDirty();markUid=(mk0&&mk0.uid)||"";}catch(e){}
@@ -10602,7 +10868,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
        added to this account. Characters that belong to a different account are never mixed in
        silently: the player chooses (add here, or remove from this device). */
     try{var legacy=!ownerNow()&&!markUid&&firstAuth,own=ownerNow()||markUid||(firstAuth?u.uid:""),nLocal=countChars(gather());
-     if(legacy&&nLocal>0&&!readDirty()){var g0=JSON.stringify(gather());localStorage.setItem(DIRTY_KEY,JSON.stringify({uid:u.uid,at:Date.now(),pre:true,emptied:false,b:baseHashes(g0)}));}
+     if(legacy&&nLocal>0&&!readDirty()){localStorage.setItem(DIRTY_KEY,JSON.stringify({uid:u.uid,at:Date.now(),pre:true,emptied:false,b:[],nb:1}));}   /* v86 (P4-1): no sync record, so nothing on this device is known to be in sync (nb = no baseline) */
      if(nLocal>0&&own!==u.uid&&!readDirty()){
       if(!foreignOk[u.uid]){foreign={uid:u.uid,n:nLocal,unknown:!own,lost:!!(markUid&&markUid===own&&markUid!==u.uid)};syncing=false;broadcast();return;}
      }}catch(e){}
@@ -10616,7 +10882,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
   window.ssResolveForeign=function(choice){
    if(!foreign||!user||user.uid!==foreign.uid)return;var u=user;
    if(choice==="remove"){
-    try{["ss-chars","ss-fallen","ss-nav",DIRTY_KEY,"ss-ai-ok","ss-pup"].forEach(function(k){localStorage.removeItem(k);});localStorage.setItem(OWNER_KEY,u.uid);}catch(e){}
+    try{["ss-chars","ss-fallen","ss-nav",DIRTY_KEY,"ss-ai-ok","ss-pup","ss-field-draft","ss-sync-kept"].forEach(function(k){localStorage.removeItem(k);});localStorage.setItem(OWNER_KEY,u.uid);}catch(e){}   /* v86: the typing draft and the kept-both note go with the characters */
     try{ssIdb.del("capture","draft");ssIdb.all("scans").then(function(a){a.forEach(function(x){ssIdb.del("scans",x[0]);});});}catch(e){}
     foreign=null;reloading=true;setTimeout(function(){location.reload();},300);return;}
    foreignOk[u.uid]=1;foreign=null;
@@ -10632,7 +10898,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
   window.ssSignOutAndClear=function(){
    return new Promise(function(res){var done=false,t0=Date.now();
     function finish(){if(done)return;done=true;reloading=true;
-     try{["ss-chars","ss-fallen","ss-nav",DIRTY_KEY,OWNER_KEY,"ss-ai-ok","ss-pup"].forEach(function(k){localStorage.removeItem(k);});}catch(e){}
+     try{["ss-chars","ss-fallen","ss-nav",DIRTY_KEY,OWNER_KEY,"ss-ai-ok","ss-pup","ss-field-draft","ss-sync-kept"].forEach(function(k){localStorage.removeItem(k);});}catch(e){}   /* v86: the typing draft and the kept-both note go with the characters */
      try{ssIdb.del("capture","draft");ssIdb.all("scans").then(function(a){a.forEach(function(x){ssIdb.del("scans",x[0]);});});}catch(e){}
      setTimeout(function(){res(true);location.reload();},300);}
     try{window.ssSignOut();}catch(e){}
@@ -10644,6 +10910,38 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
   window.addEventListener("online",function(){pushFails=0;pushHold=0;if(user){broadcast();if(loadedUid!==user.uid){retryN=0;retryLoad();}else push();}else broadcast();});   /* R4-2: back online = no back-off */
   window.addEventListener("offline",broadcast);
   setInterval(function(){if(user&&!syncing&&navigator.onLine)broadcast();},20000);
+  /* v86 (P3-1): an app left open on a second device re-reads the cloud when it comes back to the front (and about once a
+     minute while it is on screen), so it never edits an old copy or shows "Synced" over one. A changed cloud copy goes
+     through the same path as a push-time merge: this device's own edits are kept and merged, never overwritten. */
+  /* v86 (P3-1), review round 1 (D-4, D-7, D-9a): while the app is on screen and this account's cloud copy has been read,
+     a Firestore listener watches the one sync document: one read when it starts, then one per real change (no repeated
+     whole-document downloads). Coming back to the front restarts it and the app shows "Syncing..." until the server's copy
+     has arrived; it is not marked synced on a failed or cached answer. A changed cloud copy goes through the same path as a
+     push-time merge: this device's own edits are kept and merged, never overwritten. */
+  var watchUnsub=null,watchUid="",watchRetryT=null,watchBlockUntil=0,watchErr=false;
+  function unwatch(){if(watchUnsub){try{watchUnsub();}catch(e){}}watchUnsub=null;watchUid="";}
+  function considerCloud(uu,snap){
+   if(!(user&&user.uid===uu)||reloading||pushing||deleting||deletedUids[uu]||loadedUid!==uu||loadingUid||deviceFull||foreign)return;
+   if(snap.metadata&&(snap.metadata.fromCache||snap.metadata.hasPendingWrites))return;
+   var base=acked,baseC=ackedCloud;
+   var d=snap.exists()?snap.data():null,cs0=(d&&typeof d.sheetsnap_blob==="string")?d.sheetsnap_blob:null;
+   if(watchErr){watchErr=false;if(!tooBig)errState=false;broadcast();}   /* review r4 D6 */
+   if(cs0==null||cs0===baseC||base==null){if(stale){stale=false;lastSyncedAt=Date.now();broadcast();}return;}
+   hydrate(uu,cs0).then(function(cs){
+    if(!(user&&user.uid===uu)||reloading||pushing||loadedUid!==uu||acked!==base)return;   /* review D-7: a push landed meanwhile; the next change event decides */
+    if(cs===base){ackedCloud=cs0;if(stale){stale=false;lastSyncedAt=Date.now();broadcast();}return;}
+    stale=false;syncLog("another device changed the cloud copy; bringing it in");
+    try{noteFor(uu,base,false);}catch(e){}
+    unwatch();loadedUid="";last="";settle(user,cs,cs0);
+   },function(){});}   /* a portrait could not be read: stays "Syncing..."; the next change or return to the front tries again */
+  function watch(){
+   if(!user||reloading||deleting||deletedUids[user.uid]||document.visibilityState==="hidden"||loadedUid!==user.uid||!fsM.onSnapshot)return;
+   if(Date.now()<watchBlockUntil)return;   /* review r2 D2-6 */
+   if(watchUnsub&&watchUid===user.uid)return;
+   unwatch();var uu=user.uid;watchUid=uu;
+   try{watchUnsub=fsM.onSnapshot(ref(uu),{includeMetadataChanges:true},function(snap){considerCloud(uu,snap);},function(){unwatch();watchBlockUntil=Date.now()+30000;if(stale){stale=false;errState=true;watchErr=true;broadcast();}if(watchRetryT)clearTimeout(watchRetryT);watchRetryT=setTimeout(watch,31000);});}catch(e){watchUnsub=null;watchUid="";}}
+  document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible"){acted=false;if(user&&loadedUid===user.uid){stale=true;broadcast();}unwatch();watch();}else unwatch();});   /* P3-1: nothing touched since coming back, so a refresh now interrupts nothing */
+  setInterval(function(){if(user&&loadedUid===user.uid)watch();else if(watchUnsub)unwatch();},2000);
  }).catch(function(){window.ssAuth={signedIn:false,email:"",status:"Sign in",detail:"sync offline"};try{window.dispatchEvent(new CustomEvent("ss-auth"));}catch(e){}});
 })();</script>
 <script>/*ss-kb: keeps action buttons above the on-screen keyboard*/(function(){var vv=window.visualViewport;if(!vv)return;function u(){var kb=Math.max(0,(window.innerHeight-vv.height-vv.offsetTop));document.documentElement.style.setProperty('--ss-kb',kb+'px');}vv.addEventListener('resize',u);vv.addEventListener('scroll',u);u();})();</script>
