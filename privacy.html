@@ -30,7 +30,7 @@
 <header>
   <div class="kicker">DigiRune Studios</div>
   <h1>Sheetmancer Privacy Policy</h1>
-  <div class="eff">Effective date: June 6, 2026 &middot; Last updated: October 28, 2026</div>
+  <div class="eff">Effective date: June 6, 2026 &middot; Last updated: October 29, 2026</div>
 </header>
 
 <div class="supp">
@@ -79,12 +79,15 @@ character, the earlier portrait picture is not removed from the cloud right away
 to you, until you delete your account.</p>
 <p><strong>Photo Album.</strong> Pictures you add to a character's Photo Album are stored in your cloud account
 (Google Firestore) so they appear on all your devices. They are deleted when you delete them, when you delete
-that character while signed in and online, or when you delete your account. If a character is deleted while the
-device is offline or signed out, its Photo Album pictures stay in your cloud account until you delete your account.
+that character while signed in, or when you delete your account. After a character is deleted, its pictures are
+removed the next time that device is online, signed in to the same account and in sync; if that hasn't happened
+within 30 days (for example while backup is paused), or if the character was deleted while signed out, they stay until
+you delete your account.
 When the app keeps two copies of one character (after a sync it could not settle on its own), the two copies either
 share one Photo Album (its pictures are deleted only when the last copy is deleted) or each keep their own.</p>
 <p><strong>Your settings.</strong> Your account also keeps a note that you accepted the in-app AI disclosure, so
-you are not asked again on every device.</p>
+you are not asked again on every device. To withdraw that OK, simply don't start another scan: your pages are
+never sent to the AI service unless you start a scan. To have the stored note cleared as well, email us.</p>
 
 <h3>Character photos and PDFs you scan</h3>
 <p>When you take or upload photos (or a PDF) of your character pages and create your character, those pages
@@ -94,7 +97,10 @@ only, not the photos or PDFs) is kept on our scanning service for up to one hour
 collect it without paying twice, and is then deleted.</p>
 <p>On your device, the pages you add are kept until the scan finishes or you cancel (for up to three days, so
 closing the app by accident does not lose them), and a finished scan result is kept until your character is
-safely saved (for up to seven days). Neither leaves your device.</p>
+safely saved (for up to seven days). Neither leaves your device. To combine changes made on two devices, the app
+also keeps on your device the last copy of your characters it synced; and Photo Album pictures from a backup you
+restored while signed out wait on your device until you sign in, then go to your account. These leave your device
+only through sync, as described above.</p>
 
 <h3>Purchases</h3>
 <p>Sheetmancer is a paid app. Your purchase includes three Character Scans, and you can buy more scans
@@ -158,7 +164,7 @@ run the app, each for the limited purpose described:</p>
   <li><strong>Cloudflare</strong>: the secure server that relays scan requests to Anthropic and keeps your
   Character Scan balance and purchase records; it also receives and stores any note you choose to send us,
   and, when you open the note form, Cloudflare Turnstile checks that a note comes from a person and not a spam robot.</li>
-  <li><strong>Apple / Google</strong>: sign-in and purchase processing.</li>
+  <li><strong>Apple / Google</strong>: sign-in and purchase processing (and, in the Android app only, the Google Play check that the app is a genuine copy).</li>
 </ul>
 <p>Google Firebase, Anthropic and Cloudflare process your information on our behalf, only for the purposes above, under terms that require them to keep it confidential and secure and to protect it at least as well as this policy does. Apple and Google handle sign-in and payments under their own privacy policies.</p>
 <p>We may also disclose information if required by law.</p>

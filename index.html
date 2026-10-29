@@ -3,7 +3,7 @@
 <head>
 <style>html{background:#0A0A0C}</style>
 <style>:root{--fb-accent:#8a6a2f;--fb-accent-ink:#ffffff}</style>
-<script>window.SS_BUILD='v89';window.DIGIRUNE_FEEDBACK={app:'Sheetmancer',version:'build '+window.SS_BUILD,endpoint:'https://digirune-feedback.will-6d6.workers.dev/report',siteKey:'0x4AAAAAAFW88K0K9FyRmEzA',fallbackEmail:'will@digirunestudios.com',aiNotice:'I understand my note may be read with help from an AI service (Anthropic).'};</script>
+<script>window.SS_BUILD='v93';window.DIGIRUNE_FEEDBACK={app:'Sheetmancer',version:'build '+window.SS_BUILD,endpoint:'https://digirune-feedback.will-6d6.workers.dev/report',siteKey:'0x4AAAAAAFW88K0K9FyRmEzA',fallbackEmail:'will@digirunestudios.com',aiNotice:'I understand my note may be read with help from an AI service (Anthropic).'};</script>
 <script src="digirune-feedback.js?v=89"></script>
 
 <!-- Sheetmancer (formerly SheetSnap) v1.1.0-chassis — DigiRune Studios. Self-contained PWA: precompiled React (no Babel/CDN), data-URI manifest + icons, offline service worker (sw-v1.js), install prompt, safe-area + back-button. Built 2026-06-06. -->
@@ -1785,6 +1785,10 @@ function ssSanitizeChar(c0, used, opts) {
       });
     }
   }
+  /* v93 (R3-12): category settings of the wrong kind (hand-edited files) are repaired, never left to stop the character opening. */
+  if (c.catOrder != null && !(Array.isArray(c.catOrder) && c.catOrder.every(function (k) { return typeof k === "string"; }))) { own(); if (Array.isArray(c.catOrder)) c.catOrder = c.catOrder.filter(function (k) { return typeof k === "string"; }); else delete c.catOrder; }
+  if (c.groups != null && !(Array.isArray(c.groups) && c.groups.every(function (g) { return g && typeof g === "object" && !Array.isArray(g) && typeof g.key === "string" && (g.label == null || typeof g.label === "string") && (g.icon == null || typeof g.icon === "string"); }))) { own(); if (Array.isArray(c.groups)) c.groups = c.groups.filter(function (g) { return g && typeof g === "object" && !Array.isArray(g) && typeof g.key === "string"; }).map(function (g) { var o = { key: g.key }; if (typeof g.label === "string") o.label = g.label; if (typeof g.icon === "string") o.icon = g.icon; return o; }); else delete c.groups; }
+  if (c.catLabels != null && !(typeof c.catLabels === "object" && !Array.isArray(c.catLabels) && Object.keys(c.catLabels).every(function (k) { return typeof c.catLabels[k] === "string"; }))) { own(); if (typeof c.catLabels === "object" && !Array.isArray(c.catLabels)) { var cl = {}; Object.keys(c.catLabels).forEach(function (k) { if (typeof c.catLabels[k] === "string") cl[k] = c.catLabels[k]; }); c.catLabels = cl; } else delete c.catLabels; }
   used = used || Object.create(null);
   var fresh = opts && opts.freshCid;
   if (!c.cid || typeof c.cid !== "string" || used[c.cid] || fresh) {
@@ -3535,7 +3539,7 @@ function BuyScansSheet({ T, onClose, onBought, reason }) {
         if (!live.current) { ssShowToast(pt, 12000); return; }
         setBuyMsg({ ok: false, text: pt });   /* review r2 M-7: e.g. already linked to another account */
       } else if (r && r.error === "signed-out") {
-        const st = "Please sign in first, so your scans are saved to your account. You have not been charged.";   /* review r7 M1 */
+        const st = (window.ssAuth && window.ssAuth.known === false) || (window.ssAuth && window.ssAuth.status === "Signing in\u2026") ? "Still checking your sign-in. Please try again in a moment. You have not been charged." : "Please sign in first, so your scans are saved to your account. You have not been charged.";   /* review r7 M1; v93 (r8 M-2) */
         if (!live.current) { ssShowToast(st, 8000); return; }
         setBuyMsg({ ok: false, text: st });
       } else if (r && r.error === "busy") {
@@ -3546,9 +3550,10 @@ function BuyScansSheet({ T, onClose, onBought, reason }) {
         if (!live.current) { ssShowToast(SS_BUY_FAIL, 9000); return; }
         setBuyMsg({ ok: false, text: SS_BUY_FAIL });
       }
-    } catch (_) {
-      if (!live.current) { ssShowToast(SS_BUY_FAIL, 9000); return; }
-      setBuyMsg({ ok: false, text: SS_BUY_FAIL });
+    } catch (e) {
+      const ft = (e && e.message === "signed-out") ? "Please sign in again. If you paid, your purchase is safe and will be added to your account when you sign in." : SS_BUY_FAIL;   /* v93 (r8 M-1) */
+      if (!live.current) { ssShowToast(ft, 9000); return; }
+      setBuyMsg({ ok: false, text: ft });
     } finally { setBuying(false); }
   };
   const pill = { display: "block", width: "100%", minHeight: 48, padding: "12px 18px", background: T.accent, border: "none", borderRadius: 12, cursor: buying ? "default" : "pointer", opacity: buying ? 0.6 : 1, fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, color: T.bg, fontSize: 15, letterSpacing: 0.4 };
@@ -4556,8 +4561,10 @@ function ProcessingScreen({
                 headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
                 body: reqBody,
                 signal: ctl ? ctl.signal : undefined
-              }).finally(() => clearTimeout(tmo));
+              });
+              if (withImages) clearTimeout(tmo);   /* a started scan streams its reply (keep-alive spaces) for as long as it runs: no limit on the body */
               let d = null, broken = false; try { d = await resp.json(); } catch (_) { d = {}; broken = true; }
+              clearTimeout(tmo);   /* v93: a status check (never streamed) is limited as a whole, body included; same ticket on retry */
               /* v78: a 200 whose body arrives broken (an iPhone connection that dropped mid-reply) is a
                  network failure: ask again with the SAME scan id, which returns the finished result. */
               if (broken && resp.status === 200) throw new Error("broken-reply");
@@ -7059,6 +7066,7 @@ function HeaderAwareBody({ T, sec, si, hlField, menuKey, setMenuKey, updateField
   }));
 }
 
+const SS_FIELD_MAX = 50000;   /* v93 (S5, P2-08): one field can never again stop the whole account backing up */
 function FieldEditModal({ T, data, si, fi0, updateBoth, moveField, moveToSection, onClose, isHeader }) {
   const secFields = (data.sections[si] && data.sections[si].fields) || [];
   const [curFi, setCurFi] = useState(fi0);
@@ -7168,7 +7176,7 @@ function FieldEditModal({ T, data, si, fi0, updateBoth, moveField, moveToSection
     style: { fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", color: T.label, fontFamily: "'Cinzel',Georgia,serif", margin: "0 0 6px 2px" }
   }, "Value"), !isHeader && /*#__PURE__*/React.createElement("textarea", {
     ref: ta, value: val,
-    onChange: e => { pushU(val); setVal(e.target.value); },
+    onChange: e => { pushU(val); let v = e.target.value; const lim = Math.max(SS_FIELD_MAX, String(val).length); if (v.length > lim) { const over = v.length - lim, el = e.target, old = String(val), st = el.scrollTop, end = (typeof el.selectionEnd === "number") ? el.selectionEnd : v.length; let suf = 0; const sm = Math.min(old.length, Math.max(0, v.length - end)); while (suf < sm && old.charCodeAt(old.length - 1 - suf) === v.charCodeAt(v.length - 1 - suf)) suf++; let pre = 0; while (pre < old.length - suf && pre < v.length - suf && old.charCodeAt(pre) === v.charCodeAt(pre)) pre++; const hiS = c => c >= 0xD800 && c <= 0xDBFF, loS = c => c >= 0xDC00 && c <= 0xDFFF; if (pre > 0 && hiS(v.charCodeAt(pre - 1))) pre--; if (suf > 0 && loS(v.charCodeAt(v.length - suf))) suf--; const ins = v.slice(pre, v.length - suf); let keep = ins.slice(0, Math.max(0, ins.length - over)); if (keep.length && hiS(keep.charCodeAt(keep.length - 1))) keep = keep.slice(0, -1); v = v.slice(0, pre) + keep + v.slice(v.length - suf); if (v.length > lim) v = old; const at = Math.min(pre + keep.length, v.length); setTimeout(() => { try { el.setSelectionRange(at, at); el.scrollTop = st; } catch (_) {} }, 0); ssShowToast("A field holds up to 50,000 characters, so the rest wasn't added. Long text works best split over a few fields.", 7000); } setVal(v); },   /* v93 (S5; review r1 H2, r3 M1, r4: the inserted text is found by comparing old and new, and only its end is cut; existing text, the cursor and the scroll position stay) */
     "aria-label": "Field value",
     style: { colorScheme: kbScheme(T), flex: 1, minHeight: 140, width: "100%", boxSizing: "border-box", fontSize: 18, lineHeight: 1.7, fontWeight: 500, color: T.text, background: T.accentFaint, border: "1px solid " + T.borderLight, borderRadius: 10, outline: "none", padding: "14px", fontFamily: "'EB Garamond',Georgia,serif", whiteSpace: "pre-wrap", resize: "none" }
   })), /*#__PURE__*/React.createElement("div", {
@@ -9269,6 +9277,39 @@ class SsBoundary extends React.Component {
   componentDidCatch(e) { try { console.warn("Sheetmancer: a screen could not be drawn", e); } catch (_) {} try { localStorage.removeItem("ss-nav"); } catch (_) {} const f = this.props.onFail; setTimeout(function () { try { f && f(); } catch (_) {} }, 0); }
   render() { return this.state.err ? null : this.props.children; }
 }
+/* v93 (C3 part 2, R3-08): album cleanup is queued on this device and retried until it has really happened. */
+const SS_GC = "ss-album-gc";
+const ssGcKey = c => c && ((typeof c.albumOf === "string" && c.albumOf) || c.cid);
+const ssGcRead = () => { try { const a = JSON.parse(localStorage.getItem(SS_GC) || "[]"); return Array.isArray(a) ? a.filter(x => x && typeof x.cid === "string" && x.cid && typeof x.uid === "string" && x.uid) : []; } catch (_) { return []; } };
+const ssGcWrite = a => { try { if (a.length) localStorage.setItem(SS_GC, JSON.stringify(a.slice(-300))); else localStorage.removeItem(SS_GC); } catch (_) {} };
+let ssGcBusy = false;
+const ssAlbumGc = () => {
+  if (ssGcBusy) return; const q0 = ssGcRead(); if (!q0.length) return;
+  const uid = window.ssAlbumUid ? window.ssAlbumUid() : null;
+  if (!uid || !(window.ssAuth && window.ssAuth.signedIn && window.ssAuth.status === "Synced") || !window.ssAlbumList || !window.ssAlbumDelete || navigator.onLine === false) return;   /* review r1 F3: only once this device and the cloud agree, so a character sync brings back is on the device first */
+  const live = {}; try { ["ss-chars", "ss-fallen"].forEach(k => { const a = JSON.parse(localStorage.getItem(k) || "[]"); if (Array.isArray(a)) a.forEach(c => { if (c && typeof c === "object") { const kk = ssGcKey(c); if (kk) live[kk] = 1; } }); }); } catch (_) { return; }
+  ssGcBusy = true;
+  (async () => { const done = {};
+    for (const e of q0) {
+      if (Date.now() - (e.at || 0) > 30 * 86400000) { done[e.cid + "|" + e.uid] = 1; continue; }   /* too old: given up */
+      if (e.uid !== uid) continue;
+      if (live[e.cid]) continue;   /* a character with this album is on this device (not saved yet, or back again): wait */
+      try { const r = await window.ssAlbumList(e.cid); if (!r || !r.ok) continue; const ph = r.photos || []; let bad = 0;
+        for (const x of ph) { try { const d = await window.ssAlbumDelete(x.id); if (!d || !d.ok) bad++; } catch (_) { bad++; } }
+        if (!bad) done[e.cid + "|" + e.uid] = 1; } catch (_) {}
+    }
+    ssGcWrite(ssGcRead().filter(x => !done[x.cid + "|" + x.uid]));
+  })().finally(() => { ssGcBusy = false; });
+};
+const ssGcQueue = key => { let uid = window.ssAlbumUid ? window.ssAlbumUid() : null; if (!uid) { try { uid = localStorage.getItem("ss-sync-uid") || null; } catch (_) {} }   /* review r1 M8: before Firebase has loaded */ if (!key || !uid) return; const q = ssGcRead(); if (!q.some(x => x.cid === key && x.uid === uid)) { q.push({ cid: key, uid: uid, at: Date.now() }); ssGcWrite(q); } setTimeout(ssAlbumGc, 300); };
+/* v93 (S6, review r1 M8): album pictures from a signed-out restore wait here even before Firebase has loaded (same key and
+   shape the sync code drains after sign-in). */
+const ssHoldAlbumLocal = list => Promise.resolve(ssIdb.get("capture", "albumhold")).then(old => { const a = Array.isArray(old) ? old : [], seen = {}; a.forEach(x => { seen[x.charId + "|" + x.img] = 1; });
+  (list || []).forEach(x => { if (x && x.charId && typeof x.img === "string" && !seen[x.charId + "|" + x.img]) { seen[x.charId + "|" + x.img] = 1; a.push({ charId: String(x.charId), img: x.img, w: x.w | 0, h: x.h | 0, ts: x.ts || Date.now() }); } });
+  return ssIdb.put("capture", "albumhold", a.slice(0, 300)); }).catch(() => false);
+setInterval(() => { try { if (localStorage.getItem(SS_GC)) ssAlbumGc(); } catch (_) {} }, 30000);
+window.addEventListener("online", () => setTimeout(ssAlbumGc, 3000));
+setTimeout(ssAlbumGc, 8000);
 function Sheetmancer() {
   const [view, setView] = useState("loading");
   const catBackRef = useRef({ open: false, close: null });
@@ -9278,6 +9319,7 @@ function Sheetmancer() {
   const [characters, setCharacters] = useState([]);
   const [fallenHeroes, setFallenHeroes] = useState([]);
   const [appConfirm, setAppConfirm] = useState(null);
+  const [importAsk, setImportAsk] = useState(null);   /* v93 (S1) */
   /* v86 (P2-01): the box closes first and its action can run only once, however many taps land. */
   const askAppConfirm = (title, message, run, confirmLabel) => { let ran = false; setAppConfirm({ title: title, message: message, confirmLabel: confirmLabel, run: () => { if (ran) return; ran = true; setAppConfirm(null); run(); } }); };
   /* v86 (P2-01/02): list actions find the character by id in the CURRENT lists, never "whoever is at position N". */
@@ -9309,6 +9351,14 @@ function Sheetmancer() {
     if (t && THEMES[t]) setThemeKey(t);
     store.set("ss-auth", true);
     try { const kn = store.get("ss-sync-kept"); if (Array.isArray(kn) && kn.length) { const nm = kn.length === 1 ? kn[0] : kn.slice(0, -1).join(", ") + " and " + kn[kn.length - 1]; const showKept = tries => { try { if (document.querySelector('[aria-modal="true"]') && tries < 30) { setTimeout(() => showKept(tries + 1), 2000); return; } } catch (_) {} ssShowToast("We found two versions" + (kn.length === 1 ? " of " : " each of ") + nm + (kn.length >= 6 ? " (and maybe more)" : "") + (kn.length === 1 ? " and kept both." : " and kept both copies of each.") + " The one marked (second copy) is the version this device had. Delete whichever one you don't need.", 14000); setTimeout(() => { try { const t = document.getElementById("ssToast"); if (t && /two versions/.test(t.textContent || "")) localStorage.removeItem("ss-sync-kept"); } catch (_) {} }, 13500);   /* review r7 S2 */ }; setTimeout(() => showKept(0), 1500);   /* review r5 S2, S3 */ } } catch (_) {}
+    const showBothNote = () => { try { const bn = store.get("ss-sync-both"); if (Array.isArray(bn) && bn.length) {   /* v93 (S4): a field changed on two devices at once */
+      const one = bn[0] || {}, cf = Array.isArray(one.cf) ? one.cf : [], nm = String(one.n || "A character");
+      let msg;
+      if (bn.length === 1 && cf.length === 1 && cf[0] && cf[0].f && cf[0].k != null && cf[0].o != null) msg = nm + ": " + cf[0].f + " was changed on two devices at once. We kept " + (cf[0].k === "" ? "it blank" : "\u201c" + cf[0].k + "\u201d") + ". " + (cf[0].h ? "This device had " : "The other device had ") + (cf[0].o === "" ? "it blank" : "\u201c" + cf[0].o + "\u201d") + ".";
+      else { const labs = []; let total = 0; bn.forEach(x => { total += (x && typeof x.t === "number") ? x.t : ((x && x.cf) || []).length; (Array.isArray(x && x.cf) ? x.cf : []).forEach(y => { if (y && y.f && labs.indexOf(y.f) < 0 && labs.length < 4) labs.push(y.f); }); }); const more = Math.max(0, total - labs.length); const names = bn.map(x => String((x && x.n) || "a character")); const and = a => a.length <= 1 ? a.join("") : a.slice(0, -1).join(", ") + " and " + a[a.length - 1]; const lab = labs.length ? (more ? labs.join(", ") + " and " + more + " more" : and(labs)) : "some details"; msg = and(names) + (bn.length >= 4 ? " (and maybe more)" : "") + ": " + lab + (labs.length === 1 && !more ? " was" : " were") + " changed on two devices at once. For " + (labs.length === 1 && !more ? "that" : "those") + ", we kept the copy saved last. Everything else from both devices is kept."; }
+      const showBoth = tries => { try { if ((document.querySelector('[aria-modal="true"]') || (() => { const t = document.getElementById("ssToast"); return !!t && t.classList.contains("show") && /two versions/.test(t.textContent || ""); })()) && tries < 30) { setTimeout(() => showBoth(tries + 1), 2000); return; } } catch (_) {} ssShowToast(msg, 14000); setTimeout(() => { try { const t = document.getElementById("ssToast"); if (t && /two devices at once/.test(t.textContent || "")) localStorage.removeItem("ss-sync-both"); } catch (_) {} }, 13500); };
+      setTimeout(() => showBoth(0), 1800); } } catch (_) {} };
+    showBothNote(); try { window.addEventListener("ss-sync-both", showBothNote); } catch (_) {}
     const nav = store.get("ss-nav");
     if (nav && nav.view === "character" && nav.idx != null) {
       const list = nav.fallen ? f : c || [];
@@ -9451,7 +9501,7 @@ function Sheetmancer() {
   /* review r2 D2-1: never delete a Photo Album another remaining character still shows (a kept-both copy shares it). */
   const ssAlbumKey = c => c && ((typeof c.albumOf === "string" && c.albumOf) || c.cid);
   const ssAlbumShared = c => { const k = ssAlbumKey(c); return !!k && charsRef.current.concat(fallenRef.current).some(x => x && x !== c && !(x.cid && c.cid && x.cid === c.cid) && ssAlbumKey(x) === k); };
-  const ssDropAlbum = c => { if (ssAlbumShared(c)) return; c = c && Object.assign({}, c, { cid: ssAlbumKey(c) }); try { if (c && c.cid && window.ssAuth && window.ssAuth.signedIn && window.ssAlbumList && window.ssAlbumDelete) window.ssAlbumList(c.cid).then(r => { const ph = (r && (r.photos || r.items || (Array.isArray(r) ? r : null))) || []; ph.forEach(x => { try { if (x && x.id) window.ssAlbumDelete(x.id); } catch (_) {} }); }).catch(() => {}); } catch (_) {} };
+  const ssDropAlbum = c => { if (ssAlbumShared(c)) return; ssGcQueue(ssAlbumKey(c)); };   /* v93 (R3-08): queued and retried */
   const ssSame = (a, b) => a === b || !!(a && b && a.cid && a.cid === b.cid);
   const handleDeleteChar = idx => { const c = charsRef.current[idx]; if (!c) return; const nm = c.name || "this character"; askAppConfirm("Delete character?", "Are you sure? All content for “" + nm + "”" + (ssAlbumShared(c) ? " will be permanently deleted. Its Photo Album pictures stay with the other copy." : ", including its Photo Album pictures, will be permanently deleted."), () => { if (!charsRef.current.some(x => ssSame(x, c))) return; ssDropAlbum(c); setCharacters(p => p.filter(x => !ssSame(x, c))); }); };
   /* v86 (P1-01, R3-01): move one character between the lists. Both lists are saved together first; nothing
@@ -9487,30 +9537,67 @@ function Sheetmancer() {
   const handleDeleteFallen = idx => { const c = fallenRef.current[idx]; if (!c) return; const nm = c.name || "this character"; askAppConfirm("Delete character?", "Are you sure? “" + nm + "”" + (ssAlbumShared(c) ? " will be permanently deleted from Fallen Heroes. Its Photo Album pictures stay with the other copy." : " and its Photo Album pictures will be permanently deleted from Fallen Heroes."), () => { if (!fallenRef.current.some(x => ssSame(x, c))) return; ssDropAlbum(c); setFallenHeroes(p => p.filter(x => !ssSame(x, c))); }); };
   const handleImport = charData => {
     const used = Object.create(null);
+    setImportAsk(null);
     characters.concat(fallenHeroes).forEach(c => { if (c && c.cid) used[c.cid] = 1; });
     /* A full "back up all characters" file restores everything it holds. */
     if (charData && charData.sheetmancerBackup) {
-      const cidMap = {};
-      const take = list => (Array.isArray(list) ? list : []).map(c => { const old = c && c.cid; const s = ssSanitizeChar(c, used, (old && used[old]) ? { freshCid: true } : null); if (s && old) cidMap[old] = s.cid; return s; }).filter(Boolean);
-      const nc0 = take(charData.characters), nf0 = take(charData.fallen).map(c => c.archivedAt ? c : Object.assign({}, c, { archivedAt: new Date().toISOString() }));
-      const reAlb = c => (c && typeof c.albumOf === "string" && cidMap[c.albumOf] && cidMap[c.albumOf] !== c.albumOf) ? Object.assign({}, c, { albumOf: cidMap[c.albumOf] }) : c;   /* review r2 D2-1 */
-      const nc = nc0.map(reAlb), nf = nf0.map(reAlb);
-      if (!nc.length && !nf.length) { ssShowToast("That backup has no characters in it."); return; }
-      setCharacters(p => [...p, ...nc]);
-      if (nf.length) setFallenHeroes(p => [...p, ...nf]);
-      if (charData.theme && THEMES[charData.theme] && !characters.length) setThemeKey(charData.theme);
+      /* v93 (Release B, S1): sort the backup into new / already here / already here but different before touching anything. */
+      const noArch = c => { if (!c || c.archivedAt == null) return c; const o = Object.assign({}, c); delete o.archivedAt; return o; };
+      const keyOf = c => ssCharKey(noArch(c));
+      const here = characters.concat(fallenHeroes).filter(Boolean);
+      const hereById = {}, hereKeys = {};
+      here.forEach(c => { if (c.cid && !hereById[c.cid]) hereById[c.cid] = c; hereKeys[keyOf(c)] = c; });
+      const plan = { add: [], same: [], diff: [] };
+      const sort = (list, fallen) => (Array.isArray(list) ? list : []).forEach(c0 => {
+        const probe = ssSanitizeChar(c0, Object.create(null)); if (!probe) return;
+        const old = c0 && typeof c0.cid === "string" ? c0.cid : null, k = keyOf(probe), byId = old ? hereById[old] : null;
+        if (byId) { if (keyOf(byId) === k) plan.same.push({ c0: c0, fallen: fallen, to: byId.cid }); else plan.diff.push({ c0: c0, fallen: fallen, to: byId.cid, name: probe.name }); return; }
+        if (hereKeys[k]) { plan.same.push({ c0: c0, fallen: fallen, to: hereKeys[k].cid }); return; }
+        plan.add.push({ c0: c0, fallen: fallen });
+      });
+      sort(charData.characters, false); sort(charData.fallen, true);
+      if (!plan.add.length && !plan.same.length && !plan.diff.length) { ssShowToast("That backup has no characters in it."); return; }
       const alb = Array.isArray(charData.album) ? charData.album : [];
-      if (alb.length && window.ssAuth && window.ssAuth.signedIn && window.ssAlbumAdd) {
-        (async () => { let n = 0; for (const a of alb) { const cid = cidMap[a.charId] || a.charId; if (!a || !a.img || !/^data:image\/(jpeg|jpg|png|webp|gif);base64,[A-Za-z0-9+\/=\s]+$/i.test(String(a.img))) continue; try { const id = (crypto.randomUUID ? crypto.randomUUID() : ("p" + Date.now() + Math.random().toString(36).slice(2))); const r = await window.ssAlbumAdd(cid, { id: id, charId: cid, img: a.img, w: a.w || 0, h: a.h || 0, ts: a.ts || Date.now() }); if (r && r.ok) n++; } catch (_) {} } if (n) ssShowToast(n + (n === 1 ? " album photo restored." : " album photos restored.")); })();
-      }
-      setView("home");
-      ssShowToast("Restored " + (nc.length + nf.length) + ((nc.length + nf.length) === 1 ? " character." : " characters."), 4000);
+      const finish = withCopies => {
+        const cidMap = {}, skipTo = {};
+        plan.same.forEach(x => { if (x.c0 && x.c0.cid && x.to) skipTo[x.c0.cid] = x.to; });
+        if (!withCopies) plan.diff.forEach(x => { if (x.c0 && x.c0.cid && x.to) skipTo[x.c0.cid] = x.to; });
+        const mkOne = (x, copy) => { const old = x.c0 && x.c0.cid; let s = ssSanitizeChar(x.c0, used, (copy || (old && used[old])) ? { freshCid: true } : null); if (!s) return null;
+          if (copy) { const SFX = " (from backup)", nm = String(s.name || "Character"); s = Object.assign({}, s, { name: nm.slice(-SFX.length) === SFX ? nm : nm + SFX }); if (s.albumOf) { s = Object.assign({}, s); delete s.albumOf; } }
+          if (old) cidMap[old] = s.cid;
+          if (x.fallen && !s.archivedAt) s = Object.assign({}, s, { archivedAt: new Date().toISOString() });
+          return s; };
+        const adds = plan.add.map(x => ({ x: x, s: mkOne(x, false) })).concat(withCopies ? plan.diff.map(x => ({ x: x, s: mkOne(x, true) })) : []).filter(y => y.s);
+        const reAlb = c => (c && typeof c.albumOf === "string" && cidMap[c.albumOf] && cidMap[c.albumOf] !== c.albumOf) ? Object.assign({}, c, { albumOf: cidMap[c.albumOf] }) : c;   /* review r2 D2-1 */
+        const nc = adds.filter(y => !y.x.fallen).map(y => reAlb(y.s)), nf = adds.filter(y => y.x.fallen).map(y => reAlb(y.s));
+        if (nc.length) setCharacters(p => [...p, ...nc]);
+        if (nf.length) setFallenHeroes(p => [...p, ...nf]);
+        if (charData.theme && THEMES[charData.theme] && !characters.length) setThemeKey(charData.theme);
+        let held = 0;
+        const okImg = a => a && a.img && /^data:image\/(jpeg|jpg|png|webp|gif);base64,[A-Za-z0-9+\/=\s]+$/i.test(String(a.img));
+        if (alb.length && window.ssAuth && window.ssAuth.signedIn && window.ssAlbumAdd) {
+          const albKeys = {}; nc.concat(nf).forEach(c => { if (c && typeof c.albumOf === "string" && c.albumOf) albKeys[c.albumOf] = 1; });
+          const hereAlb = {}; here.forEach(c => { if (c && typeof c.albumOf === "string" && c.albumOf) hereAlb[c.albumOf] = 1; });   /* review r2 D1: a shared album kept by a copy already here */   /* review r1 F2: a shared album kept by a copy */
+          (async () => { const have = {}; let n2 = 0;
+            for (const a of alb) { if (!okImg(a)) continue; const added = cidMap[a.charId] || (albKeys[a.charId] ? a.charId : null), to = added || skipTo[a.charId] || (hereAlb[a.charId] ? a.charId : null); if (!to) continue;
+              if (!added) { if (!have[to] && window.ssAlbumList) { try { const r = await window.ssAlbumList(to); have[to] = (r && r.ok && Array.isArray(r.photos)) ? r.photos.map(p => String(p.img)) : null; } catch (_) { have[to] = null; } }
+                if (!have[to] || have[to].indexOf(String(a.img)) >= 0) continue; have[to].push(String(a.img)); }   /* already there (or the album could not be read): not sent again */
+              try { const id = (crypto.randomUUID ? crypto.randomUUID() : ("p" + Date.now() + Math.random().toString(36).slice(2))); const r = await window.ssAlbumAdd(to, { id: id, charId: to, img: a.img, w: a.w || 0, h: a.h || 0, ts: a.ts || Date.now() }); if (r && r.ok) n2++; } catch (_) {} } if (n2) setTimeout(() => ssShowToast(n2 + (n2 === 1 ? " Photo Album picture restored." : " Photo Album pictures restored.")), 5200); })();
+        } else if (alb.length) { try { const ak2 = {}; nc.concat(nf).forEach(c => { if (c && typeof c.albumOf === "string" && c.albumOf) ak2[c.albumOf] = 1; }); const hl = alb.filter(okImg).map(a => ({ charId: cidMap[a.charId] || skipTo[a.charId] || (ak2[a.charId] || here.some(c => c && c.albumOf === a.charId) ? a.charId : ""), img: a.img, w: a.w || 0, h: a.h || 0, ts: a.ts || Date.now() })).filter(a => a.charId); if (hl.length) { (window.ssHoldAlbum || ssHoldAlbumLocal)(hl); held = hl.length; } } catch (_) {} }   /* v93 (S6, R3-05) */
+        setView("home");
+        const n = nc.length + nf.length, sk = plan.same.length + (withCopies ? 0 : plan.diff.length);
+        ssShowToast((n ? "Restored " + n + (n === 1 ? " character." : " characters.") : "Nothing new to restore.") + (sk ? " " + sk + (sk === 1 ? " was" : " were") + " already on this device." : "") + (held ? " Photo Album pictures from the backup will be added when you sign in." : ""), held ? 8000 : 5000);
+      };
+      if (!plan.diff.length) { finish(false); return; }
+      setImportAsk({ diff: plan.diff.map(x => String(x.name || "Character")), add: plan.add.length, same: plan.same.length, finish: finish });
       return;
     }
     const old = charData && charData.cid;
     let c = ssSanitizeChar(charData, used, (old && used[old]) ? { freshCid: true } : null);
     if (!c) { ssShowToast("That file doesn't look like a Sheetmancer character backup."); return; }
     if (c.archivedAt) { const { archivedAt, ...rest } = c; c = rest; }   /* a Fallen Hero's backup comes back as an active character */
+    { const k1 = ssCharKey(c), hi = characters.findIndex(x => x && ssCharKey(x) === k1);   /* v93 (S1): already here: open it, no copy */
+      if (hi >= 0) { setActiveCharIdx(hi); setActiveIsFallen(false); setView("character"); ssShowToast((c.name ? "\u201c" + c.name + "\u201d" : "That character") + " is already on this device.", 4000); return; } }
     const nc = [...characters, c];
     setCharacters(nc);
     setActiveCharIdx(nc.length - 1);
@@ -9558,14 +9645,20 @@ function Sheetmancer() {
     T: T, title: appConfirm.title, message: appConfirm.message, confirmLabel: appConfirm.confirmLabel, onConfirm: appConfirm.run, onClose: () => setAppConfirm(null)
   }), undoNote && view === "home" && !appConfirm && /*#__PURE__*/React.createElement(Toast, {
     T: T, msg: undoNote.msg, undoLabel: "Undo retire", onUndo: undoNote.undo ? () => { const u = undoNote; setUndoNote(null); if (viewRef.current === "home") u.undo(); } : null
+  }), importAsk && /*#__PURE__*/React.createElement(SsNoticeSheet, {   /* v93 (S1) */
+    T: T, title: importAsk.diff.length === 1 ? (importAsk.add || importAsk.same ? "One of these is already here" : "Already on this device") : (importAsk.add || importAsk.same ? "Some of these are already here" : "These are already on this device"), busyKey: "import",
+    body: (importAsk.diff.length === 1 ? "\u201c" + importAsk.diff[0] + "\u201d is already on this device, but the backup has a different version." : importAsk.diff.length + " characters in this backup (" + importAsk.diff.slice(0, 3).join(", ") + (importAsk.diff.length > 3 ? " and more" : "") + ") are already on this device, but the backup has different versions.") + " Your current " + (importAsk.diff.length === 1 ? "version stays" : "versions stay") + " as " + (importAsk.diff.length === 1 ? "it is" : "they are") + ". Add the backup " + (importAsk.diff.length === 1 ? "version as an extra character" : "versions as extra characters") + " too?" + (importAsk.add ? (importAsk.add === 1 ? " The one character" : " The " + importAsk.add + " characters") + " not on this device will be added either way." : ""),
+    primary: importAsk.diff.length === 1 ? "Add as an extra copy" : "Add as extra copies", onPrimary: () => { const f = importAsk.finish; setImportAsk(null); f(true); },
+    secondary: importAsk.diff.length === 1 ? "Skip it" : "Skip them", onSecondary: () => { const f = importAsk.finish; setImportAsk(null); f(false); },
+    onBack: () => { setImportAsk(null); ssShowToast("Nothing was restored.", 3000); }
   }), storageFull && /*#__PURE__*/React.createElement(SsNoticeSheet, {
     T: T, title: "This device is out of space", busyKey: "storage",
     body: "Sheetmancer couldn't save your latest change on this device because its storage is full. Back up all your characters now so nothing is lost, then free some space (remove a few Photo Album pictures or portraits).",
     primary: "Back up all characters", onPrimary: () => { ssBackupAll({ skipAlbum: true }).catch(() => {}); },
     secondary: "Close", onSecondary: () => setStorageFull(false), onBack: () => setStorageFull(false)
   }), !!ssAuthNow.foreign && /*#__PURE__*/React.createElement(SsNoticeSheet, {
-    T: T, title: "Characters from another account", busyKey: "foreign",
-    body: "This device has " + ssAuthNow.foreign + (ssAuthNow.foreign === 1 ? " character" : " characters") + (ssAuthNow.foreignUnknown ? (ssAuthNow.foreign === 1 ? " that is not saved in any account yet." : " that are not saved in any account yet.") : " saved under a different account.") + " Add " + (ssAuthNow.foreign === 1 ? "it" : "them") + " to the account you just signed in with, or remove " + (ssAuthNow.foreign === 1 ? "it" : "them") + " from this device. Back up first if you're not sure." + (ssAuthNow.foreignLost ? " Some changes made on this device never reached that account, so back up before removing anything." : ""),
+    T: T, title: ssAuthNow.foreignUnknown ? "Characters on this device" : "Characters from another account", busyKey: "foreign",
+    body: "This device has " + ssAuthNow.foreign + (ssAuthNow.foreign === 1 ? " character" : " characters") + (ssAuthNow.foreignUnknown ? " from before you signed in." : " saved under a different account.") + " Add " + (ssAuthNow.foreign === 1 ? "it" : "them") + " to the account you just signed in with, or remove " + (ssAuthNow.foreign === 1 ? "it" : "them") + " from this device. Back up first if you're not sure." + (ssAuthNow.foreignLost ? " Some changes made on this device never reached that account, so back up before removing anything." : ""),
     onBack: () => {},   /* a choice is needed; Back keeps the app open */
     primary: "Add to this account", onPrimary: () => { try { window.ssResolveForeign && window.ssResolveForeign("add"); } catch (_) {} },
     secondary: "Remove from this device", onSecondary: () => { try { window.ssResolveForeign && window.ssResolveForeign("remove"); } catch (_) {} },
@@ -9586,7 +9679,18 @@ function Sheetmancer() {
   }, "Storage is full. Back up a character, then remove some photos.")), view === "signin" && /*#__PURE__*/React.createElement(SignInScreen, {
     T: T,
     onSignIn: handleSignIn
-  }), view === "home" && /*#__PURE__*/React.createElement(HomeScreen, {
+  }), view === "home" && ssAuthNow.status === "Not backed up" && (() => {   /* v93 (S5, P2-08): say it on Home, and lead to the fix */
+    let best = null;
+    [[characters, false], [fallenHeroes, true]].forEach(([list, fal]) => (list || []).forEach((c, i) => { let n = 0; try { const o = Object.assign({}, c); delete o.avatarImg; n = JSON.stringify(o).length; } catch (_) {} if (!best || n > best.n) best = { n: n, i: i, fal: fal, c: c }; }));
+    const nm = best && best.c && best.c.name ? best.c.name : "One character";
+    const go = () => { if (!best) return; let lf = null; try { (best.c.sections || []).forEach(s => (s.fields || []).forEach(f => { const len = String(f.value == null ? "" : f.value).length + (Array.isArray(f.rows) ? JSON.stringify(f.rows).length : 0); if (!lf || len > lf.len) lf = { len: len, label: f.label || s.title || "a field" }; })); } catch (_) {}
+      if (best.fal) handleOpenFallen(best.i); else handleOpenChar(best.i);
+      setTimeout(() => ssShowToast(nm + " holds the most text" + (lf && lf.len > 20000 ? ". Its longest field is \u201c" + lf.label + "\u201d (" + lf.len.toLocaleString() + " characters)" : "") + ". Shortening long fields lets backup start again on its own.", 10000), 600); };
+    return /*#__PURE__*/React.createElement("button", {
+      onClick: go, className: "ss-press", "aria-label": "Backup paused. Your characters are too large to back up together. Tap to see the biggest one.",
+      style: { position: "sticky", top: 0, zIndex: 60, display: "block", width: "100%", minHeight: 44, padding: "calc(env(safe-area-inset-top,0px) + 10px) 16px 10px", border: "none", borderBottom: "2px solid " + T.accent, background: T.surface, color: T.text, fontFamily: "'EB Garamond',Georgia,serif", fontSize: 15.5, fontWeight: 600, lineHeight: 1.4, textAlign: "left", cursor: "pointer" }
+    }, "Backup paused: your characters are too large to back up together. Tap to see the biggest one.");
+  })(), view === "home" && /*#__PURE__*/React.createElement(HomeScreen, {
     T: T,
     characters: characters,
     fallenHeroes: fallenHeroes,
@@ -9675,9 +9779,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
 })();
 </script>
 <script>
-/* Route-B client purchase bridge (v73) — INERT until a store wrapper exposes a purchase path.
-   Mirrors the sign-in bridge: chassis JS publishing window.ss* for React. Web/pre-re-wrap builds
-   see ssPurchaseAvailable=false, so nothing renders or runs -> zero regression. */
+/* Route-B client purchase bridge (v73). Active in the store apps: the Android and iOS shells expose the purchase path.
+   Mirrors the sign-in bridge: chassis JS publishing window.ss* for React. On the plain web ssPurchaseAvailable
+   stays false, so nothing renders or runs there. (Comment updated v93, A8-19.) */
 (function(){
   /* Android billing wrapper launch signal (v74): the native TWA appends ?sm_n=<nonce> at launch
      and reports a background Play Integrity token to the Worker keyed by that nonce (see
@@ -10020,7 +10124,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
  var OWNER_KEY="ss-owner-uid",bootUid=null;try{bootUid=localStorage.getItem(UID_KEY);}catch(e){}
  var foreign=null,foreignOk={},tooBig=false,pushing=false,deviceFull=false,authCalls=0;
  var ackedCloud=null,pushFails=0,pushHold=0;   /* v85: the acked copy in its cloud form; push back-off */
- var stale=false,keptNames=null;   /* v86: stale = re-reading the cloud after the app came back (P3-1); keptNames = characters kept twice by a merge (P4-1) */
+ var stale=false,keptNames=null,confNotes=null;   /* v86: stale = re-reading the cloud after the app came back (P3-1); keptNames = characters kept twice by a merge (P4-1) */
  window.addEventListener("ss-storage-full",function(){deviceFull=true;try{broadcast();}catch(e){}});
  window.addEventListener("ss-storage-ok",function(){deviceFull=false;try{broadcast();}catch(e){}});
  function ownerNow(){try{return localStorage.getItem(OWNER_KEY)||bootUid||"";}catch(e){return bootUid||"";}}
@@ -10035,12 +10139,25 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
  function readDirty(){try{var r=JSON.parse(localStorage.getItem(DIRTY_KEY)||"null");return (r&&r.uid)?r:null;}catch(e){return null;}}
  function dirtyFor(uid){var r=readDirty();return !!(r&&uid&&r.uid===uid);}
  function clearDirty(uid){try{var r=readDirty();if(r&&r.uid===uid)localStorage.removeItem(DIRTY_KEY);}catch(e){}}
+ /* v93 (Release B, S4): the last copy this device and the cloud agreed on, in cloud form, kept in IndexedDB (not localStorage,
+    so it never competes with the characters for space). s = that cloud copy, h = its fingerprint, ds = fingerprint of the
+    device copy at that moment. A merge uses it only when the unsynced-changes marker names the same fingerprint (bh). */
+ var BASE_KEY="syncbase",baseRec=null;
+ function setBase(uid,cs,dev){if(!uid||typeof cs!=="string")return;try{baseRec={uid:uid,s:cs,h:hashStr(cs),ds:(typeof dev==="string")?hashStr(dev):""};ssIdb.put("capture",BASE_KEY,baseRec);}catch(e){}}
+ function dropBase(){baseRec=null;try{ssIdb.del("capture",BASE_KEY);}catch(e){}}
+ function storeConf(now){if(!confNotes)return;try{var cj=JSON.stringify(confNotes);if(sessionStorage.getItem("ss-sync-both-last")===cj){confNotes=null;return;}sessionStorage.setItem("ss-sync-both-last",cj);localStorage.setItem("ss-sync-both",JSON.stringify(confNotes.slice(0,4).map(function(x){return {n:String(x.n).slice(0,60),t:x.cf.length,cf:x.cf.slice(0,3).map(function(y){function sv(v){return (typeof v==="string"&&v.length<=40)?v:null;}var raw=(y.f==="Portrait"||y.f==="Fallen Heroes date");return {f:String(y.f||"").slice(0,40),k:raw?null:sv(y.keep),o:raw?null:sv(y.lost),h:!!y.here};})};})));if(now)window.dispatchEvent(new CustomEvent("ss-sync-both"));}catch(e){}confNotes=null;}   /* v93 (S4): the note the app shows once */
+ var baseLoad=null;function loadBase(){if(!baseLoad)baseLoad=Promise.resolve().then(function(){return ssIdb.get("capture",BASE_KEY);}).then(function(r){if(r&&typeof r==="object"&&typeof r.s==="string"&&r.uid&&!baseRec)baseRec=r;},function(){});return Promise.race([baseLoad,new Promise(function(res){setTimeout(res,2000);})]);}   /* review r1 F5: a stuck IndexedDB never holds up sync (no base = the v89 merge) */
+ try{loadBase();}catch(e){}
+ function baseFor(uid,base,pre){try{if(!baseRec||baseRec.uid!==uid||base==null)return "";
+  if(!pre&&base===acked&&ackedCloud!=null&&baseRec.s===ackedCloud)return baseRec.h;
+  if(baseRec.ds&&hashStr(base)===baseRec.ds)return baseRec.h;}catch(e){}return "";}   /* a restart offline: the device still held exactly the agreed copy */
  /* Mark local changes against a baseline (what this account last read/acked, or local at sign-in). */
  function noteFor(uid,base,pre){if(!uid||base==null)return;
   try{var o=gather(),s=JSON.stringify(o);if(s===base||s===notedS)return;notedS=s;
    var r=readDirty(),same=!!(r&&r.uid===uid);var n=countChars(o),emptied=false;
    if(n===0){emptied=!!(same&&r.emptied);try{if(countChars(JSON.parse(base))>0)emptied=true;}catch(e){}}
    var m={uid:uid,at:same?r.at:Date.now(),pre:!!(pre||(same&&r.pre)),emptied:emptied,b:(same&&r.b)?r.b:baseHashes(base),c:(same&&r.c)?r.c:baseCids(base)};if(same&&r.nb)m.nb=1;
+   if(same&&r.b){if(r.bh)m.bh=r.bh;}else if(!m.nb){var bh0=baseFor(uid,base,pre);if(bh0)m.bh=bh0;}   /* v93 (S4) */
    if(same&&r.pre===m.pre&&!!r.emptied===m.emptied&&r.b)return;
    localStorage.setItem(DIRTY_KEY,JSON.stringify(m));}catch(e){}}
  function noteLocal(){if(reloading)return;
@@ -10058,7 +10175,45 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
   var aOnly=na.some(function(n){return n&&n.id!=null&&!ib[n.id];}),bOnly=nc.some(function(n){return n&&n.id!=null&&!ia[n.id];});
   return (aOnly&&!bOnly)?1:((bOnly&&!aOnly)?-1:0);}catch(e){return 0;}}
  function sameExceptNotes(a,b){try{var x={},y={},k;for(k in (a||{}))if(k!=="cid"&&k!=="upd"&&k!=="sessionNotes")x[k]=a[k];for(k in (b||{}))if(k!=="cid"&&k!=="upd"&&k!=="sessionNotes")y[k]=b[k];return JSON.stringify(x)===JSON.stringify(y);}catch(e){return false;}}
- function mergeList(L,C,B,anc,K,nb,kept,AC,AL){
+ /* v93 (Release B, S4): field-by-field merge of one character against the agreed base copy. Objects merge key by key, lists
+    whose items all carry an id merge item by item (sections, fields), anything else is one value. A value changed on one side
+    only is taken from that side; changed on both sides to different values, the newer copy's value wins and is reported.
+    The journal keeps every entry from both copies, as before. Returns null when it cannot merge safely. */
+ function m3J(v){return v===undefined?"\u0000u":JSON.stringify(v);}
+ function m3Obj(v){return !!v&&typeof v==="object"&&!Array.isArray(v);}
+ function m3IdArr(a){if(!Array.isArray(a))return false;var s={};for(var i=0;i<a.length;i++){var x=a[i];if(!m3Obj(x)||typeof x.id!=="string"||!x.id||s[x.id])return false;s[x.id]=1;}return true;}
+ function m3Lab(x,d){return (x&&typeof x.label==="string"&&x.label)||(x&&typeof x.title==="string"&&x.title)||d;}
+ function m3Val(b,l,c,lab,cf,cn){var sl=m3J(l),sc=m3J(c);if(sl===sc)return l;var sb=m3J(b);if(sl===sb)return c;if(sc===sb)return l;
+  if(m3Obj(b)&&m3Obj(l)&&m3Obj(c))return m3O(b,l,c,lab,cf,cn);
+  if(m3IdArr(b)&&m3IdArr(l)&&m3IdArr(c))return m3A(b,l,c,lab,cf,cn);
+  cf.push({f:lab,keep:cn?c:l,lost:cn?l:c,here:!!cn});return cn?c:l;}
+ function m3O(b,l,c,lab,cf,cn,top){var w=cn?c:l,o=cn?l:c,keys=[],seen={},out={};
+  [w,o,b].forEach(function(x){for(var k in x)if(Object.prototype.hasOwnProperty.call(x,k)&&!seen[k]){seen[k]=1;keys.push(k);}});
+  keys.forEach(function(k){if(top&&(k==="cid"||k==="upd"||k==="sessionNotes"||k==="avatarImg"||k==="avatarRef"))return;
+   var kl=top?({name:"Name",system:"Game system",avatarPan:"Portrait position",archivedAt:"Fallen Heroes date"}[k]||lab):lab;
+   var v=m3Val(b[k],l[k],c[k],kl,cf,cn);if(v!==undefined)out[k]=v;});return out;}
+ function m3A(b,l,c,lab,cf,cn){var w=cn?c:l,o=cn?l:c,B0={},L0={},C0={},ids=[],seen={},out=[];
+  b.forEach(function(x){B0[x.id]=x;});l.forEach(function(x){L0[x.id]=x;});c.forEach(function(x){C0[x.id]=x;});
+  w.concat(o).forEach(function(x){if(!seen[x.id]){seen[x.id]=1;ids.push(x.id);}});
+  ids.forEach(function(id){var xb=B0[id],xl=L0[id],xc=C0[id],il=m3Lab(xl||xc||xb,lab);
+   if(xl&&xc){out.push(m3Val(xb,xl,xc,il,cf,cn));return;}
+   if(!xb){out.push(xl||xc);return;}   /* added on one side */
+   var kept1=xl||xc;if(m3J(kept1)!==m3J(xb))out.push(kept1);});   /* removed on one side: gone, unless the other side changed it */
+  return out;}
+ function pKey(x){try{if(x&&typeof x.avatarImg==="string")return "i:"+portraitRef(x.avatarImg);if(x&&typeof x.avatarRef==="string")return "i:"+x.avatarRef;}catch(e){}return "";}
+ function merge3(bc,lc,cc,cn){try{if(!m3Obj(bc)||!m3Obj(lc)||!m3Obj(cc))return null;var cf=[];
+  var r=m3O(bc,lc,cc,"",cf,cn,true);
+  var pk=m3Val(pKey(bc),pKey(lc),pKey(cc),"Portrait",cf,cn),src=null;
+  [cn?cc:lc,cn?lc:cc].forEach(function(x){if(!src&&pk&&pKey(x)===pk)src=x;});
+  if(pk&&!src)return null;
+  var o={};if(lc.cid!=null)o.cid=lc.cid;else if(cc.cid!=null)o.cid=cc.cid;
+  for(var k in r)o[k]=r[k];
+  if(src){if(typeof src.avatarImg==="string")o.avatarImg=src.avatarImg;else if(typeof src.avatarRef==="string")o.avatarRef=src.avatarRef;}
+  var lu=+(lc.upd||0),cu=+(cc.upd||0);if(lu||cu)o.upd=Math.max(lu,cu);
+  var nw=unionNotes(cn?cc:lc,cn?lc:cc);if(nw&&nw.sessionNotes!==undefined)o.sessionNotes=nw.sessionNotes;
+  cf=cf.filter(function(x){return x.f!=="Portrait position";});
+  return {c:o,cf:cf};}catch(e){return null;}}
+ function mergeList(L,C,B,anc,K,nb,kept,AC,AL,BS,conf){
   var out=L.slice(),used={},lh=L.map(charHash),add=[];
   C.forEach(function(c){var ch=charHash(c),m=-1,j;
    if(c&&c.cid){for(j=0;j<L.length;j++)if(!used[j]&&L[j]&&L[j].cid===c.cid){m=j;break;}}
@@ -10081,7 +10236,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
     }
     else if(!B[ch]){   /* edited on both devices: keep the newer one, and every journal entry from both */
      var lu=+((L[m]&&L[m].upd)||0),cu=+((c&&c.upd)||0);
-     if(nb?journalSide(L[m],c)<0:cu>lu){   /* nb here means the copies differ only in their journals: every entry is kept either way */var w=(c&&!c.cid&&L[m]&&L[m].cid)?Object.assign({},c,{cid:L[m].cid}):c;out[m]=unionNotes(w,L[m]);}
+     var bc3=(!nb&&BS)?((L[m]&&L[m].cid&&BS.byCid[L[m].cid])||(c&&c.cid&&BS.byCid[c.cid])||null):null,r3=bc3?merge3(bc3,L[m],c,cu>lu):null;   /* v93 (S4) */
+     if(r3){var w3=r3.c;if(c&&c.cid&&L[m]&&L[m].cid&&L[m].cid!==c.cid)w3=Object.assign({},w3,{cid:c.cid});else if(L[m]&&L[m].cid)w3=Object.assign({},w3,{cid:L[m].cid});out[m]=w3;if(r3.cf.length&&conf)conf.push({n:String((w3&&w3.name)||"Character"),cf:r3.cf});}
+     else if(nb?journalSide(L[m],c)<0:cu>lu){   /* nb here means the copies differ only in their journals: every entry is kept either way */var w=(c&&!c.cid&&L[m]&&L[m].cid)?Object.assign({},c,{cid:L[m].cid}):c;out[m]=unionNotes(w,L[m]);}
      else{var w2=(c&&c.cid&&L[m]&&L[m].cid!==c.cid)?Object.assign({},L[m],{cid:c.cid}):L[m];out[m]=unionNotes(w2,c);}
     }
     else if(c&&c.cid&&L[m]&&!L[m].cid)out[m]=Object.assign({},L[m],{cid:c.cid});
@@ -10104,13 +10261,25 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
   ["ss-chars","ss-fallen"].forEach(function(k){if(typeof o[k]!=="string")return;var a=JSON.parse(o[k]);if(!Array.isArray(a))return;var s2=JSON.stringify(ssSanitizeList(a,used));if(s2!==o[k]){out=out||Object.assign({},o);out[k]=s2;}});
   return out||o;}catch(e){return o;}}
  function mergeInto(cObj,dr){
-  try{var lo=gather(),B={},out={},changed=false,kept=[];(dr.b||[]).forEach(function(h){B[h]=1;});
+  try{var lo=gather(),B={},out={},changed=false,kept=[],conf3=[];(dr.b||[]).forEach(function(h){B[h]=1;});
    var Ms={},usedC={};
    var LL={},CC={},AC={},AL={};
    ["ss-chars","ss-fallen"].forEach(function(k){
     var L=lo[k]!=null?JSON.parse(lo[k]):[],C=cObj[k]!=null?JSON.parse(cObj[k]):[];
     if(!Array.isArray(L)||!Array.isArray(C))throw 0;
+    C.forEach(function(c){try{if(B[charHash(c)]){var x=ssSanitizeChar(c,Object.create(null));if(x&&x!==c)B[charHash(x)]=1;}}catch(e){}});   /* v93 (R8-1) */
     LL[k]=L;CC[k]=cleanCloudList(C);});   /* R6-1 */
+   var BS=null;   /* v93 (S4): the agreed base, only when the marker names it */
+   if(!dr.nb&&dr.bh&&baseRec&&baseRec.h===dr.bh&&baseRec.uid===dr.uid){try{var bo=JSON.parse(baseRec.s);BS={byCid:Object.create(null),list:{}};
+    ["ss-chars","ss-fallen"].forEach(function(k){var a=bo[k]!=null?JSON.parse(bo[k]):[];if(!Array.isArray(a))throw 0;BS.list[k]=Object.create(null);cleanCloudList(a).forEach(function(x){if(x&&typeof x.cid==="string"&&x.cid&&!BS.byCid[x.cid]){BS.byCid[x.cid]=x;BS.list[k][x.cid]=1;}});});}catch(e){BS=null;}}
+   if(BS){   /* v93 (R3-06): moved to the other list on ONE side since the base: the character follows the move, keeping the other side's edits */
+    var inL={},inC={};["ss-chars","ss-fallen"].forEach(function(k){inL[k]={};inC[k]={};LL[k].forEach(function(x){if(x&&x.cid)inL[k][x.cid]=(inL[k][x.cid]||0)+1;});CC[k].forEach(function(x){if(x&&x.cid)inC[k][x.cid]=(inC[k][x.cid]||0)+1;});});
+    var moveTo=function(x,o,ref){var y=x;if(o==="ss-chars"&&y.archivedAt!=null){y=Object.assign({},y);delete y.archivedAt;}else if(o==="ss-fallen"){var at=(ref&&ref.archivedAt!=null)?ref.archivedAt:(y.archivedAt!=null?y.archivedAt:new Date().toISOString());if(y.archivedAt!==at)y=Object.assign({},y,{archivedAt:at});}return y;};
+    var firstIn=function(A,cid){for(var i=0;i<A.length;i++)if(A[i]&&A[i].cid===cid)return A[i];return null;};
+    [["ss-chars","ss-fallen"],["ss-fallen","ss-chars"]].forEach(function(p){var a=p[0],o=p[1],stayL=[],stayC=[];
+     LL[a].forEach(function(x){var id=x&&x.cid;if(id&&BS.list[a][id]&&!BS.list[o][id]&&inL[a][id]===1&&!inL[o][id]&&!inC[a][id]&&inC[o][id]===1){LL[o].push(moveTo(x,o,firstIn(CC[o],id)));}else stayL.push(x);});
+     CC[a].forEach(function(x){var id=x&&x.cid;if(id&&BS.list[a][id]&&!BS.list[o][id]&&inC[a][id]===1&&!inC[o][id]&&!inL[a][id]&&inL[o][id]===1){CC[o].push(moveTo(x,o,firstIn(LL[o],id)));}else stayC.push(x);});
+     LL[a]=stayL;CC[a]=stayC;});}
    if(dr.nb){   /* review r5 D1: the cloud moved it to the other list: follow the cloud */
     var cin={};["ss-chars","ss-fallen"].forEach(function(k){cin[k]={};CC[k].forEach(function(x){if(x&&x.cid)cin[k][x.cid]=1;});});
     [["ss-chars","ss-fallen"],["ss-fallen","ss-chars"]].forEach(function(p){var a=p[0],o=p[1],stay=[];
@@ -10119,7 +10288,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
    ["ss-chars","ss-fallen"].forEach(function(k){CC[k].forEach(function(x){if(x&&x.cid)AC[x.cid]=1;});LL[k].forEach(function(x){if(x&&x.cid)AL[x.cid]=1;});});
    ["ss-chars","ss-fallen"].forEach(function(k){
     var K=null;if(Array.isArray(dr.c)){K={};dr.c.forEach(function(x){K[x]=1;});}
-    Ms[k]=mergeList(LL[k],CC[k],B,!dr.pre,K,!!dr.nb,kept,AC,AL);});
+    Ms[k]=mergeList(LL[k],CC[k],B,!dr.pre,K,!!dr.nb,kept,AC,AL,BS,conf3);});
    /* v85 (found on a live account 2026-10-27): the app keeps character ids unique across BOTH lists when it
       loads (ssSanitizeChar: active list first, then fallen; a repeated id gets "-2", "-3"...). The merge must
       hand back ids in that same final form, or the app re-suffixes them on reload, the next merge undoes it,
@@ -10137,7 +10306,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
     if(cid===c.cid)return c;var o={};for(var x in c)if(Object.prototype.hasOwnProperty.call(c,x))o[x]=(x==="cid")?cid:c[x];return o;});});}
    ["ss-chars","ss-fallen"].forEach(function(k){var M=Ms[k];if(lo[k]==null&&!M.length)return;
     var s=JSON.stringify(M);if(s!==lo[k]){out[k]=s;changed=true;}});
-   keptNames=kept.length?kept:null;
+   keptNames=kept.length?kept:null;confNotes=conf3.length?conf3:null;
    return changed?out:null;
   }catch(e){syncLog("could not merge; keeping this device's copy");return false;}}
  function sameButIds(m){try{var lo=gather();if((m["ss-theme"]||null)!==(lo["ss-theme"]||null))return false;
@@ -10212,7 +10381,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
     own iOS SDK sends for revokeToken(withAuthorizationCode:). Held under the SAME
     uid-scoping and tab-scoped persistence as the access token, for the same reason:
     sign-in can reload the page long before deletion is ever attempted.
-    INERT until the Swift shell passes a 3rd argument to __onNativeAppleCredential. */
+    Active: the iOS shell passes the authorization code as the 3rd argument to __onNativeAppleCredential
+    (ViewController.swift, 1.0.2 and later). (Comment updated v93, A8-19.) */
  function keepCode(uid,code){
    if(!uid||!code)return false;
    appleCode=String(code);appleCodeUid=String(uid);
@@ -10234,8 +10404,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
    return (appleCodeUid===uid)?appleCode:null;   /* same rule: never one account's grant for another */
  }
  function relTime(ts){if(!ts)return"just now";var s=Math.floor((Date.now()-ts)/1000);if(s<10)return"just now";if(s<60)return s+"s ago";var m=Math.floor(s/60);if(m<60)return m+"m ago";var h=Math.floor(m/60);if(h<24)return h+"h ago";return Math.floor(h/24)+"d ago";}
- function broadcast(){var status,detail;if(pending){status="Signing in…";detail="";}else if(!user){status="Sign in";detail="";}else if(!navigator.onLine){status="Offline";detail="will sync when online";}else if(syncing){status="Syncing…";detail="";}else if(deviceFull){status="Device full";detail="back up your characters";}else if(foreign){status="Waiting";detail="choose what to do with this device's characters";}else if(errState&&tooBig){status="Not backed up";detail="too large to sync";}else if(errState){status="Sync error";detail="tap to retry";}else if(!lastSyncedAt||stale){status="Syncing…";detail="";}else{status="Synced";detail=relTime(lastSyncedAt);}window.ssAuth={signedIn:!!user,apple:!!(user&&(user.providerData||[]).some(function(p){return p&&p.providerId==="apple.com";})),email:user?(user.email||""):"",syncing:syncing,err:errState||deviceFull,tooBig:tooBig,deviceFull:deviceFull,foreign:foreign?foreign.n:0,foreignUnknown:!!(foreign&&foreign.unknown),foreignLost:!!(foreign&&foreign.lost),offline:!navigator.onLine,pending:pending,lastSyncedAt:lastSyncedAt,status:status,detail:detail};try{window.dispatchEvent(new CustomEvent("ss-auth"));}catch(e){}}
- window.ssAuth={signedIn:false,email:"",status:"Sign in",detail:""};
+ function broadcast(){var status,detail;if(pending){status="Signing in…";detail="";}else if(!user){status="Sign in";detail="";}else if(!navigator.onLine){status="Offline";detail="will sync when online";}else if(syncing){status="Syncing…";detail="";}else if(deviceFull){status="Device full";detail="back up your characters";}else if(foreign){status="Waiting";detail="choose what to do with this device's characters";}else if(errState&&tooBig){status="Not backed up";detail="too large to sync";}else if(errState){status="Sync error";detail="tap to retry";}else if(!lastSyncedAt||stale){status="Syncing…";detail="";}else{status="Synced";detail=relTime(lastSyncedAt);}window.ssAuth={known:authCalls>0,signedIn:!!user,apple:!!(user&&(user.providerData||[]).some(function(p){return p&&p.providerId==="apple.com";})),email:user?(user.email||""):"",syncing:syncing,err:errState||deviceFull,tooBig:tooBig,deviceFull:deviceFull,foreign:foreign?foreign.n:0,foreignUnknown:!!(foreign&&foreign.unknown),foreignLost:!!(foreign&&foreign.lost),offline:!navigator.onLine,pending:pending,lastSyncedAt:lastSyncedAt,status:status,detail:detail};try{window.dispatchEvent(new CustomEvent("ss-auth"));}catch(e){}}
+ window.ssAuth={known:false,signedIn:false,email:"",status:"Sign in",detail:""};
  Promise.all([import(FB+"firebase-app.js"),import(FB+"firebase-auth.js"),import(FB+"firebase-firestore.js")]).then(function(m){
   var appM=m[0];authM=m[1];var fsM=m[2];
   var app=appM.initializeApp(cfg),auth=authM.getAuth(app),db=fsM.getFirestore(app);
@@ -10360,7 +10530,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
     function settle(fn){if(settled)return;settled=true;fn();}     /* releases the CALLER only */
     function succeed(){
      stop();
-     user=null;last="";lastSyncedAt=0;errState=false;syncing=false;pending=false;
+     user=null;last="";lastSyncedAt=0;errState=false;syncing=false;pending=false;dropBase();try{ssIdb.del("capture",HOLD_KEY);}catch(e){}
      if(timer){clearTimeout(timer);timer=null;}
      try{sessionStorage.removeItem("ss-sync-reloaded");}catch(e){}
      settle(function(){broadcast();resolve();});
@@ -10370,7 +10540,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
     function restoreDoc(){
      var s=JSON.stringify(gather());
      return cloudWrite(uid,s)
-      .then(function(ds){if(user&&user.uid===uid){last=s;acked=s;ackedCloud=ds;lastSyncedAt=Date.now();errState=false;}return true;},function(){if(user&&user.uid===uid)errState=true;return false;});   /* R4-1: only the same account's state */
+      .then(function(ds){if(user&&user.uid===uid){last=s;acked=s;ackedCloud=ds;setBase(uid,ds,s);lastSyncedAt=Date.now();errState=false;}return true;},function(){if(user&&user.uid===uid)errState=true;return false;});   /* R4-1: only the same account's state */
     }
     /* Roll back. Runs even if the caller was already released by the timer - an
        abandoned chain must still clean up after itself. The tombstone delete is
@@ -10408,7 +10578,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
        signed in moments ago we must not open a popup at all. On a phone that popup
        is a whole new tab, and its result routinely fails to reach the opener, which
        is exactly what made this hang on 'Deleting...' for two minutes. */
-    var FRESH_MS=5*60*1000;
+    var FRESH_MS=4*60*1000;   /* v93 (A8-11): under the ~5 minutes an Apple authorization code lasts */
     function signedInAt(user){try{var t=user&&user.metadata&&user.metadata.lastSignInTime;return t?Date.parse(t)||0:0;}catch(_e){return 0;}}
     function reauthStep(){
       var t0=signedInAt(u);
@@ -10688,6 +10858,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
   function albumCol(uid){ return fsM.collection(db,"users",uid,"album"); }
   function albumDoc(uid,pid){ return fsM.doc(db,"users",uid,"album",pid); }
   function newPhotoId(){ try{return crypto.randomUUID();}catch(_){return "ph_"+Date.now()+"_"+Math.random().toString(36).slice(2);} }
+  window.ssAlbumUid=function(){return albumUid();};   /* v93 (R3-08): the account the album cleanup queue belongs to */
   window.ssAlbumList=function(charId){
    var uid=albumUid(); if(!uid)return Promise.resolve({ok:false,reason:"signin"});
    try{
@@ -10725,6 +10896,23 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
    try{return fsM.setDoc(albumDoc(uid,String(rec.id)),docv).then(function(){return {ok:true,photo:Object.assign({id:rec.id},docv)};},function(e){return {ok:false,reason:"error",err:String((e&&(e.code||e.message))||e)};});}
    catch(e){return Promise.resolve({ok:false,reason:"error",err:String(e)});}
   };
+  /* v93 (S6, R3-05): album pictures from a backup restored while signed out. */
+  var HOLD_KEY="albumhold",draining=false;
+  window.ssHoldAlbum=function(list){if(!Array.isArray(list)||!list.length)return Promise.resolve(false);
+   return Promise.resolve(ssIdb.get("capture",HOLD_KEY)).then(function(old){var a=Array.isArray(old)?old:[];var seen={};a.forEach(function(x){seen[x.charId+"|"+x.img]=1;});
+    list.forEach(function(x){if(x&&x.charId&&typeof x.img==="string"&&!seen[x.charId+"|"+x.img]){seen[x.charId+"|"+x.img]=1;a.push({charId:String(x.charId),img:x.img,w:x.w|0,h:x.h|0,ts:x.ts||Date.now()});}});
+    return ssIdb.put("capture",HOLD_KEY,a.slice(0,300));}).catch(function(){return false;});};
+  function drainHeld(uid){if(draining||!user||user.uid!==uid||loadedUid!==uid||deleting||deletedUids[uid])return;draining=true;
+   Promise.resolve(ssIdb.get("capture",HOLD_KEY)).then(function(a){if(!Array.isArray(a)||!a.length)return;
+    var here={};try{var o=gather();["ss-chars","ss-fallen"].forEach(function(k){var l=o[k]!=null?JSON.parse(o[k]):[];if(Array.isArray(l))l.forEach(function(c){if(c&&c.cid)here[c.cid]=1;if(c&&typeof c.albumOf==="string"&&c.albumOf)here[c.albumOf]=1;});});}catch(e){return;}
+    var left=a.slice(),have={},n=0;
+    function next(){if(!user||user.uid!==uid)return Promise.resolve();if(!left.length)return Promise.resolve();var x=left[0];
+     if(!here[x.charId]){left.shift();return next();}   /* that character is no longer on this device: the picture is dropped */
+     var get=have[x.charId]?Promise.resolve(have[x.charId]):window.ssAlbumList(x.charId).then(function(r){if(!r||!r.ok)throw new Error("album-read");have[x.charId]=(r.photos||[]).map(function(p){return String(p.img);});return have[x.charId];});
+     return get.then(function(h){if(h.indexOf(x.img)>=0){left.shift();return ssIdb.put("capture",HOLD_KEY,left).then(next);}
+      return window.ssAlbumAdd(x.charId,x).then(function(r){if(!r||!r.ok)throw new Error("album-write");h.push(x.img);n++;left.shift();return ssIdb.put("capture",HOLD_KEY,left).then(next);});});}
+    return next().then(function(){if(!left.length)return ssIdb.del("capture",HOLD_KEY);});
+   }).then(function(){draining=false;},function(){draining=false;}).then(function(){});}
   function retryLoad(){if(retryT){clearTimeout(retryT);retryT=null;}
    if(!user||loadedUid===user.uid||loadingUid===user.uid)return;var u=user;
    if(deleting){scheduleRetry(u);return;}
@@ -10753,27 +10941,33 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
    /* v85 review round 2 (H1): new portraits go up FIRST, so the read-compare-write below spans one round trip,
       exactly as in v83. The comparison runs in cloud form; pictures are downloaded only for a real merge (M1). */
    var base=acked,baseC=ackedCloud,dh=dehydrate(s);
+   /* v93 (Release B): the read-compare-write is ONE Firestore transaction. If another device writes between this device's
+      read and its write, Firestore re-runs the read, sees the other copy, and nothing is overwritten: the merge path runs. */
+   function done(){pushing=false;pushFails=0;pushHold=0;
+     if(user&&user.uid===uu){acked=s;ackedCloud=dh.s;cloudCount=countChars(o);setBase(uu,dh.s,s);try{localStorage.setItem(OWNER_KEY,uu);}catch(e){}}
+     try{if(JSON.stringify(gather())===s)clearDirty(uu);}catch(e){}
+     tooBig=false;stale=false;lastSyncedAt=Date.now();syncing=false;errState=false;broadcast();}
    uploadPortraits(uu,dh.need).then(function(){
     if(!(user&&user.uid===uu)||reloading)return null;
-    return raceOut(fsM.getDoc(ref(uu)),15000,new Error("read-timeout"));
-   }).then(function(snap){
-    if(!snap||!(user&&user.uid===uu)||reloading){pushing=false;syncing=false;broadcast();return;}
-    if(snap.metadata&&snap.metadata.fromCache)throw new Error("from-cache");
-    var d=snap.exists()?snap.data():null,cs0=(d&&typeof d.sheetsnap_blob==="string")?d.sheetsnap_blob:null;
-    var same=(cs0==null)||cs0===dh.s||(baseC!=null&&cs0===baseC);
-    return (same?Promise.resolve(null):hydrate(uu,cs0)).then(function(cs){
+    return txWrite(uu,dh.s,baseC,null);
+   }).then(function(r){
+    if(!r||!(user&&user.uid===uu)||reloading){pushing=false;syncing=false;broadcast();return;}
+    if(r.wrote){done();return;}
+    var cs0=r.cs0;
+    return hydrate(uu,cs0).then(function(cs){
     if(!(user&&user.uid===uu)||reloading){pushing=false;syncing=false;broadcast();return;}
-    if(!same&&base!=null&&cs!=null&&cs!==base&&cs!==s){
+    if(base!=null&&cs!=null&&cs!==base&&cs!==s){
      pushing=false;syncLog("another device changed the cloud copy; merging before upload");
      try{noteFor(uu,base,false);}catch(e){}
      loadedUid="";last="";settle(user,cs,cs0);return;}
-    return fsM.setDoc(ref(uu),{sheetsnap_blob:dh.s,sheetsnap_updatedAt:Date.now()},{merge:true}).then(function(){
-     pushing=false;pushFails=0;pushHold=0;
-     if(user&&user.uid===uu){acked=s;ackedCloud=dh.s;cloudCount=countChars(o);try{localStorage.setItem(OWNER_KEY,uu);}catch(e){}}
-     try{if(JSON.stringify(gather())===s)clearDirty(uu);}catch(e){}
-     tooBig=false;stale=false;lastSyncedAt=Date.now();syncing=false;errState=false;broadcast();});
+    return txWrite(uu,dh.s,baseC,cs0).then(function(r2){
+     if(!r2||!(user&&user.uid===uu)||reloading){pushing=false;syncing=false;broadcast();return;}
+     if(r2.wrote){done();return;}
+     var ch=new Error("cloud-changed");ch.changed=true;throw ch;});
     });
-   }).catch(function(e){pushing=false;syncing=false;errState=true;var em=String((e&&(e.code||e.message))||"");
+   }).catch(function(e){pushing=false;syncing=false;
+    if(e&&e.changed){last="";pushHold=Date.now()+1500;syncLog("the cloud copy changed again while saving; trying again");broadcast();return;}   /* v93: not an error, just another device's turn */
+    errState=true;var em=String((e&&(e.code||e.message))||"");
     pushFails++;pushHold=Date.now()+Math.min(60000,2000*Math.pow(2,Math.min(pushFails,6)-1));   /* back off: 2, 4, 8, 16, 32, 60 s */
     if(e&&e.portrait&&!/maximum allowed size|exceeds the maximum|too large|invalid-argument/i.test(em)){syncLog("a portrait could not be uploaded; will retry");last="";
      if(/permission/i.test(em)){try{fsM.getDoc(tomb(uu)).then(function(t){if(t.exists()){deletedUids[uu]=1;broadcast();}},function(){});}catch(_){}}}   /* a deletion only if the tombstone really stands */
@@ -10781,6 +10975,21 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
     else if(/maximum allowed size|exceeds the maximum|too large|invalid-argument/i.test(em)){tooBig=true;syncLog("this account is too large to sync in one piece; back up from the Help menu");}   /* keep last=s: do not resend the same oversized copy every few seconds */
     else last="";
     broadcast();});}
+  /* v93 (Release B): write the sync document only if the cloud still holds a copy this device has accounted for (none, its own,
+     its last acknowledged copy, or the copy it just compared). Returns {wrote:true} or {wrote:false,cs0:<the cloud copy>}. */
+  function txWrite(uu,ds,baseC,accept){
+   function ok(cs0){return cs0==null||cs0===ds||(baseC!=null&&cs0===baseC)||(accept!=null&&cs0===accept);}
+   if(typeof fsM.runTransaction!=="function"){   /* SDK without transactions: the v89 read then write */
+    return raceOut(fsM.getDoc(ref(uu)),15000,new Error("read-timeout")).then(function(snap){
+     if(snap.metadata&&snap.metadata.fromCache)throw new Error("from-cache");
+     var d=snap.exists()?snap.data():null,cs0=(d&&typeof d.sheetsnap_blob==="string")?d.sheetsnap_blob:null;
+     if(!ok(cs0))return {wrote:false,cs0:cs0};
+     return fsM.setDoc(ref(uu),{sheetsnap_blob:ds,sheetsnap_updatedAt:Date.now()},{merge:true}).then(function(){return {wrote:true};});});}
+   return raceOut(fsM.runTransaction(db,function(tx){return tx.get(ref(uu)).then(function(snap){
+     var d=snap.exists()?snap.data():null,cs0=(d&&typeof d.sheetsnap_blob==="string")?d.sheetsnap_blob:null;
+     if(!ok(cs0))return {wrote:false,cs0:cs0};
+     if(cs0===ds)return {wrote:true};   /* review r1 F4: the cloud already holds exactly this copy (e.g. a slow earlier write landed after its wait) */
+     tx.set(ref(uu),{sheetsnap_blob:ds,sheetsnap_updatedAt:Date.now()},{merge:true});return {wrote:true};});},{maxAttempts:5}),20000+Math.ceil(ds.length/250000)*15000,new Error("write-timeout"));}   /* review r1 F4: about 15 s more per 250 KB */
   /* A deletion that died between the tombstone and the finish would otherwise leave
      the account permanently unable to sync, silently and with no way back. On sign-in,
      an OLD tombstone (older than the few seconds a real deletion takes) is reconciled:
@@ -10812,7 +11021,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
    var target=null,cFix=cObj?loaderForm(cObj):null,repaired=!!(cFix&&cFix!==cObj);   /* R6-2 */
    if(repaired)cc=countChars(cFix);   /* R7-2: count what the device will actually hold */
    var idsOnly=false;if(!dirty){if(cFix&&wouldChange(cFix)){if(sameButIds(cFix))idsOnly=true;else target=cFix;}}
-   else if(cObj){var mg=mergeInto(cObj,dr);if(mg)target=mg;}
+   else if(cObj){var mg=mergeInto(cObj,dr);if(mg)target=mg;else storeConf(true);}   /* v93: nothing to refresh, but the player is still told */
    if(target){applyAndRefresh(u,target,cloudS);return;}
    deferred=null;cloudCount=cc;loadedUid=u.uid;retryN=0;if(retryT){clearTimeout(retryT);retryT=null;}
    try{var tm0=JSON.parse(sessionStorage.getItem("ss-sync-reloads-total")||"{}");if(tm0&&tm0.__all){tm0.__all=0;sessionStorage.setItem("ss-sync-reloads-total",JSON.stringify(tm0));}}catch(e){}   /* review r4 D2 */
@@ -10824,6 +11033,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
     if(JSON.stringify(gather())===last)clearDirty(u.uid);
     else syncLog("uploading this device's unsynced changes (merged with the cloud copy)");
    } else { last=JSON.stringify(gather());acked=(cloudS!=null)?cloudS:"";if((cloudS==null&&countChars(gather())>0)||idsOnly||repaired)last=""; }   /* R6-2: send the repaired copy once */   /* v78: no cloud copy yet: upload this device's characters once */
+   setTimeout(function(){try{drainHeld(u.uid);}catch(e){}},1500);   /* v93 (S6) */
+   if(ackedCloud!=null){var dv0=acked;if(!dirty){try{dv0=JSON.stringify(gather());}catch(e){}}setBase(u.uid,ackedCloud,dv0);}   /* v93 (S4): dv0 = this device's copy when it is the agreed one */
    stale=false;lastSyncedAt=Date.now();syncing=false;errState=false;broadcast();push();
   }
   function applyAndRefresh(u,target,cloudS){
@@ -10842,7 +11053,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
    tm[th]=tot+1;try{sessionStorage.setItem("ss-sync-reloads-total",JSON.stringify(tm));}catch(e){}
    rl.push([now,th]);try{sessionStorage.setItem(RELOADS_KEY,JSON.stringify(rl));}catch(e){}
    try{apply(target);}catch(e){deferred=null;syncLog("could not write the cloud copy on this device");syncing=false;errState=true;broadcast();return;}
-   if(keptNames){try{localStorage.setItem("ss-sync-kept",JSON.stringify(keptNames.slice(0,6)));}catch(e){}keptNames=null;}   /* v86: the app says so once after the refresh */
+   if(keptNames){try{localStorage.setItem("ss-sync-kept",JSON.stringify(keptNames.slice(0,6)));}catch(e){}keptNames=null;}
+   storeConf(false);   /* v93: told once after the refresh */   /* v86: the app says so once after the refresh */
    try{var dr0=readDirty();if(dr0&&dr0.uid===u.uid&&dr0.nb&&typeof cloudS==="string"){localStorage.setItem(DIRTY_KEY,JSON.stringify({uid:u.uid,at:dr0.at||Date.now(),pre:false,emptied:false,b:baseHashes(cloudS),c:baseCids(cloudS)}));}}catch(e){}   /* review r2 D2-3: the cloud copy just merged with is now the known baseline */
    try{baseSnap=JSON.stringify(gather());notedS=baseSnap;}catch(e){}   /* our own write is not a local edit */
    deferred=null;reloading=true;location.reload();
@@ -10856,7 +11068,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
      var d=snap.exists()?snap.data():null;
      try{if(d&&d.ai_ok)localStorage.setItem("ss-ai-ok","1");}catch(e){}   /* v78: AI Disclosure answer follows the account (read only; written only when this account's player taps OK) */
      var raw=(d&&typeof d.sheetsnap_blob==="string")?d.sheetsnap_blob:null;
-     return hydrate(u.uid,raw).then(function(cs){   /* v85: a failed portrait read fails the whole read (retried) */
+     return Promise.all([hydrate(u.uid,raw),loadBase()]).then(function(hb){var cs=hb[0];   /* v85: a failed portrait read fails the whole read (retried); v93: base read first */
       if(loadingUid===u.uid)loadingUid="";
       if(!(user&&user.uid===u.uid)){syncing=false;broadcast();return;}
       settle(u,cs,raw);});
@@ -10892,9 +11104,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
   window.ssResolveForeign=function(choice){
    if(!foreign||!user||user.uid!==foreign.uid)return;var u=user;
    if(choice==="remove"){
-    try{["ss-chars","ss-fallen","ss-nav",DIRTY_KEY,"ss-ai-ok","ss-pup","ss-field-draft","ss-sync-kept"].forEach(function(k){localStorage.removeItem(k);});localStorage.setItem(OWNER_KEY,u.uid);}catch(e){}   /* v86: the typing draft and the kept-both note go with the characters */
+    try{["ss-chars","ss-fallen","ss-nav",DIRTY_KEY,"ss-ai-ok","ss-pup","ss-field-draft","ss-sync-kept","ss-sync-both"].forEach(function(k){localStorage.removeItem(k);});localStorage.setItem(OWNER_KEY,u.uid);}catch(e){}   /* v86: the typing draft and the kept-both note go with the characters */
     try{ssIdb.del("capture","draft");ssIdb.all("scans").then(function(a){a.forEach(function(x){ssIdb.del("scans",x[0]);});});}catch(e){}
-    foreign=null;reloading=true;setTimeout(function(){location.reload();},300);return;}
+    dropBase();try{ssIdb.del("capture",HOLD_KEY);}catch(e){}foreign=null;reloading=true;setTimeout(function(){location.reload();},300);return;}
    foreignOk[u.uid]=1;foreign=null;
    try{localStorage.setItem(DIRTY_KEY,JSON.stringify({uid:u.uid,at:Date.now(),pre:true,emptied:false,b:[]}));localStorage.setItem(OWNER_KEY,u.uid);}catch(e){}   /* both versions considered: newer wins, journals combined */
    try{baseSnap=JSON.stringify(gather());}catch(e){baseSnap=null;}
@@ -10908,9 +11120,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
   window.ssSignOutAndClear=function(){
    return new Promise(function(res){var done=false,t0=Date.now();
     function finish(){if(done)return;done=true;reloading=true;
-     try{["ss-chars","ss-fallen","ss-nav",DIRTY_KEY,OWNER_KEY,"ss-ai-ok","ss-pup","ss-field-draft","ss-sync-kept"].forEach(function(k){localStorage.removeItem(k);});}catch(e){}   /* v86: the typing draft and the kept-both note go with the characters */
+     try{["ss-chars","ss-fallen","ss-nav",DIRTY_KEY,OWNER_KEY,"ss-ai-ok","ss-pup","ss-field-draft","ss-sync-kept","ss-sync-both"].forEach(function(k){localStorage.removeItem(k);});}catch(e){}   /* v86: the typing draft and the kept-both note go with the characters */
      try{ssIdb.del("capture","draft");ssIdb.all("scans").then(function(a){a.forEach(function(x){ssIdb.del("scans",x[0]);});});}catch(e){}
-     setTimeout(function(){res(true);location.reload();},300);}
+     dropBase();try{ssIdb.del("capture",HOLD_KEY);}catch(e){}setTimeout(function(){res(true);location.reload();},300);}
     try{window.ssSignOut();}catch(e){}
     (function wait(){if(!user||Date.now()-t0>5000)finish();else setTimeout(wait,100);})();});
   };
@@ -10939,7 +11151,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
    if(cs0==null||cs0===baseC||base==null){if(stale){stale=false;lastSyncedAt=Date.now();broadcast();}return;}
    hydrate(uu,cs0).then(function(cs){
     if(!(user&&user.uid===uu)||reloading||pushing||loadedUid!==uu||acked!==base)return;   /* review D-7: a push landed meanwhile; the next change event decides */
-    if(cs===base){ackedCloud=cs0;if(stale){stale=false;lastSyncedAt=Date.now();broadcast();}return;}
+    if(cs===base){ackedCloud=cs0;setBase(uu,cs0,base);if(stale){stale=false;lastSyncedAt=Date.now();broadcast();}return;}
     stale=false;syncLog("another device changed the cloud copy; bringing it in");
     try{noteFor(uu,base,false);}catch(e){}
     unwatch();loadedUid="";last="";settle(user,cs,cs0);
