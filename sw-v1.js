@@ -1,18 +1,22 @@
-/* Sheetmancer service worker (v93 2026-10-29: cache bump for Release B; logic unchanged. v89 2026-10-28: cache bump, feedback ?v=89; logic unchanged. v88 2026-10-28: cache bump; feedback script URL versioned; logic unchanged. v85 2026-10-27: cache bump for the portrait-sync fix, DS-05; logic unchanged. v80: Candlelit Table + Arcane Violet theme art precached, 2026-10-26; logic unchanged since v79).
-   - App page (/ and /index.html): network first, but if the network has not answered in 2.5 s the saved
+/* Sheetmancer service worker (v94 2026-10-29, Release C: theme art cache first, only the default theme's art precached, no double
+   first download, 1.2 s race timer; S14 / R4-03, R4-04, R4-05. v93 2026-10-29: cache bump for Release B; logic unchanged. v89 2026-10-28: cache bump, feedback ?v=89; logic unchanged. v88 2026-10-28: cache bump; feedback script URL versioned; logic unchanged. v85 2026-10-27: cache bump for the portrait-sync fix, DS-05; logic unchanged. v80: Candlelit Table + Arcane Violet theme art precached, 2026-10-26; logic unchanged since v79).
+   - App page (/ and /index.html): network first, but if the network has not answered in 1.2 s the saved
      copy opens at once and the network answer refreshes the saved copy for next time. Only a real
      (200) HTML answer for the app page is ever saved as the app.
    - Every other page (about, privacy, delete-account, press, /__/ sign-in pages) is left to the network
      and never saved as the app, so an offline launch always opens the app.
-   - Fonts, icons, manifest and the pinned Firebase SDK files: cache first (they never change at a URL).
+   - Fonts, icons, manifest, theme art (studio/*.webp) and the pinned Firebase SDK files: cache first (they never
+     change at a URL; a release bumps the cache name). Only the default theme's art is precached; the others are
+     saved the first time they are used.
    - Update cleanup deletes only old sheetmancer-shell-* caches; nothing else in Cache Storage is touched. */
-const CACHE='sheetmancer-shell-v93';
+const CACHE='sheetmancer-shell-v94';
 const PREFIX='sheetmancer-shell-';
 const FB='https://www.gstatic.com/firebasejs/10.12.2/';
 const STATIC=['./manifest.json','./digirune-feedback.js?v=89','./digirune-keepawake.js','./icon-192.png','./icon-512.png','./icon-192-maskable.png','./icon-512-maskable.png','./apple-touch-icon.png',
  './fonts/cinzel-latin-400-normal.woff2','./fonts/cinzel-latin-700-normal.woff2','./fonts/cormorant-garamond-latin-700-normal.woff2',
  './fonts/eb-garamond-latin-400-normal.woff2','./fonts/eb-garamond-latin-600-normal.woff2','./fonts/eb-garamond-latin-700-normal.woff2','./fonts/eb-garamond-latin-400-italic.woff2',
- './studio/table-plate.webp','./studio/candle-bokeh.webp','./studio/splash-whirlwind.webp','./studio/room-violet.webp','./studio/room-violet-plate.webp','./studio/room-neon.webp','./studio/room-neon-plate.webp','./studio/room-iron.webp','./studio/room-iron-plate.webp','./studio/room-verdant.webp','./studio/room-verdant-plate.webp','./studio/room-frost.webp','./studio/room-frost-plate.webp','./studio/room-gold.webp','./studio/room-gold-plate.webp','./studio/room-parch.webp','./studio/room-parch-plate.webp','./studio/room-paper.webp','./studio/room-paper-plate.webp'];
+ /* v94 (R4-03): only the default theme's art (Candlelit Table); other themes' art is saved when first used */
+ './studio/table-plate.webp','./studio/candle-bokeh.webp','./studio/splash-whirlwind.webp'];
 const SDK=[FB+'firebase-app.js',FB+'firebase-auth.js',FB+'firebase-firestore.js'];
 const APP_URL=new URL('./index.html',self.location).href;
 function isAppPage(u){try{var x=new URL(u);if(x.origin!==self.location.origin)return false;var base=new URL('./',self.location).pathname;return x.pathname===base||x.pathname===base+'index.html';}catch(_){return false;}}
@@ -22,7 +26,9 @@ self.addEventListener('install',function(e){
   self.skipWaiting();
   e.waitUntil((async function(){
     const c=await caches.open(CACHE);
-    try{const r=await fetch(new Request('./index.html',{cache:'reload'}));if(isHtml(r)){await c.put(APP_URL,r.clone());await c.put(new URL('./',self.location).href,r);}}catch(_){}
+    /* v94 (R4-05): no cache:'reload', and the same address the open page came from, so the browser's own copy answers */
+    let src='./index.html';try{const cs=await self.clients.matchAll({type:'window',includeUncontrolled:true});for(const w of cs){if(isAppPage(w.url)){src=w.url;break;}}}catch(_){}
+    try{const r=await fetch(src);if(isHtml(r)){await c.put(APP_URL,r.clone());await c.put(new URL('./',self.location).href,r);}}catch(_){}
     try{await c.addAll(STATIC);}catch(_){}
     for(const u of SDK){try{await c.add(new Request(u,{mode:'cors',credentials:'omit'}));}catch(_){}}
   })());
@@ -42,7 +48,7 @@ self.addEventListener('fetch',function(e){
       const net=fetch(req).then(function(res){if(isHtml(res)){var keep=res.clone();e.waitUntil(saveApp(keep));}return res;});
       const saved=async function(){const c=await caches.open(CACHE);return (await c.match(APP_URL))||(await c.match(new URL('./',self.location).href));};
       let timer;
-      const slow=new Promise(function(res){timer=setTimeout(function(){res('slow');},2500);});
+      const slow=new Promise(function(res){timer=setTimeout(function(){res('slow');},1200);   /* v94 (R4-04) */});
       try{
         const first=await Promise.race([net.then(function(r){return {r:r};},function(err){return {err:err};}),slow]);
         clearTimeout(timer);
@@ -56,12 +62,14 @@ self.addEventListener('fetch',function(e){
   }
   var u;try{u=new URL(url);}catch(_){return;}
   var same=u.origin===self.location.origin;
-  var cacheable=(same&&(/\/fonts\/[^/]+\.woff2$/.test(u.pathname)||/\/(manifest\.json|icon-[^/]+\.png|apple-touch-icon\.png|digirune-(feedback|keepawake)\.js)$/.test(u.pathname)))||url.indexOf(FB)===0||/^fonts\.(googleapis|gstatic)\.com$/.test(u.host);
+  var cacheable=(same&&(/\/fonts\/[^/]+\.woff2$/.test(u.pathname)||/\/studio\/[^/]+\.webp$/.test(u.pathname)||   /* v94 (R4-03): theme art */
+    /\/(manifest\.json|icon-[^/]+\.png|apple-touch-icon\.png|digirune-(feedback|keepawake)\.js)$/.test(u.pathname)))||url.indexOf(FB)===0||/^fonts\.(googleapis|gstatic)\.com$/.test(u.host);
   if(!cacheable)return;   /* everything else goes straight to the network */
   e.respondWith(caches.match(req).then(function(hit){
     if(hit)return hit;
     return fetch(req).then(function(res){
-      if(res&&(res.ok||res.type==='opaque')){var copy=res.clone();caches.open(CACHE).then(function(c){c.put(req,copy);});}
+      if(res&&((res.ok&&res.status===200)||res.type==='opaque')){var copy=res.clone();   /* v94: only real 200 answers (never a 206 part) */
+       caches.open(CACHE).then(function(c){c.put(req,copy);});}
       return res;
     });
   }));
