@@ -1,4 +1,5 @@
-/* DigiRune Studios: "Report a problem or suggest an idea" form. Version 1.2.0 (2026-10-28)
+/* DigiRune Studios: "Report a problem or suggest an idea" form. Version 1.2.1 (2026-10-28)
+   1.2.1: fine print says the email is used to reply (notes themselves may be read with AI help when aiNotice is set).
    1.2.0: optional aiNotice: '<text>' in DIGIRUNE_FEEDBACK shows a checkbox with that text; Send waits for it
    (Apple 5.1.2(i)). Apps that do not set it see no change. The form now sets its own color-scheme.
    1.1.1: the form owns one history step (Android Back closes the form, not the panel under it) and
@@ -103,7 +104,7 @@
     var c = cfg();
     var to = c.fallbackEmail || 'will@digirunestudios.com';
     var subj = (c.app || 'DigiRune app') + ': a problem or an idea';
-    var body = 'App: ' + (c.app || '') + ' ' + (c.version || '') + '\n' + (c.aiNotice ? 'Note: emailed notes may also be read with help from an AI service (Anthropic).\n' : '') + '\n' + (text || 'What happened or what would help:\n');
+    var body = 'App: ' + (c.app || '') + ' ' + (c.version || '') + '\n' + (c.aiNotice ? 'Note: emailed notes may be read with help from an AI service (Anthropic).\n' : '') + '\n' + (text || 'What happened or what would help:\n');
     return 'mailto:' + to + '?subject=' + encodeURIComponent(subj) + '&body=' + encodeURIComponent(body);
   }
   function ready() { var c = cfg(); return !!(c.endpoint && c.siteKey && c.app); }
@@ -188,7 +189,7 @@
       aiHint,
       tsBox, msg,
       el('div', { class: 'row' }, [cancel, send]),
-      el('p', { class: 'fine', text: 'We only use your email to answer this note. No account needed.' })
+      el('p', { class: 'fine', text: 'We only use your email to reply to this note. No account needed.' })
     ]);
     var sheet = el('div', { class: 'drfb', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'drfb-title' }, [title, form]);
     var back = el('div', { class: 'drfb-back' }, [sheet]);
@@ -313,5 +314,5 @@
     show({ kind: t.getAttribute('data-feedback-kind') || undefined });
   });
 
-  window.DigiRuneFeedback = { open: show, close: close, mailto: mailtoHref, version: '1.2.0' };
+  window.DigiRuneFeedback = { open: show, close: close, mailto: mailtoHref, version: '1.2.1' };
 })();
