@@ -53,6 +53,94 @@
   ]
 }
 </script>
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@type": "FAQPage",
+ "mainEntity": [
+  {
+   "@type": "Question",
+   "name": "What does Sheetmancer do?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "You take photos of your paper character (the character sheet plus the spell lists, charts, gear pages, backstory and notes that go with it) and Sheetmancer reads them into one editable Character Hub on your phone or tablet. Up to 10 pages per scan, typed or handwritten."
+   }
+  },
+  {
+   "@type": "Question",
+   "name": "Does it work with my game?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "Yes, if your character is on paper. Sheetmancer works with any tabletop RPG and any edition, including small-press games, older editions and homebrew, because it reads the character in front of it instead of forcing a template. Your game's own words stay as written: Hull Integrity stays Hull Integrity, Sanity stays Sanity."
+   }
+  },
+  {
+   "@type": "Question",
+   "name": "Can it read handwriting?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "Usually, yes. Typed, printed, filled-in PDF and handwritten pages all work, and a mix is fine. Clear handwriting reads well; very faint pencil or crowded margins are where mistakes come from, so glance over the result and fix a field or two, the same way you would proofread a photocopy."
+   }
+  },
+  {
+   "@type": "Question",
+   "name": "How many pages can it scan?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "Up to 10 pages of one character in a single Character Scan, so a full spellcaster with several pages of spells fits in one go. Found a stray page later? Add it to the character you already have."
+   }
+  },
+  {
+   "@type": "Question",
+   "name": "How much does Sheetmancer cost?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "Sheetmancer is a one-time purchase with no ads and no subscription. It includes three Character Scans of up to 10 pages each. Extra scans are a one-time buy too, singly or in a five-pack."
+   }
+  },
+  {
+   "@type": "Question",
+   "name": "Is it on iPhone and Android?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "Yes. Sheetmancer is on the App Store for iPhone and iPad and on Google Play for Android phones and tablets. Sign in with Apple or Google and your characters sync across your devices."
+   }
+  },
+  {
+   "@type": "Question",
+   "name": "Do I need the internet?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "Only to scan. Viewing and editing your saved characters, the Session Journal and the Dice Library all work offline."
+   }
+  },
+  {
+   "@type": "Question",
+   "name": "Does it use AI? Will it change my character?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "A machine-vision model reads the text on your photos and places it into editable fields. It only reads what is on your paper: it does not invent stats, rules, art or backstory, and every field is yours to edit afterwards."
+   }
+  },
+  {
+   "@type": "Question",
+   "name": "Can I delete my account and data?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "Yes, from inside the app at any time. Deleting your account removes your characters and everything tied to it. The privacy policy explains exactly how your data is handled."
+   }
+  },
+  {
+   "@type": "Question",
+   "name": "Can it scan the whole party at once?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "No. One scan is one character, so each player scans their own."
+   }
+  }
+ ]
+}
+</script>
 <meta name="theme-color" content="#0b0806">
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
@@ -161,6 +249,16 @@
     .card > span{font-size:12px}
   }
   @media(prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}}
+
+  /* FAQ (2026-10-29, Foundation M1: plain answers, the way people ask) */
+  .faq{background:linear-gradient(180deg,var(--bg2) 0%,var(--bg) 100%);border-top:1px solid var(--line)}
+  .qas{max-width:760px;margin:0 auto}
+  .qa{border-bottom:1px solid var(--line);padding:4px 0}
+  .qa summary{cursor:pointer;list-style:none;font-family:var(--disp);font-weight:700;color:var(--cream);font-size:clamp(19px,2.4vw,22px);padding:14px 36px 14px 0;position:relative}
+  .qa summary::-webkit-details-marker{display:none}
+  .qa summary:after{content:"+";position:absolute;right:6px;top:10px;color:var(--gold);font-family:var(--sans);font-size:24px;font-weight:300}
+  .qa[open] summary:after{content:"\2212"}
+  .qa p{margin:0 0 16px;font-size:16px;color:var(--body)}
 </style>
 <noscript><style>.reveal{opacity:1;transform:none}</style></noscript>
 </head>
@@ -277,6 +375,28 @@
   </div>
 </section>
 
+<section class="band faq">
+  <div class="wrap">
+    <div class="head reveal">
+      <p class="kick">Questions players ask</p>
+      <h2>The straight answers.</h2>
+      <div class="rule"><i></i></div>
+    </div>
+    <div class="qas reveal">
+      <details class="qa"><summary>What does Sheetmancer do?</summary><p>You take photos of your paper character (the character sheet plus the spell lists, charts, gear pages, backstory and notes that go with it) and Sheetmancer reads them into one editable Character Hub on your phone or tablet. Up to 10 pages per scan, typed or handwritten.</p></details>
+      <details class="qa"><summary>Does it work with my game?</summary><p>Yes, if your character is on paper. Sheetmancer works with any tabletop RPG and any edition, including small-press games, older editions and homebrew, because it reads the character in front of it instead of forcing a template. Your game&#x27;s own words stay as written: Hull Integrity stays Hull Integrity, Sanity stays Sanity.</p></details>
+      <details class="qa"><summary>Can it read handwriting?</summary><p>Usually, yes. Typed, printed, filled-in PDF and handwritten pages all work, and a mix is fine. Clear handwriting reads well; very faint pencil or crowded margins are where mistakes come from, so glance over the result and fix a field or two, the same way you would proofread a photocopy.</p></details>
+      <details class="qa"><summary>How many pages can it scan?</summary><p>Up to 10 pages of one character in a single Character Scan, so a full spellcaster with several pages of spells fits in one go. Found a stray page later? Add it to the character you already have.</p></details>
+      <details class="qa"><summary>How much does Sheetmancer cost?</summary><p>Sheetmancer is <span data-sale="$2.99 (a limited-time price; regular price $9.99)">$9.99</span>, one time, with no ads and no subscription. That includes three Character Scans of up to 10 pages each. Extra scans are a one-time buy too, singly or in <span class="nw">a five-pack.</span></p></details>
+      <details class="qa"><summary>Is it on iPhone and Android?</summary><p>Yes. Sheetmancer is on App Store &amp; Google Play, for iPhone, iPad and Android phones and tablets. Sign in with Apple or Google and your characters sync across your devices.</p></details>
+      <details class="qa"><summary>Do I need the internet?</summary><p>Only to scan. Viewing and editing your saved characters, the Session Journal and the Dice Library all work offline.</p></details>
+      <details class="qa"><summary>Does it use AI? Will it change my character?</summary><p>A machine-vision model reads the text on your photos and places it into editable fields. It only reads what is on your paper: it does not invent stats, rules, art or backstory, and every field is yours to edit afterwards.</p></details>
+      <details class="qa"><summary>Can I delete my account and data?</summary><p>Yes, from inside the app at any time (<a href="./delete-account.html">how to delete</a>). Deleting your account removes your characters and everything tied to it. The <a href="./privacy.html">privacy policy</a> explains exactly how your data is handled.</p></details>
+      <details class="qa"><summary>Can it scan the whole party at once?</summary><p>No. One scan is one character, so each player scans their own.</p></details>
+    </div>
+  </div>
+</section>
+
 <section class="guide">
   <div class="wrap">
     <p class="kick">Guide</p>
@@ -348,6 +468,7 @@
   if(now>=start && now<end){
     var h=document.getElementById('sale-hero'); if(h) h.hidden=false;
     var c=document.getElementById('price-card'); if(c) c.innerHTML='<b>$2.99</b><span>Limited-time price. Regular price $9.99. No ads, no subscriptions.</span>';
+    var e=document.querySelectorAll('[data-sale]'); for(var i=0;i<e.length;i++) e[i].innerHTML=e[i].getAttribute('data-sale');   /* 2026-10-29: the FAQ price line */
   }
 }catch(e){}})();
 /* Campaign pass-through: about.html?utm_source=reddit -> App Store ct=sm-reddit, Play utm_source=sm-reddit */
