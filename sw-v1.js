@@ -1,4 +1,4 @@
-/* Sheetmancer service worker (v95 2026-10-30: cache bump for the v95 release; logic unchanged. v94 2026-10-29, Release C: theme art cache first, only the default theme's art precached, no double
+/* Sheetmancer service worker (v96 2026-10-30: cache bump for the v96 release; logic unchanged. v95 2026-10-30: cache bump for the v95 release; logic unchanged. v94 2026-10-29, Release C: theme art cache first, only the default theme's art precached, no double
    first download, 1.2 s race timer; S14 / R4-03, R4-04, R4-05. v93 2026-10-29: cache bump for Release B; logic unchanged. v89 2026-10-28: cache bump, feedback ?v=89; logic unchanged. v88 2026-10-28: cache bump; feedback script URL versioned; logic unchanged. v85 2026-10-27: cache bump for the portrait-sync fix, DS-05; logic unchanged. v80: Candlelit Table + Arcane Violet theme art precached, 2026-10-26; logic unchanged since v79).
    - App page (/ and /index.html): network first, but if the network has not answered in 1.2 s the saved
      copy opens at once and the network answer refreshes the saved copy for next time. Only a real
@@ -9,7 +9,7 @@
      change at a URL; a release bumps the cache name). Only the default theme's art is precached; the others are
      saved the first time they are used.
    - Update cleanup deletes only old sheetmancer-shell-* caches; nothing else in Cache Storage is touched. */
-const CACHE='sheetmancer-shell-v95';
+const CACHE='sheetmancer-shell-v96';
 const PREFIX='sheetmancer-shell-';
 const FB='https://www.gstatic.com/firebasejs/10.12.2/';
 const STATIC=['./manifest.json','./digirune-feedback.js?v=89','./digirune-keepawake.js','./icon-192.png','./icon-512.png','./icon-192-maskable.png','./icon-512-maskable.png','./apple-touch-icon.png',
