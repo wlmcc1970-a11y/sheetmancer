@@ -3,7 +3,7 @@
 <head>
 <style>html{background:#0A0A0C}</style>
 <style>:root{--fb-accent:#8a6a2f;--fb-accent-ink:#ffffff}</style>
-<script>window.SS_BUILD='v94';window.DIGIRUNE_FEEDBACK={app:'Sheetmancer',version:'build '+window.SS_BUILD,endpoint:'https://digirune-feedback.will-6d6.workers.dev/report',siteKey:'0x4AAAAAAFW88K0K9FyRmEzA',fallbackEmail:'will@digirunestudios.com',aiNotice:'I understand my note may be read with help from an AI service (Anthropic).'};</script>
+<script>window.SS_BUILD='v95';window.DIGIRUNE_FEEDBACK={app:'Sheetmancer',version:'build '+window.SS_BUILD,endpoint:'https://digirune-feedback.will-6d6.workers.dev/report',siteKey:'0x4AAAAAAFW88K0K9FyRmEzA',fallbackEmail:'will@digirunestudios.com',aiNotice:'I understand my note may be read with help from an AI service (Anthropic).'};</script>
 <script src="digirune-feedback.js?v=89"></script>
 
 <!-- Sheetmancer (formerly SheetSnap) v1.1.0-chassis — DigiRune Studios. Self-contained PWA: precompiled React (no Babel/CDN), data-URI manifest + icons, offline service worker (sw-v1.js), install prompt, safe-area + back-button. Built 2026-06-06. -->
@@ -27,10 +27,15 @@
 }catch(_){}})();</script>
 <script>/* v94 (S10, P4-5): "New in this update" goes to returning customers only. Decided ONCE, before the app writes
    anything: a device that already used Sheetmancer gets "c94-pending"; a first-ever run is marked seen. */
-(function(){try{var K="ss-whatsnew";if(localStorage.getItem(K))return;var ret=false;
+(function(){try{var K="ss-whatsnew",w=localStorage.getItem(K);
+ /* v95: "c94" saw the v94 card; "c94-pending" never did. Both are returning customers. */
+ if(w==="c95"||w==="c95-pending"||w==="c95-pending94")return;
+ if(w==="c94"){localStorage.setItem(K,"c95-pending");return;}
+ if(w){localStorage.setItem(K,"c95-pending94");return;}
+ var ret=false;
  ["ss-chars","ss-fallen"].forEach(function(k){var v=localStorage.getItem(k);if(v&&v!=="[]"&&v!=="null")ret=true;});
  ["ss-auth","ss-scanCount","ss-ai-ok","ss-theme","ss-nav"].forEach(function(k){if(localStorage.getItem(k)!=null)ret=true;});
- localStorage.setItem(K,ret?"c94-pending":"c94");}catch(_){}})();</script>
+ localStorage.setItem(K,ret?"c95-pending94":"c95");}catch(_){}})();</script>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0A0A0C">
 <meta name="google" content="notranslate">
@@ -3288,6 +3293,12 @@ function SsPageSheet({ T, page, onClose }) {
   }, "Close")), failed ? /*#__PURE__*/React.createElement("div", { style: { padding: 28, textAlign: "center", color: T.textSoft, fontSize: 15, lineHeight: 1.6 } }, "This page needs a connection. You can also read it at sheetmancer.digirunestudios.com/" + (page === "delete" ? "delete-account.html" : "privacy.html") + ".")
     : /*#__PURE__*/React.createElement("iframe", { src: src, title: title, onError: () => setFailed(true), onLoad: e => { try { const doc = e.target.contentDocument; doc.querySelectorAll("a[href]").forEach(a => { const u = new URL(a.getAttribute("href"), doc.baseURI); if (u.origin !== location.origin || u.protocol === "mailto:") { a.target = "_blank"; a.rel = "noopener"; } }); } catch (_) {} }, style: { flex: 1, width: "100%", border: "none", background: "#fff" } })), document.body);
 }
+/* v95: what returning customers will notice in v95. Wording for Will to approve. */
+const SS_WHATS_NEW_95 = [
+  "Photos you remove from a character's Photo Album now stay removed, even if you close the app right away.",
+  "Newly scanned characters start with a tidier layout.",
+  "A short tip on each newly scanned character shows how to move, rename and edit anything."
+];
 /* v94 (P4-5): what returning customers will notice in Releases B and C. Wording for Will to approve. */
 const SS_WHATS_NEW = [
   "Bigger labels, quick minus and plus buttons for numbers, and tick boxes for death saves.",
@@ -3740,8 +3751,9 @@ function HomeScreen({
   const [signInSheet, setSignInSheet] = useState(false);
   const [goneSheet, setGoneSheet] = useState(false);   /* v94 (R3-10) */
   /* v94 (P4-5): shown once, to returning customers only (see the early script); stays up this session until dismissed */
-  const [whatsNew, setWhatsNew] = useState(() => { try { return !!window.__ssWnOpen || localStorage.getItem("ss-whatsnew") === "c94-pending"; } catch (_) { return false; } });
-  useEffect(() => { if (whatsNew) { window.__ssWnOpen = true; try { localStorage.setItem("ss-whatsnew", "c94"); } catch (_) {} } }, [whatsNew]);
+  const [whatsNew, setWhatsNew] = useState(() => { try { const w = localStorage.getItem("ss-whatsnew"); if (w === "c95-pending94") window.__ssWn94 = true; return !!window.__ssWnOpen || w === "c95-pending" || w === "c95-pending94"; } catch (_) { return false; } });   /* v95 */
+  useEffect(() => { if (whatsNew) { window.__ssWnOpen = true; try { localStorage.setItem("ss-whatsnew", "c95"); } catch (_) {} } }, [whatsNew]);
+  const wnItems = SS_WHATS_NEW_95.concat(window.__ssWn94 ? SS_WHATS_NEW : []);   /* v95 */
   const closeWhatsNew = () => { window.__ssWnOpen = false; setWhatsNew(false); };
   const grantBusy = useSsGrantBusy();
   const pillKnown = !!(ssauth.signedIn && ssBal && typeof ssBal.remaining === "number" && !window.__ssWelcomeBusy && !grantBusy);
@@ -4032,7 +4044,7 @@ function HomeScreen({
     role: "note", "aria-label": "New in this update", className: "smx-pretty",
     style: { position: "relative", zIndex: 1, margin: "0 0 10px", padding: "14px 16px 8px", borderRadius: 14, border: "1px solid " + T.accent, background: T.accentFaint, color: T.text, fontSize: 14.5, lineHeight: 1.5 }
   }, /*#__PURE__*/React.createElement("div", { style: { fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, fontSize: 15.5, color: T.accent, marginBottom: 6, textAlign: "center" } }, "New in this update"),
-    /*#__PURE__*/React.createElement("ul", { style: { margin: 0, paddingLeft: 20 } }, SS_WHATS_NEW.map((t, i) => /*#__PURE__*/React.createElement("li", { key: i, style: { margin: "0 0 4px" } }, t))),
+    /*#__PURE__*/React.createElement("ul", { style: { margin: 0, paddingLeft: 20 } }, wnItems.map((t, i) => /*#__PURE__*/React.createElement("li", { key: i, style: { margin: "0 0 4px" } }, t))),
     /*#__PURE__*/React.createElement("div", { style: { textAlign: "center" } }, /*#__PURE__*/React.createElement("button", { onClick: closeWhatsNew, className: "ss-press", style: { minHeight: 44, minWidth: 96, padding: "8px 18px", margin: "4px 0 0", borderRadius: 10, border: "1px solid " + T.borderLight, background: "none", color: T.text, fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, fontSize: 13.5, cursor: "pointer" } }, "Got it"))), /*#__PURE__*/React.createElement("div", {
     className: "smx-home-card",
     style: {
@@ -5345,6 +5357,23 @@ function categorizeV2(sec) {
   if (["core stat", "main stat", "basic stat", "key stat", "stats", "summary", "vitals", "statistics", "status"].some(function (w) { return s.indexOf(w) >= 0; })) return "vitals";
   return v1;
 }
+/* v95 (105b): used only for characters scanned on v95 or later (layoutV 3). The v78 sorter decides first, so every
+   existing word keeps its group; only a section it would put in "More" is checked for these common titles. */
+var CAT_ORDER_V3 = ["identity", "vitals", "inventory", "combat", "skills", "magic", "notes", "other"];
+/* Whole titles only (review round 2): "Class Abilities", "Companion Profile", "Mount Details" and the like stay in More. */
+var SS_V3_ID1 = /^(?:character|personal) (?:record|sheet|overview|profile|details|basics|info|information)$/;
+var SS_V3_VIT = /^(?:abilities|ability|stats|attributes)$/;
+var SS_V3_ID2 = /^(?:overview|profile|details|basics)$/;
+function categorizeV3(sec) {
+  var v2 = categorizeV2(sec);
+  if (v2 !== "other") return v2;
+  var t = ssNormTitle(sec && sec.title);
+  if (SS_V3_ID1.test(t)) return "identity";
+  if (SS_V3_VIT.test(t)) return "vitals";
+  if (SS_V3_ID2.test(t)) return "identity";
+  return v2;
+}
+function ssLayoutV(o) { return (o && typeof o.layoutV === "number") ? o.layoutV : 0; }
 /* v94 (S15 / P3-4, P3-8): spell-level sections to Powers, each system's key stats to Vitals / Combat. */
 var SS_SPELLLV = /^(?:spells? )?(?:(?:[1-9](?:st|nd|rd|th)|first|second|third|fourth|fifth|sixth|seventh|eighth|ninth) ?(?:level|lvl|circle|rank)|(?:level|lvl|circle|rank) ?[1-9])(?: spells?)?$/;
 var SS_KEYSTAT = { sanity: "vitals", san: "vitals", "sanity points": "vitals", luck: "vitals", "luck points": "vitals", "magic points": "vitals", "magic point": "vitals", mp: "vitals", "hero points": "vitals", "hero point": "vitals", focus: "vitals", "focus points": "vitals", "focus point": "vitals", "focus pool": "vitals", perception: "combat" };
@@ -5380,7 +5409,7 @@ function ssFreezeCats(n) {
     n.sections.forEach(function (s, i) { if (s && ks[i] !== ((s.catKey) || categorize(s))) s.catKey = ks[i]; });
   } catch (e) {}
 }
-function ssStampCats(sections, ctx) { var all = (ctx || []).concat(sections || []); return (sections || []).map(function (s) { return (s && !s.catKey) ? Object.assign({}, s, { catKey: ssRouteV3(s, all) || categorizeV2(s) }) : s; }); }
+function ssStampCats(sections, ctx, lv) { var all = (ctx || []).concat(sections || []); var cat = (lv >= 3) ? categorizeV3 : categorizeV2;   /* v95 (105b) */ return (sections || []).map(function (s) { return (s && !s.catKey) ? Object.assign({}, s, { catKey: ssRouteV3(s, all) || cat(s) }) : s; }); }
 function buildGroups(sections, catOrder, groups, hub) {
   groups = groups || [];
   var gLabel = {}, gIcon = {};
@@ -5410,7 +5439,7 @@ function buildGroups(sections, catOrder, groups, hub) {
   });
   var order = [];
   (catOrder || []).forEach(function (k) { if (map[k] && order.indexOf(k) < 0) order.push(k); });
-  CAT_ORDER.forEach(function (k) { if (map[k] && order.indexOf(k) < 0) order.push(k); });
+  (ssLayoutV(hub) >= 3 ? CAT_ORDER_V3 : CAT_ORDER).forEach(function (k) { if (map[k] && order.indexOf(k) < 0) order.push(k); });   /* v95 (105b) */
   Object.keys(map).forEach(function (k) { if (order.indexOf(k) < 0) order.push(k); });
   var cats = order.map(function (k) {
     return map[k];
@@ -7640,7 +7669,8 @@ function Toast({
       display: "flex",
       alignItems: "center",
       justifyContent: "space-between",
-      boxShadow: "0 6px 22px rgba(0,0,0,0.5)"
+      boxShadow: "0 6px 22px rgba(0,0,0,0.5)",
+      pointerEvents: "none"   /* v95 (item 108): taps on the message reach the photo or button under it */
     }
   }, /*#__PURE__*/React.createElement("span", {
     style: {
@@ -7664,7 +7694,8 @@ function Toast({
       gap: 5,
       minHeight: 44,
       padding: "0 10px",
-      flexShrink: 0
+      flexShrink: 0,
+      pointerEvents: "auto"
     }
   }, "↶ Undo"));
 }
@@ -7743,7 +7774,7 @@ function AlbumPage({ T, charId, signedIn }) {
       mounted.current = false;
       if (undoTimer.current) clearTimeout(undoTimer.current);
       /* a delete still inside its Undo window is committed on the way out, so a removed photo never returns */
-      if (delRef.current && window.ssAlbumDelete) { try { window.ssAlbumDelete(delRef.current.id); } catch (_) {} delRef.current = null; }
+      if (delRef.current && window.ssAlbumDelete) { const _id = delRef.current.id; if (!ssPendDelSameUid(_id)) { ssPendLive.delete(String(_id)); delRef.current = null; return; } try { Promise.resolve(window.ssAlbumDelete(_id)).then(function (r) { ssPendLive.delete(String(_id)); if (r && r.ok) ssPendDelDone(_id); }, function () { ssPendLive.delete(String(_id)); }); } catch (_) { ssPendLive.delete(String(_id)); } delRef.current = null; }   /* v95 (item 108) */
     };
   }, []);
   const load = function () {
@@ -7751,13 +7782,14 @@ function AlbumPage({ T, charId, signedIn }) {
     setLoadErr(false);
     window.ssAlbumList(charId).then(function (res) {
       if (!mounted.current) return;
-      if (res && res.ok) setPhotos(res.photos || []);
+      if (res && res.ok) { const gone = ssPendDelIds(); setPhotos((res.photos || []).filter(function (x) { return !gone[x.id]; })); ssPendDelDrain(); }   /* v95 (item 108) */
       else if (res && res.reason === "signin") setPhotos([]);
       else { setPhotos([]); setLoadErr(true); }
     }, function () { if (mounted.current) { setPhotos([]); setLoadErr(true); } });
   };
   useEffect(function () {
     var cached = (signedIn && window.ssAlbumCacheGet) ? window.ssAlbumCacheGet(charId) : null;
+    if (cached != null) { var _gone = ssPendDelIds(); cached = cached.filter(function (x) { return x && !_gone[x.id]; }); }   /* v95 (item 108) */
     setPhotos(cached != null ? cached : null);
     load();
   }, [charId, signedIn]);
@@ -7807,6 +7839,10 @@ function AlbumPage({ T, charId, signedIn }) {
     setLightIdx(null);
     setPhotos(function (p) { return (p || []).filter(function (x) { return x.id !== rec.id; }); });
     if (undoTimer.current) clearTimeout(undoTimer.current);
+    /* v95 (item 108): the earlier remove still waiting on its Undo is committed now, never forgotten */
+    if (delRef.current && delRef.current.id !== rec.id) commitRemove(delRef.current);
+    ssPendGen[String(rec.id)] = (ssPendGen[String(rec.id)] || 0) + 1;   /* review round 3: an Undo restore already on its way for this photo is called off */
+    ssPendLive.add(String(rec.id)); ssPendDelAdd(rec.id);   /* v95 (item 108): survives the app being closed inside the Undo window */
     delRef.current = rec; setUndoRec(rec);
     undoTimer.current = setTimeout(function () { commitRemove(rec); }, 10000);   /* v94 (P1-07) */
     buzz(25);
@@ -7814,8 +7850,13 @@ function AlbumPage({ T, charId, signedIn }) {
   const commitRemove = function (rec) {
     if (delRef.current && delRef.current.id === rec.id) delRef.current = null;
     if (mounted.current) setUndoRec(function (c) { return c && c.id === rec.id ? null : c; });
-    Promise.resolve().then(function () { return window.ssAlbumDelete ? window.ssAlbumDelete(rec.id) : Promise.resolve({ ok: false }); }).then(function (res) {
+    if (!ssPendDelSameUid(rec.id)) { ssPendLive.delete(String(rec.id)); return; }   /* v95 (item 108): signed into another account meanwhile: left for that account's next start */
+    Promise.resolve().then(function () { return window.ssAlbumDelete ? window.ssAlbumDelete(rec.id) : Promise.resolve({ ok: false }); }).then(null, function () { return { ok: false }; }).then(function (res) {
+      ssPendLive.delete(String(rec.id));   /* v95 (item 108) */
+      if (res && res.ok) ssPendDelDone(rec.id);
+      else if (res && res.reason === "signin" && ssPendDelRead().some(function (x) { return x.id === String(rec.id); })) return;   /* signed out meanwhile: the entry stays for that account's next start, the photo stays hidden */
       if (!(res && res.ok) && mounted.current) {
+        ssPendDelDone(rec.id);   /* v95 (item 108): the photo is shown again, so it must never be deleted later */
         setPhotos(function (p) { if ((p || []).some(function (x) { return x.id === rec.id; })) return p; var n = (p || []).concat([rec]); n.sort(function (a, b) { return (a.ts || 0) - (b.ts || 0); }); return n; });
         ssShowToast("Couldn't remove that photo. Please try again.");
       }
@@ -7825,9 +7866,23 @@ function AlbumPage({ T, charId, signedIn }) {
     var rec = undoRec; if (!rec) return;
     if (undoTimer.current) clearTimeout(undoTimer.current);
     delRef.current = null; setUndoRec(null);
+    var _pe = ssPendDelRead().find(function (x) { return x.id === String(rec.id); }), _pu = window.ssAlbumUid ? window.ssAlbumUid() : null, _pg = ssPendGen[String(rec.id)] || 0;
+    ssPendLive.delete(String(rec.id)); ssPendDelDone(rec.id);   /* v95 (item 108) */
     setPhotos(function (p) { if ((p || []).some(function (x) { return x.id === rec.id; })) return p; var n = (p || []).concat([rec]); n.sort(function (a, b) { return (a.ts || 0) - (b.ts || 0); }); return n; });
+    /* v95 (review round 2): if the cloud copy is already gone (deleted from another copy of the app), put it back */
+    /* review round 3: only that one photo is read, from the server (offline or any error: nothing is written); skipped if
+       the photo was removed again since this Undo (generation), or its character is no longer on this device */
+    if (_pe && _pu && _pe.uid === _pu && window.ssAlbumExists && window.ssAlbumRestore && navigator.onLine !== false) { var _rc = rec.charId || charId, _ri = String(rec.id); try { Promise.resolve(window.ssAlbumExists(_ri)).then(function (r) { if (!(r && r.ok === true && r.exists === false)) return; if ((ssPendGen[_ri] || 0) !== _pg || ssPendLive.has(_ri) || ssPendDelRead().some(function (x) { return x.id === _ri; }) || navigator.onLine === false || (window.ssAlbumUid ? window.ssAlbumUid() : null) !== _pu || !ssAlbumKeyHere(_rc)) return; return window.ssAlbumRestore(Object.assign({}, rec, { charId: _rc })); }).catch(function () {}); } catch (_) {} }
     buzz(15);
   };
+  /* v95 (review round 2): a remove still inside its Undo window is committed when the app is hidden or closed, so other
+     devices see it gone without waiting for this phone to reopen the app */
+  const commitRef = useRef(null); commitRef.current = commitRemove;
+  useEffect(function () {
+    var onHide = function (e) { if (e.type !== "pagehide" && document.visibilityState !== "hidden") return; var r = delRef.current; if (!r) return; if (undoTimer.current) clearTimeout(undoTimer.current); try { commitRef.current(r); } catch (_) {} };
+    document.addEventListener("visibilitychange", onHide); window.addEventListener("pagehide", onHide);
+    return function () { document.removeEventListener("visibilitychange", onHide); window.removeEventListener("pagehide", onHide); };
+  }, []);
   const atCap = (photos || []).length >= CAP_CHAR;
   const sheetBtn = { display: "flex", alignItems: "center", gap: 12, width: "100%", padding: "14px 16px", marginBottom: 10, borderRadius: 12, border: "1px solid " + T.borderLight, background: T.accentFaint, color: T.text, fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, fontSize: 15, cursor: "pointer" };
   const header = /*#__PURE__*/React.createElement("div", { style: { textAlign: "center" } }, /*#__PURE__*/React.createElement("h2", { style: { fontSize: 20, fontWeight: 700, color: T.accent, fontFamily: "'Cinzel',Georgia,serif", letterSpacing: 2.5, textShadow: T.titleShadow } }, "Photo Album"), /*#__PURE__*/React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, width: "40%", margin: "10px auto 0" } }, /*#__PURE__*/React.createElement("div", { style: { flex: 1, height: 1, background: T.sectionRule } }), /*#__PURE__*/React.createElement("span", { style: { color: T.accent, fontSize: 10, opacity: 0.4 } }, T.ornChar), /*#__PURE__*/React.createElement("div", { style: { flex: 1, height: 1, background: T.sectionRule } })));
@@ -7908,6 +7963,20 @@ function ssCapInput(e, old0) {
   ssShowToast("A field holds up to 50,000 characters, so the rest wasn't added. Long text works best split over a few fields.", 7000);
   return v;
 }
+/* v95 (105a): characters just made from a scan that have not shown the "Make it yours" card yet (this device only). */
+const SS_FL = "ss-firstlook";
+const ssFlRead = () => { try { const a = JSON.parse(localStorage.getItem(SS_FL) || "[]"); return Array.isArray(a) ? a.filter(x => typeof x === "string" && x) : []; } catch (_) { return []; } };
+const ssFlAdd = cid => { if (!cid || typeof cid !== "string") return; const a = ssFlRead().filter(x => x !== cid); a.push(cid); try { localStorage.setItem(SS_FL, JSON.stringify(a.slice(-50))); } catch (_) {} };
+const ssFlHas = cid => !!cid && ssFlRead().indexOf(cid) >= 0;
+const ssFlDone = cid => { if (!cid) return; const a = ssFlRead(), b = a.filter(x => x !== cid); if (b.length === a.length) return; try { if (b.length) localStorage.setItem(SS_FL, JSON.stringify(b)); else localStorage.removeItem(SS_FL); } catch (_) {} };
+function FirstLookCard({ T, onDone }) {
+  return /*#__PURE__*/React.createElement("div", {
+    role: "note", "aria-label": "Make it yours", className: "smx-pretty ss-firstlook",
+    style: { position: "relative", zIndex: 1, width: "100%", maxWidth: 420, boxSizing: "border-box", margin: "0 auto 16px", padding: "16px 18px 12px", borderRadius: 14, border: "1.5px solid " + T.accent, background: T.cardGrad || ("linear-gradient(158deg," + T.surface + "," + T.accentFaint + ")"), boxShadow: T.cardShadow || "none", color: T.text, textAlign: "center" }
+  }, /*#__PURE__*/React.createElement("div", { style: { fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, fontSize: 18, lineHeight: 1.3, color: T.accent, letterSpacing: 0.3, margin: "0 0 6px" } }, "Make it yours"),
+    /*#__PURE__*/React.createElement("p", { style: { fontSize: 16, lineHeight: 1.5, color: T.text, margin: "0 0 10px" } }, "Want a different layout? You can easily move, rename and edit almost anything. Tap the ", /*#__PURE__*/React.createElement("b", { "aria-label": "three dots menu", style: { color: T.accent, fontWeight: 900, padding: "0 1px" } }, "\u22ee"), " on any section or field."),
+    /*#__PURE__*/React.createElement("button", { onClick: onDone, className: "ss-press v94-onmetal", style: { minHeight: 44, minWidth: 140, padding: "10px 22px", borderRadius: 12, border: "none", background: T.metalGrad || T.accent, color: T.bg, fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, fontSize: 15, letterSpacing: 0.4, cursor: "pointer", boxShadow: "0 3px 12px " + T.accentFaint } }, "Got it"));
+}
 function CharacterScreen({
   T,
   showArrangeIntro,
@@ -7949,7 +8018,10 @@ function CharacterScreen({
     return () => window.removeEventListener("keydown", h);
   }, [themeOpen]);
   const [arrangeIntro, setArrangeIntro] = useState(!!showArrangeIntro && !store.get("ss-seenArrangeIntro"));
-  const dismissArrange = () => { try { store.set("ss-seenArrangeIntro", true); } catch (_) {} setArrangeIntro(false); };
+  /* v95 (105a): the "Make it yours" card for a character just made from a scan */
+  const [firstLook, setFirstLook] = useState(() => !isSample && !isFallen && ssFlHas(character && character.cid));
+  const doneFirstLook = () => { ssFlDone(character && character.cid); setFirstLook(false); };
+  const dismissArrange = () => { try { store.set("ss-seenArrangeIntro", true); } catch (_) {} setArrangeIntro(false); if (firstLook) doneFirstLook(); };
   useEffect(() => { if (arrangeIntro) { try { store.set("ss-seenArrangeIntro", true); } catch (_) {} } }, [arrangeIntro]);
   const [undoStack, setUndoStack] = useState([]);
   const [verifyOnly, setVerifyOnly] = useState(false);
@@ -9006,7 +9078,7 @@ function CharacterScreen({
       gap: 4,
       animation: (smxNav.current.back ? "smxCatBack" : "ssCatIn") + " 0.26s ease"
     }
-  }, activeCat === null && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+  }, activeCat === null && /*#__PURE__*/React.createElement(React.Fragment, null, firstLook && !arrangeIntro && /*#__PURE__*/React.createElement(FirstLookCard, { T: T, onDone: doneFirstLook }) /* v95 (105a) */, /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       alignItems: "center",
@@ -9708,6 +9780,36 @@ class SsBoundary extends React.Component {
   componentDidCatch(e) { try { console.warn("Sheetmancer: a screen could not be drawn", e); } catch (_) {} try { localStorage.removeItem("ss-nav"); } catch (_) {} const f = this.props.onFail; setTimeout(function () { try { f && f(); } catch (_) {} }, 0); }
   render() { return this.state.err ? null : this.props.children; }
 }
+/* v95 (item 108): a Photo Album remove waits 10 s for Undo, and the cloud delete was kept only in memory, so closing the
+   app inside that window (or removing a second photo in it) brought the photo back. Each remove is now written here first
+   (photo id + account + time) and cleared on Undo, once the cloud delete succeeds, or when a failed delete shows the photo
+   again. Anything left is finished later for the same account only. Only ids the player removed are ever kept. */
+const SS_PD = "ss-album-pendel";
+const ssPendLive = new Set();   /* removes made in this run that are still waiting on Undo or on their cloud delete */
+const ssPendGen = Object.create(null);   /* review round 3: how many times each photo was removed in this run */
+const ssAlbumKeyHere = key => { try { return ["ss-chars", "ss-fallen"].some(k => { const a = JSON.parse(localStorage.getItem(k) || "[]"); return Array.isArray(a) && a.some(c => c && ((typeof c.albumOf === "string" && c.albumOf) || c.cid) === String(key)); }); } catch (_) { return false; } };   /* review round 3: the album's character is still on this device */
+const ssPendDelRead = () => { try { const a = JSON.parse(localStorage.getItem(SS_PD) || "[]"); return Array.isArray(a) ? a.filter(x => x && typeof x.id === "string" && x.id && typeof x.uid === "string" && x.uid && typeof x.at === "number" && isFinite(x.at)) : []; }   /* review round 3: malformed entries dropped */ catch (_) { return []; } };
+const ssPendDelWrite = a => { try { if (a.length) localStorage.setItem(SS_PD, JSON.stringify(a.slice(-200))); else localStorage.removeItem(SS_PD); } catch (_) {} };
+const ssPendDelAdd = id => { const uid = window.ssAlbumUid ? window.ssAlbumUid() : null; if (!id || !uid) return; const a = ssPendDelRead().filter(x => !(x.id === String(id) && x.uid === uid)); a.push({ id: String(id), uid: uid, at: Date.now() }); ssPendDelWrite(a); };
+const ssPendDelDone = id => { if (!id) return; const a = ssPendDelRead(); const b = a.filter(x => x.id !== String(id)); if (b.length !== a.length) ssPendDelWrite(b); };
+const ssPendDelSameUid = id => { const e = ssPendDelRead().find(x => x.id === String(id)); if (!e) return true; const uid = window.ssAlbumUid ? window.ssAlbumUid() : null; return !!uid && e.uid === uid; };   /* no entry (storage full or blocked): as before; signed out: kept for later (review round 2) */
+const ssPendDelIds = () => { const uid = window.ssAlbumUid ? window.ssAlbumUid() : null, o = {}; if (uid) ssPendDelRead().forEach(x => { if (x.uid === uid) o[x.id] = 1; }); return o; };
+let ssPendDelBusy = false;
+const SS_PD_GRACE = 120000;   /* review round 2: another open copy of the app may still be offering Undo for a young entry */
+const ssPendDelDrain = () => {
+  if (ssPendDelBusy || !window.ssAlbumDelete || navigator.onLine === false) return;
+  const a0 = ssPendDelRead(); if (!a0.length) return;
+  const old = a0.filter(x => Date.now() - (x.at || 0) > 30 * 86400000); if (old.length) ssPendDelWrite(a0.filter(x => old.indexOf(x) < 0));   /* too old: given up */
+  const uid = window.ssAlbumUid ? window.ssAlbumUid() : null; if (!uid) return;
+  const now = Date.now();
+  const due = ssPendDelRead().filter(x => x.uid === uid && !ssPendLive.has(x.id) && Math.abs(now - (x.at || 0)) >= SS_PD_GRACE);   /* never one the player can still undo (here or in another open copy), or one already on its way */
+  if (!due.length) return; ssPendDelBusy = true;
+  (async () => { for (const x of due) { try { if ((window.ssAlbumUid ? window.ssAlbumUid() : null) !== x.uid || ssPendLive.has(x.id) || !ssPendDelRead().some(y => y.id === x.id)) continue; const r = await window.ssAlbumDelete(x.id); if (r && r.ok) ssPendDelDone(x.id); } catch (_) {} } })().finally(() => { ssPendDelBusy = false; });
+};
+window.addEventListener("ss-auth", () => setTimeout(ssPendDelDrain, 1500));
+window.addEventListener("online", () => setTimeout(ssPendDelDrain, 3000));
+setInterval(() => { try { if (localStorage.getItem(SS_PD)) ssPendDelDrain(); } catch (_) {} }, 30000);
+setTimeout(ssPendDelDrain, 8000);
 /* v93 (C3 part 2, R3-08): album cleanup is queued on this device and retried until it has really happened. */
 const SS_GC = "ss-album-gc";
 const ssGcKey = c => c && ((typeof c.albumOf === "string" && c.albumOf) || c.cid);
@@ -9901,7 +10003,7 @@ function Sheetmancer() {
       const _added = (charData && Array.isArray(charData.sections)) ? charData.sections.length : 0;
       const _ssAddTag = Date.now(); setSsAddTag(_ssAddTag);   /* v94 (P3-10) */
       const _ssDupAsk = ((characters[scanAddIdx] || {}).sections || []).some(o => o && ssSecKey(o.title) && ((charData && charData.sections) || []).some(s => s && ssSecKey(s.title) === ssSecKey(o.title)));   /* r2 S4 */
-      setCharacters(prev => prev.map((c, i) => i === scanAddIdx ? appendScannedSections(c, ssStampCats(charData.sections, c.sections), _ssAddTag) : c));
+      setCharacters(prev => prev.map((c, i) => i === scanAddIdx ? appendScannedSections(c, ssStampCats(charData.sections, c.sections, ssLayoutV(c)), _ssAddTag) : c));
       setActiveCharIdx(scanAddIdx);
       setActiveIsFallen(false);
       setScanAddIdx(null);
@@ -9911,7 +10013,8 @@ function Sheetmancer() {
     }
     const _firstEver = !characters.length;
     const _u = Object.create(null); characters.concat(fallenHeroes).forEach(c => { if (c && c.cid) _u[c.cid] = 1; });
-    charData = ssSanitizeChar(Object.assign({ layoutV: 2 }, charData, { sections: ssStampCats(charData && charData.sections) }), _u, { freshCid: true }) || charData;
+    charData = ssSanitizeChar(Object.assign({}, charData, { layoutV: 3, sections: ssStampCats(charData && charData.sections, null, 3) }), _u, { freshCid: true }) || charData;   /* v95 (105b) */
+    try { if (charData && typeof charData.cid === "string") ssFlAdd(charData.cid); } catch (_) {}   /* v95 (105a) */
     const nc = [...characters, charData];
     setCharacters(nc);
     setActiveCharIdx(nc.length - 1);
@@ -11358,6 +11461,11 @@ ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.c
    var docv={charId:String(rec.charId),img:String(rec.img),w:rec.w|0,h:rec.h|0,ts:rec.ts||Date.now()};
    try{return fsM.setDoc(albumDoc(uid,String(rec.id)),docv).then(function(){return {ok:true,photo:Object.assign({id:rec.id},docv)};},function(e){return {ok:false,reason:"error",err:String((e&&(e.code||e.message))||e)};});}
    catch(e){return Promise.resolve({ok:false,reason:"error",err:String(e)});}
+  };
+  window.ssAlbumExists=function(photoId){   /* v95 review round 3: {ok:true,exists} from the server only; offline or any error gives ok:false */
+   var uid=albumUid(); if(!uid||!photoId||!fsM.getDocFromServer)return Promise.resolve({ok:false});
+   try{return fsM.getDocFromServer(albumDoc(uid,String(photoId))).then(function(d){return {ok:true,exists:!!(d&&d.exists())};},function(){return {ok:false};});}
+   catch(e){return Promise.resolve({ok:false});}
   };
   /* v93 (S6, R3-05): album pictures from a backup restored while signed out. */
   var HOLD_KEY="albumhold",draining=false;
