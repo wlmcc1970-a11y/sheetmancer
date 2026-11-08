@@ -3,7 +3,7 @@
 <head>
 <style>html{background:#0A0A0C}</style>
 <style>:root{--fb-accent:#8a6a2f;--fb-accent-ink:#ffffff}</style>
-<script>window.SS_BUILD='v97';window.DIGIRUNE_FEEDBACK={app:'Sheetmancer',version:'build '+window.SS_BUILD,endpoint:'https://digirune-feedback.will-6d6.workers.dev/report',siteKey:'0x4AAAAAAFW88K0K9FyRmEzA',fallbackEmail:'will@digirunestudios.com',aiNotice:'I understand my note may be read with help from an AI service (Anthropic).'};</script>
+<script>window.SS_BUILD='v98';window.DIGIRUNE_FEEDBACK={app:'Sheetmancer',version:'build '+window.SS_BUILD,endpoint:'https://digirune-feedback.will-6d6.workers.dev/report',siteKey:'0x4AAAAAAFW88K0K9FyRmEzA',fallbackEmail:'will@digirunestudios.com',aiNotice:'I understand my note may be read with help from an AI service (Anthropic).'};</script>
 <script src="digirune-feedback.js?v=89"></script>
 
 <!-- Sheetmancer (formerly SheetSnap) v1.1.0-chassis — DigiRune Studios. Self-contained PWA: precompiled React (no Babel/CDN), data-URI manifest + icons, offline service worker (sw-v1.js), install prompt, safe-area + back-button. Built 2026-06-06. -->
@@ -337,28 +337,101 @@ var SS_PAL={"parchment":{"n":"Parchment & Leather","ground":[0.9796,0.9516,0.900
 
   /* ---------- table rendering (v70) ---------- */
   var TBL_HEAD_SZ = 8.4, TBL_CELL_SZ = 8.6, TBL_CPAD = 3;
-  function layoutTable(f, innerW) {
+  /* v98 (item 178): column widths follow the content, like the app's own on-screen table. */
+  function tblNorm(f) {
     var cols = Array.isArray(f.columns) ? f.columns.map(function (c) { return c == null ? "" : String(c); }) : [];
     var body = Array.isArray(f.rows) ? f.rows.map(function (r) { return Array.isArray(r) ? r.map(function (c) { return c == null ? "" : String(c); }) : []; }) : [];
     var n = cols.length;
     for (var bi = 0; bi < body.length; bi++) if (body[bi].length > n) n = body[bi].length;
     if (n < 1) n = 1;
+    return { cols: cols, body: body, n: n };
+  }
+  function tblMeasure(txt, font, size) {   /* [widest single word, widest line] */
+    var lines = String(txt == null ? "" : txt).split(/\r?\n/).map(toWin), mw = 0, lw = 0;
+    for (var i = 0; i < lines.length; i++) {
+      var ws = lines[i].split(/\s+/).filter(function (x) { return x.length; });
+      for (var k = 0; k < ws.length; k++) { var w = textWidth(ws[k], font, size); if (w > mw) mw = w; }
+      var l = textWidth(ws.join(" "), font, size); if (l > lw) lw = l;
+    }
+    return [mw, Math.max(lw, mw)];
+  }
+  function tblNeeds(t) {
+    var mins = [], nats = [];
+    for (var c = 0; c < t.n; c++) {
+      var m = tblMeasure(t.cols[c] || "", "Times-Bold", TBL_HEAD_SZ), mn = m[0], nt = m[1];
+      for (var r = 0; r < t.body.length; r++) {
+        m = tblMeasure(t.body[r][c] != null ? t.body[r][c] : "", "Times-Roman", TBL_CELL_SZ);
+        if (m[0] > mn) mn = m[0]; if (m[1] > nt) nt = m[1];
+      }
+      mins.push(mn + TBL_CPAD * 2 + 0.5); nats.push(nt + TBL_CPAD * 2 + 0.5);
+    }
+    return { mins: mins, nats: nats };
+  }
+  function tblSum(a) { var s = 0; for (var i = 0; i < a.length; i++) s += a[i]; return s; }
+  function tblWidths(nd, innerW) {   /* null = cannot fit without breaking a word */
+    var n = nd.mins.length, eq = innerW / n, ws = [], c, ok = innerW <= COLW - PAD * 2 + 0.5;   /* equal widths only in half a page */
+    for (c = 0; c < n; c++) if (eq < nd.mins[c]) ok = false;
+    if (ok) { for (c = 0; c < n; c++) ws.push(eq); return ws; }   /* v97 look, unchanged */
+    var sMin = tblSum(nd.mins), sNat = tblSum(nd.nats);
+    if (sMin > innerW) return null;
+    if (sNat <= innerW) { for (c = 0; c < n; c++) ws.push(nd.nats[c] + (innerW - sNat) * nd.nats[c] / sNat); }
+    else {
+      var span = sNat - sMin;
+      for (c = 0; c < n; c++) ws.push(nd.mins[c] + (innerW - sMin) * (span > 0 ? (nd.nats[c] - nd.mins[c]) / span : 1 / n));
+    }
+    return ws;
+  }
+  function tableFits(f, innerW) { return !!tblWidths(tblNeeds(tblNorm(f)), innerW); }
+  /* one table, or column groups that each repeat the first column when it is too wide even here */
+  function layoutTablePieces(f, innerW) {
+    var t = tblNorm(f), nd = tblNeeds(t);
+    if (tblWidths(nd, innerW) || t.n < 3) return [layoutTable(f, innerW)];
+    var lab = nd.mins[0], room = innerW - lab, groups = [], g = [], used = 0, c;
+    if (lab > innerW * 0.5) return [layoutTable(f, innerW)];
+    for (c = 1; c < t.n; c++) {
+      if (nd.mins[c] > room) return [layoutTable(f, innerW)];
+      if (g.length && used + nd.mins[c] > room) { groups.push(g); g = []; used = 0; }
+      g.push(c); used += nd.mins[c];
+    }
+    if (g.length) groups.push(g);
+    /* even out the groups (16-23 / 24-30 rather than 16-26 / 27-30) when that still fits */
+    var k = groups.length, per = Math.ceil((t.n - 1) / k), even = [], okE = true;
+    for (c = 1; c < t.n; c += per) {
+      var eg = []; for (var j = c; j < Math.min(t.n, c + per); j++) eg.push(j);
+      var s = 0; for (j = 0; j < eg.length; j++) s += nd.mins[eg[j]];
+      if (s > room) okE = false; even.push(eg);
+    }
+    if (okE) groups = even;
+    var out = [];
+    for (var gi = 0; gi < groups.length; gi++) {
+      var idx = [0].concat(groups[gi]);
+      out.push(layoutTable({
+        title: gi === 0 ? f.title : "",
+        columns: idx.map(function (i) { return t.cols[i] || ""; }),
+        rows: t.body.map(function (r) { return idx.map(function (i) { return r[i] != null ? r[i] : ""; }); })
+      }, innerW));
+    }
+    return out;
+  }
+  function layoutTable(f, innerW) {
+    var t0 = tblNorm(f), cols = t0.cols, body = t0.body, n = t0.n;
+    var ws = tblWidths(tblNeeds(t0), innerW), wi;
+    if (!ws) { ws = []; for (wi = 0; wi < n; wi++) ws.push(innerW / n); }   /* last resort: v97 widths */
     var cw = innerW / n;
-    var cellW = cw - TBL_CPAD * 2;
     var lhH = TBL_HEAD_SZ + 2.2, lhC = TBL_CELL_SZ + 2.2;
     var titleLines = (f.title != null && String(f.title).length) ? wrap(String(f.title), "Times-Bold", LBL_SZ, innerW) : [];
     var titleH = titleLines.length ? titleLines.length * (LBL_SZ + 2.2) + 3 : 0;
     var colLines = [], headH = 0;
-    for (var c = 0; c < n; c++) { var w = wrap(cols[c] || "", "Times-Bold", TBL_HEAD_SZ, cellW); colLines.push(w); if (w.length * lhH > headH) headH = w.length * lhH; }
+    for (var c = 0; c < n; c++) { var w = wrap(cols[c] || "", "Times-Bold", TBL_HEAD_SZ, ws[c] - TBL_CPAD * 2); colLines.push(w); if (w.length * lhH > headH) headH = w.length * lhH; }
     headH += 6;
     var rowsL = [], rowH = [];
     for (var r = 0; r < body.length; r++) {
       var cells = [], hh = 0;
-      for (var cc = 0; cc < n; cc++) { var cellTxt = body[r][cc] != null ? String(body[r][cc]) : ""; var wl = wrap(cellTxt, "Times-Roman", TBL_CELL_SZ, cellW); cells.push(wl); if (wl.length * lhC > hh) hh = wl.length * lhC; }
+      for (var cc = 0; cc < n; cc++) { var cellTxt = body[r][cc] != null ? String(body[r][cc]) : ""; var wl = wrap(cellTxt, "Times-Roman", TBL_CELL_SZ, ws[cc] - TBL_CPAD * 2); cells.push(wl); if (wl.length * lhC > hh) hh = wl.length * lhC; }
       hh += 5; rowsL.push(cells); rowH.push(hh);
     }
     var gridH = headH; for (var g = 0; g < rowH.length; g++) gridH += rowH[g];
-    return { n: n, cw: cw, pad: TBL_CPAD, HEAD: TBL_HEAD_SZ, CELL: TBL_CELL_SZ, lhH: lhH, lhC: lhC, cols: colLines, headH: headH, rowsL: rowsL, rowH: rowH, titleLines: titleLines, titleH: titleH, h: titleH + gridH + 2 };
+    return { n: n, cw: cw, ws: ws, pad: TBL_CPAD, HEAD: TBL_HEAD_SZ, CELL: TBL_CELL_SZ, lhH: lhH, lhC: lhC, cols: colLines, headH: headH, rowsL: rowsL, rowH: rowH, titleLines: titleLines, titleH: titleH, h: titleH + gridH + 2 };
   }
   function splitTable(tbl, maxH) {
     var chunks = [], i = 0;
@@ -366,7 +439,7 @@ var SS_PAL={"parchment":{"n":"Parchment & Leather","ground":[0.9796,0.9516,0.900
       var first = chunks.length === 0;
       var h = (first ? tbl.titleH : 0) + tbl.headH, start = i;
       while (i < tbl.rowsL.length && (h + tbl.rowH[i] <= maxH || i === start)) { h += tbl.rowH[i]; i++; }
-      chunks.push({ n: tbl.n, cw: tbl.cw, pad: tbl.pad, HEAD: tbl.HEAD, CELL: tbl.CELL, lhH: tbl.lhH, lhC: tbl.lhC, cols: tbl.cols, headH: tbl.headH, rowsL: tbl.rowsL.slice(start, i), rowH: tbl.rowH.slice(start, i), titleLines: first ? tbl.titleLines : [], titleH: first ? tbl.titleH : 0, h: h + 2 });
+      chunks.push({ n: tbl.n, cw: tbl.cw, ws: tbl.ws, pad: tbl.pad, HEAD: tbl.HEAD, CELL: tbl.CELL, lhH: tbl.lhH, lhC: tbl.lhC, cols: tbl.cols, headH: tbl.headH, rowsL: tbl.rowsL.slice(start, i), rowH: tbl.rowH.slice(start, i), titleLines: first ? tbl.titleLines : [], titleH: first ? tbl.titleH : 0, h: h + 2 });
     }
     if (!chunks.length) chunks.push(tbl);
     return chunks;
@@ -380,7 +453,7 @@ var SS_PAL={"parchment":{"n":"Parchment & Leather","ground":[0.9796,0.9516,0.900
     for (c = 0; c < tbl.n; c++) {
       var hy = y - 3 - tbl.HEAD;
       for (a = 0; a < tbl.cols[c].length; a++) { pg.text(cx + tbl.pad, hy, tbl.cols[c][a], F.bold, tbl.HEAD, C.leather); hy -= tbl.lhH; }
-      cx += tbl.cw;
+      cx += tbl.ws ? tbl.ws[c] : tbl.cw;
     }
     var ry = y - tbl.headH;
     pg.line(x, ry, x + innerW, ry, C.brown, 0.7);
@@ -390,7 +463,7 @@ var SS_PAL={"parchment":{"n":"Parchment & Leather","ground":[0.9796,0.9516,0.900
         var cy = ry - 3 - tbl.CELL;
         var cell = tbl.rowsL[r][c] || [];
         for (a = 0; a < cell.length; a++) { pg.text(cx2 + tbl.pad, cy, cell[a], F.body, tbl.CELL, C.ink); cy -= tbl.lhC; }
-        cx2 += tbl.cw;
+        cx2 += tbl.ws ? tbl.ws[c] : tbl.cw;
       }
       ry -= tbl.rowH[r];
       if (r < tbl.rowsL.length - 1) pg.line(x, ry, x + innerW, ry, C.rule, 0.4);
@@ -399,7 +472,7 @@ var SS_PAL={"parchment":{"n":"Parchment & Leather","ground":[0.9796,0.9516,0.900
     pg.line(x, gridTop, x + innerW, gridTop, C.rule, 0.5);
     pg.line(x, botY, x + innerW, botY, C.rule, 0.5);
     var vx = x;
-    for (c = 0; c <= tbl.n; c++) { pg.line(vx, gridTop, vx, botY, C.rule, 0.4); vx += tbl.cw; }
+    for (c = 0; c <= tbl.n; c++) { pg.line(vx, gridTop, vx, botY, C.rule, 0.4); if (c < tbl.n) vx += tbl.ws ? tbl.ws[c] : tbl.cw; }
   }
   function measureRows(fields, innerW) {
     var lblW = Math.min(innerW * 0.46, innerW - 60);
@@ -412,8 +485,8 @@ var SS_PAL={"parchment":{"n":"Parchment & Leather","ground":[0.9796,0.9516,0.900
         continue;
       }
       if (f.type === "table") {
-        var tb = layoutTable(f, innerW);
-        rows.push({ table: true, tbl: tb, h: tb.h });
+        var tbs = layoutTablePieces(f, innerW);   /* v98 */
+        for (var tpi = 0; tpi < tbs.length; tpi++) rows.push({ table: true, tbl: tbs[tpi], h: tbs[tpi].h });
         continue;
       }
       var raw = (f.value == null || f.value === "") ? "–" : String(f.value);
@@ -549,36 +622,44 @@ var SS_PAL={"parchment":{"n":"Parchment & Leather","ground":[0.9796,0.9516,0.900
     var maxRowH0 = Math.min(colTop1, colTop) - colBottom - headerH() - PAD * 2;
     var pre = [];
     var totalH = 0;
+    var FULLW = PW - 2 * M, anyWide = false;   /* v98: a section with a table too wide for half a page spans both columns */
     for (var m = 0; m < sections.length; m++) {
-      var mr = splitTallRows(measureRows(sections[m].fields || [], COLW - PAD * 2), COLW - PAD * 2, maxRowH0);
+      var wfs = sections[m].fields || [], wide = false;
+      for (var wq = 0; wq < wfs.length; wq++) if (wfs[wq] && wfs[wq].type === "table" && !tableFits(wfs[wq], COLW - PAD * 2)) wide = true;
+      var iw = (wide ? FULLW : COLW) - PAD * 2;
+      var mr = splitTallRows(measureRows(wfs, iw), iw, maxRowH0);
       var mh = blockH(mr, 0, mr.length);
-      pre.push({ rows: mr, h: mh });
+      pre.push({ rows: mr, h: mh, wide: wide });
+      if (wide) anyWide = true;
       totalH += mh + SEC_GAP;
     }
     var colCap = colTop1 - colBottom;
-    var balanceTarget = (totalH <= colCap * 2) ? (totalH / 2) : 0;
+    var balanceTarget = (!anyWide && totalH <= colCap * 2) ? (totalH / 2) : 0;
+    var curWide = false, colStart = colTop1, colLow = [colTop1, colTop1], deferWide = -1;
     var usedInCol = 0;
 
     function colX() { return M + colIdx * (COLW + GUT); }
     function nextColumn() {
-      if (colIdx === 0) { colIdx = 1; cursorY = (pageNo === 0) ? colTop1 : colTop; }
-      else { pg = newPage(); pageNo++; chrome(pg); colIdx = 0; cursorY = colTop; }
+      if (colIdx === 0) { colIdx = 1; cursorY = colStart; }   /* v98: colStart = the page top, or under a full-width section */
+      else { pg = newPage(); pageNo++; chrome(pg); colIdx = 0; cursorY = colTop; colStart = colTop; colLow = [colTop, colTop];
+        if (deferWide >= 0) { var dw = deferWide; deferWide = -1; placeWide(sections[dw], pre[dw].rows); }   /* v98: a held full-width section opens the new page */
+      }
       usedInCol = 0;
     }
 
     function drawBlock(sec, rows, from, to, cont) {
-      var x = colX(), innerW = COLW - PAD * 2;
+      var BW = curWide ? FULLW : COLW, x = curWide ? M : colX(), innerW = BW - PAD * 2;   /* v98 */
       var h = blockH(rows, from, to);
       var top = cursorY, bot = top - h;
-      pg.rect(x, bot, COLW, h, C.card, C.rule, 0.7);
-      pg.rect(x, top - 2.2, COLW, 2.2, C.brown);
+      pg.rect(x, bot, BW, h, C.card, C.rule, 0.7);
+      pg.rect(x, top - 2.2, BW, 2.2, C.brown);
 
       var ty = top - PAD - TITLE_SZ + 1.5;
       var title = toWin(String(sec.title || "Section")) + (cont ? " (cont.)" : "");
       var tsz = TITLE_SZ;
       while (tsz > 7 && textWidth(title, "Times-Bold", tsz) > innerW) tsz -= 0.3;
       pg.text(x + PAD, ty, title, F.bold, tsz, C.leather);
-      pg.line(x + PAD, ty - 4.5, x + COLW - PAD, ty - 4.5, C.rule, 0.6);
+      pg.line(x + PAD, ty - 4.5, x + BW - PAD, ty - 4.5, C.rule, 0.6);
 
       var y = ty - 4.5 - 7;
       for (var i = from; i < to; i++) {
@@ -586,9 +667,9 @@ var SS_PAL={"parchment":{"n":"Parchment & Leather","ground":[0.9796,0.9516,0.900
         if (r.hdr) {
           var hy = y - 2;
           for (a = 0; a < r.H.length; a++) { pg.text(x + PAD, hy - HDR_SZ, r.H[a], F.bold, HDR_SZ, C.leather); hy -= HDR_SZ + 2.4; }
-          pg.line(x + PAD, hy - 0.5, x + COLW - PAD, hy - 0.5, C.gold, 0.5);
+          pg.line(x + PAD, hy - 0.5, x + BW - PAD, hy - 0.5, C.gold, 0.5);
         } else if (r.table) {
-          drawTable(pg, x + PAD, y, COLW - PAD * 2, r.tbl);
+          drawTable(pg, x + PAD, y, BW - PAD * 2, r.tbl);
         } else if (r.flow) {
           var fy2 = y;
           for (a = 0; a < r.flow.length; a++) {
@@ -606,18 +687,45 @@ var SS_PAL={"parchment":{"n":"Parchment & Leather","ground":[0.9796,0.9516,0.900
           var ly = y;
           for (a = 0; a < r.L.length; a++) { pg.text(x + PAD, ly - LBL_SZ, r.L[a], F.body, LBL_SZ, C.muted); ly -= LBL_SZ + 2.2; }
           var vy = y;
-          for (b = 0; b < r.V.length; b++) { pg.text(x + COLW - PAD, vy - VAL_SZ, r.V[b], F.bold, VAL_SZ, C.ink, { align: "right" }); vy -= VAL_SZ + 2.4; }
+          for (b = 0; b < r.V.length; b++) { pg.text(x + BW - PAD, vy - VAL_SZ, r.V[b], F.bold, VAL_SZ, C.ink, { align: "right" }); vy -= VAL_SZ + 2.4; }
         }
         y -= r.h + ROW_GAP;
       }
       cursorY = bot - SEC_GAP;
       usedInCol += h + SEC_GAP;
+      if (!curWide) colLow[colIdx] = cursorY;
+    }
+
+    function placeWide(sec, rows) {   /* v98: full width, under everything already on this page */
+      var placed = 0, cont = false;
+      cursorY = Math.min(colLow[0], colLow[1]);
+      curWide = true;
+      while (placed < rows.length) {
+        var avail = cursorY - colBottom;
+        if (blockH(rows, placed, rows.length) <= avail) { drawBlock(sec, rows, placed, rows.length, cont); placed = rows.length; break; }
+        var fit = placed;
+        while (fit < rows.length && blockH(rows, placed, fit + 1) <= avail) fit++;
+        var atTop = cursorY >= colTop - 0.01 || (pageNo === 0 && cursorY >= colTop1 - 0.01);
+        if (fit - placed < 2 && !atTop) { pg = newPage(); pageNo++; chrome(pg); cursorY = colTop; continue; }
+        if (fit === placed) fit = placed + 1;
+        drawBlock(sec, rows, placed, fit, cont);
+        placed = fit; cont = true;
+        if (placed < rows.length) { pg = newPage(); pageNo++; chrome(pg); cursorY = colTop; }
+      }
+      curWide = false; colIdx = 0; colStart = cursorY; colLow = [cursorY, cursorY]; usedInCol = 0;
     }
 
     for (var s = 0; s < sections.length; s++) {
       var sec = sections[s];
       var rows = pre[s].rows;
       var placed = 0, cont = false;
+      if (pre[s].wide) {
+        if (deferWide >= 0) { var dq = deferWide; deferWide = -1; placeWide(sections[dq], pre[dq].rows); }
+        /* it cannot start on this page: let the next ordinary sections use the space left, then open the next page with it */
+        var wTop = Math.min(colLow[0], colLow[1]), wNeed = blockH(rows, 0, Math.min(2, rows.length));
+        if (wNeed > wTop - colBottom && (colIdx === 0 || cursorY - colBottom > 80) && s + 1 < sections.length && !pre[s + 1].wide) { deferWide = s; continue; }
+        placeWide(sec, rows); continue;
+      }
 
       /* balanced break: once column 1 holds about half the content, move to column 2 */
       if (balanceTarget && colIdx === 0 && pageNo === 0 && usedInCol > 0 &&
@@ -644,6 +752,8 @@ var SS_PAL={"parchment":{"n":"Parchment & Leather","ground":[0.9796,0.9516,0.900
         if (placed < rows.length) nextColumn();
       }
     }
+
+    if (deferWide >= 0) { placeWide(sections[deferWide], pre[deferWide].rows); deferWide = -1; }
 
     /* ---- footers ---- */
     for (var i = 0; i < pages.length; i++) {
