@@ -3,7 +3,7 @@
 <head>
 <style>html{background:#0A0A0C}</style>
 <style>:root{--fb-accent:#8a6a2f;--fb-accent-ink:#ffffff}</style>
-<script>window.SS_BUILD='v98';window.DIGIRUNE_FEEDBACK={app:'Sheetmancer',version:'build '+window.SS_BUILD,endpoint:'https://digirune-feedback.will-6d6.workers.dev/report',siteKey:'0x4AAAAAAFW88K0K9FyRmEzA',fallbackEmail:'will@digirunestudios.com',aiNotice:'I understand my note may be read with help from an AI service (Anthropic).'};</script>
+<script>window.SS_BUILD='v99';window.DIGIRUNE_FEEDBACK={app:'Sheetmancer',version:'build '+window.SS_BUILD,endpoint:'https://digirune-feedback.will-6d6.workers.dev/report',siteKey:'0x4AAAAAAFW88K0K9FyRmEzA',fallbackEmail:'will@digirunestudios.com',aiNotice:'I understand my note may be read with help from an AI service (Anthropic).'};</script>
 <script src="digirune-feedback.js?v=89"></script>
 
 <!-- Sheetmancer (formerly SheetSnap) v1.1.0-chassis — DigiRune Studios. Self-contained PWA: precompiled React (no Babel/CDN), data-URI manifest + icons, offline service worker (sw-v1.js), install prompt, safe-area + back-button. Built 2026-06-06. -->
@@ -1065,6 +1065,10 @@ html[data-smx-theme="candlelit"] .v94-onmetal{text-shadow:0 0 1px rgba(255,240,1
 }
 .smx-scan-pill{flex-wrap:wrap;justify-content:center;row-gap:2px;max-width:100%}
 .smx-scan-pill>span{white-space:nowrap}
+/* v99 (item 204): at 0 Character Scans the pill glows softly so 'Get more' is seen; reduce-motion gets a still glow. */
+@keyframes smxPillGlow{0%,100%{box-shadow:0 0 6px 0 var(--smx-pill-glow)}50%{box-shadow:0 0 18px 5px var(--smx-pill-glow)}}
+.smx-scan-pill.smx-pill-out{animation:smxPillGlow 2.6s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){.smx-scan-pill.smx-pill-out{animation:none!important;box-shadow:0 0 14px 3px var(--smx-pill-glow)!important}}
 .smx-cact{flex:1 1 0;min-width:0;min-height:44px;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px 6px;cursor:pointer;
   font:600 13px/1.1 'EB Garamond',Georgia,serif;letter-spacing:.02em;white-space:nowrap}
 /* Hub: keep the class / race line and the scan check from breaking badly. */
@@ -3885,6 +3889,9 @@ function HomeScreen({
   const closeWhatsNew = () => { window.__ssWnOpen = false; setWhatsNew(false); };
   const grantBusy = useSsGrantBusy();
   const pillKnown = !!(ssauth.signedIn && ssBal && typeof ssBal.remaining === "number" && !window.__ssWelcomeBusy && !grantBusy);
+  /* v99 (item 204): low = 1 or 0 scans left (Get more becomes a chip); out = 0 (pill glows, number in danger red). */
+  const pillLow = pillKnown && !ssauth.deleted && slotsLeft <= 1, pillOut = pillLow && slotsLeft <= 0;
+  const pillGlow = (() => { const m = /^#?([0-9a-f]{6})$/i.exec(T.accent || ""); if (!m) return T.accent; const n = parseInt(m[1], 16); return "rgba(" + (n >> 16) + "," + (n >> 8 & 255) + "," + (n & 255) + ",0.6)"; })();
   /* UX-07: a sign-in started from "Add a character" continues straight on to the camera. */
   const pendingAdd = useRef(false);
   useEffect(() => { if (ssauth.signedIn && pendingAdd.current) { pendingAdd.current = false; onStartCapture(); } }, [ssauth.signedIn]);
@@ -4231,14 +4238,16 @@ function HomeScreen({
     onClick: () => setSignInSheet(true), className: "ss-press smx-pretty",
     style: { alignSelf: "center", minHeight: 44, padding: "6px 10px", margin: "-6px 0", background: "none", border: "none", cursor: "pointer", color: T.textSoft || T.text, fontFamily: "'EB Garamond',Georgia,serif", fontSize: 15, lineHeight: 1.4, textAlign: "center" }
   }, "Used Sheetmancer before? ", /*#__PURE__*/React.createElement("span", { style: { color: T.accent, fontWeight: 700, textDecoration: "underline", textUnderlineOffset: 3 } }, "Sign in to bring back your characters.")), /*#__PURE__*/React.createElement("button", {
-    onClick: () => ssauth.deleted ? setGoneSheet(true) : ssauth.signedIn ? setShowSlots(true) : setSignInSheet(true), className: "ss-press smx-scan-pill",
-    style: { alignSelf: "center", minHeight: 44, display: "flex", alignItems: "center", gap: 6, padding: "8px 18px", background: T.accentFaint, border: `1.5px solid ${T.accent}`, borderRadius: 20, cursor: "pointer", boxShadow: `0 1px 6px ${T.accentFaint}` }
+    onClick: () => ssauth.deleted ? setGoneSheet(true) : ssauth.signedIn ? setShowSlots(true) : setSignInSheet(true), className: "ss-press smx-scan-pill" + (pillOut ? " smx-pill-out" : ""),   /* v99 (item 204) */
+    style: { "--smx-pill-glow": pillGlow, alignSelf: "center", minHeight: 44, display: "flex", alignItems: "center", gap: 6, padding: "8px 18px", background: T.accentFaint, border: `1.5px solid ${T.accent}`, borderRadius: 20, cursor: "pointer", boxShadow: `0 1px 6px ${T.accentFaint}` }
   }, /*#__PURE__*/React.createElement("span", {
-    style: { fontSize: 15, fontWeight: 800, color: T.accent, fontFamily: "'Cinzel',Georgia,serif" }
+    style: { fontSize: 15, fontWeight: 800, color: pillOut ? (T.danger || "#c0503a") : T.accent, fontFamily: "'Cinzel',Georgia,serif" }   /* v99 (item 204) */
   }, pillKnown ? slotsLeft : ""), /*#__PURE__*/React.createElement("span", {
     style: { fontSize: 13, fontWeight: 700, color: T.text, fontFamily: "'Cinzel',Georgia,serif", letterSpacing: 0.3 }
   }, !ssauth.signedIn ? "Your Character Scans" : !pillKnown ? "Checking scans\u2026" : (slotsLeft === 1 ? "Character Scan left" : "Character Scans left")), /*#__PURE__*/React.createElement("span", {
-    style: { fontSize: 13, color: T.accent, fontWeight: 700, fontFamily: "'Cinzel',Georgia,serif", display: "inline-flex", alignItems: "center", gap: 3 }
+    style: pillLow   /* v99 (item 204): a solid chip so Get more reads as a button */
+      ? { fontSize: 13, color: T.bg, background: T.accent, fontWeight: 700, fontFamily: "'Cinzel',Georgia,serif", display: "inline-flex", alignItems: "center", gap: 3, padding: "3px 10px", borderRadius: 999, boxShadow: "0 1px 4px rgba(0,0,0,0.35)" }
+      : { fontSize: 13, color: T.accent, fontWeight: 700, fontFamily: "'Cinzel',Georgia,serif", display: "inline-flex", alignItems: "center", gap: 3 }
   }, /*#__PURE__*/React.createElement("span", { "aria-hidden": "true", style: { fontSize: 15, lineHeight: 1 } }, "+"), ssauth.signedIn ? "Get more" : "Sign in")), characters.length > 0 && /*#__PURE__*/React.createElement("div", {
     className: "smx-charlist",
     style: {
